@@ -1,0 +1,25 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.next/
+out/
+build/
+dist/
+
+# Android & Gradle
+.gradle/
+build/
+app/build/
+local.properties
+*.apk
+*.aab
+
+# Env files & secrets
+.env
+.env*.local
+
+# OS
+.DS_Store
+Thumbs.db

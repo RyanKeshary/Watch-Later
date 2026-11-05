@@ -1,0 +1,16 @@
+{
+  "name": "reelvault-backend",
+  "version": "1.0.0",
+  "description": "ReelVault extraction and categorization backend worker",
+  "main": "src/worker.js",
+  "scripts": {
+    "start": "node src/worker.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.7",
+    "dotenv": "^16.4.5",
+    "instatouch": "^2.3.20",
+    "node-fetch": "^2.7.0",
+    "pg": "^8.23.1"
+  }
+}
