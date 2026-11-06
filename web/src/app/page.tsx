@@ -133,6 +133,9 @@ export default function App() {
       const savedThumbs = localStorage.getItem('reelvault_show_thumbnails');
       if (savedThumbs !== null) setShowThumbnails(savedThumbs === 'true');
 
+      const savedSidebar = localStorage.getItem('reelvault_sidebar_collapsed');
+      if (savedSidebar !== null) setSidebarCollapsed(savedSidebar === 'true');
+
       const savedRetention = localStorage.getItem('reelvault_archive_retention') as any;
       if (savedRetention) setRetentionPeriod(savedRetention);
     } catch (e) {}
@@ -1457,7 +1460,26 @@ export default function App() {
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-zinc-300">Display Thumbnails</span>
+                    <div>
+                      <span className="text-xs text-zinc-300 block">Sidebar Collapsed by Default</span>
+                      <span className="text-[11px] text-zinc-500">Keep navigation sidebar minimized</span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={sidebarCollapsed}
+                      onChange={(e) => {
+                        setSidebarCollapsed(e.target.checked);
+                        localStorage.setItem('reelvault_sidebar_collapsed', String(e.target.checked));
+                      }}
+                      className="rounded accent-indigo-600"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-xs text-zinc-300 block">Display Thumbnails</span>
+                      <span className="text-[11px] text-zinc-500">Show reel cover pictures on cards</span>
+                    </div>
                     <input
                       type="checkbox"
                       checked={showThumbnails}
@@ -1551,7 +1573,7 @@ export default function App() {
                     Export your entire curated reel library and metadata to standard formats for permanent offline archival.
                   </p>
 
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <button
                       onClick={() => exportData('json')}
                       className="flex items-center gap-1.5 rounded-lg border border-zinc-700 bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 text-xs font-medium text-white transition"
@@ -1565,6 +1587,47 @@ export default function App() {
                     >
                       <Download className="h-3.5 w-3.5" />
                       <span>Export CSV</span>
+                    </button>
+                    <button
+                      onClick={async () => {
+                        const completedReels = reels.filter(r => r.completion_status === 'completed');
+                        if (completedReels.length === 0) {
+                          alert('No completed reels to delete.');
+                          return;
+                        }
+                        if (!confirm(`Permanently delete ${completedReels.length} completed reel(s)?`)) return;
+                        const ids = completedReels.map(r => r.id);
+                        setReels(prev => prev.filter(r => r.completion_status !== 'completed'));
+                        const { error } = await supabase.from('reels').delete().in('id', ids);
+                        if (error) {
+                          alert(`Failed: ${error.message}`);
+                          await loadData();
+                        }
+                      }}
+                      className="flex items-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900 hover:bg-red-950/40 hover:border-red-800/50 hover:text-red-400 px-3 py-1.5 text-xs font-medium text-zinc-400 transition"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      <span>Delete Completed Content</span>
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (reels.length === 0) {
+                          alert('Vault is already empty.');
+                          return;
+                        }
+                        if (!confirm(`Warning: This will delete ALL ${reels.length} saved reels from your vault permanently. Proceed?`)) return;
+                        const ids = reels.map(r => r.id);
+                        setReels([]);
+                        const { error } = await supabase.from('reels').delete().in('id', ids);
+                        if (error) {
+                          alert(`Failed: ${error.message}`);
+                          await loadData();
+                        }
+                      }}
+                      className="flex items-center gap-1.5 rounded-lg border border-red-900/40 bg-red-950/20 hover:bg-red-950/50 px-3 py-1.5 text-xs font-medium text-red-400 transition"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      <span>Delete All Saved Content</span>
                     </button>
                   </div>
                 </div>
