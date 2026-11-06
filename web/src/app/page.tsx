@@ -322,30 +322,7 @@ export default function App() {
     }
   }, [session, loadData]);
 
-  // Automatically delete empty categories (no reels associated as category or subcategory)
-  useEffect(() => {
-    if (!session || categories.length === 0 || reels.length === 0) return;
-
-    // A category is considered in-use if any reel references it directly as category_id or subcategory_id,
-    // OR if it has a child subcategory that is in-use.
-    const directlyUsedIds = new Set<string>();
-    for (const r of reels) {
-      if (r.category_id) directlyUsedIds.add(r.category_id);
-      if (r.subcategory_id) directlyUsedIds.add(r.subcategory_id);
-    }
-
-    const emptyCategoryIds = categories.filter(cat => {
-      if (directlyUsedIds.has(cat.id)) return false;
-      // If parent, check if any subcategory has reels
-      const hasActiveSub = categories.some(sub => sub.parent_id === cat.id && directlyUsedIds.has(sub.id));
-      return !hasActiveSub;
-    }).map(c => c.id);
-
-    if (emptyCategoryIds.length > 0) {
-      setCategories(prev => prev.filter(c => !emptyCategoryIds.includes(c.id)));
-      supabase.from('categories').delete().in('id', emptyCategoryIds).then();
-    }
-  }, [categories, reels, session]);
+  // Purge expired archived reels
   useEffect(() => {
     if (!session || reels.length === 0) return;
 
@@ -522,46 +499,33 @@ export default function App() {
     }
   };
 
-  const exportData = (format: 'json' | 'csv') => {
-    if (format === 'json') {
-      const jsonStr = JSON.stringify(reels, null, 2);
-      const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.setAttribute('href', url);
-      link.setAttribute('download', `watchlater_export_${new Date().toISOString().slice(0, 10)}.json`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
-    } else {
-      const headers = ['id', 'url', 'ai_title', 'creator_username', 'completion_status', 'created_at'];
-      const sanitizeCell = (val: string | null | undefined) => {
-        let text = val ? String(val) : '';
-        if (/^[=+\-@\t\r]/.test(text)) text = "'" + text;
-        return `"${text.replace(/"/g, '""')}"`;
-      };
+  const exportData = (format: 'csv') => {
+    const headers = ['id', 'url', 'ai_title', 'creator_username', 'completion_status', 'created_at'];
+    const sanitizeCell = (val: string | null | undefined) => {
+      let text = val ? String(val) : '';
+      if (/^[=+\-@\t\r]/.test(text)) text = "'" + text;
+      return `"${text.replace(/"/g, '""')}"`;
+    };
 
-      const rows = reels.map(r => [
-        sanitizeCell(r.id),
-        sanitizeCell(r.url),
-        sanitizeCell(r.ai_title),
-        sanitizeCell(r.creator_username),
-        sanitizeCell(r.completion_status),
-        sanitizeCell(r.created_at)
-      ]);
+    const rows = reels.map(r => [
+      sanitizeCell(r.id),
+      sanitizeCell(r.url),
+      sanitizeCell(r.ai_title),
+      sanitizeCell(r.creator_username),
+      sanitizeCell(r.completion_status),
+      sanitizeCell(r.created_at)
+    ]);
 
-      const csvContent = [headers.map(h => `"${h}"`).join(','), ...rows.map(e => e.join(','))].join('\r\n');
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.setAttribute('href', url);
-      link.setAttribute('download', `watchlater_export_${new Date().toISOString().slice(0, 10)}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
-    }
+    const csvContent = [headers.map(h => `"${h}"`).join(','), ...rows.map(e => e.join(','))].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `watchlater_export_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
   };
 
   const handleChangePassword = async (e: React.FormEvent) => {
@@ -1833,18 +1797,11 @@ export default function App() {
 
                   <div className="flex flex-wrap gap-2">
                     <button
-                      onClick={() => exportData('json')}
-                      className="flex items-center gap-1.5 rounded-lg border border-zinc-700 bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 text-xs font-medium text-white transition"
-                    >
-                      <Download className="h-3.5 w-3.5" />
-                      <span>Export JSON ({reels.length} items)</span>
-                    </button>
-                    <button
                       onClick={() => exportData('csv')}
                       className="flex items-center gap-1.5 rounded-lg border border-zinc-700 bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 text-xs font-medium text-white transition"
                     >
                       <Download className="h-3.5 w-3.5" />
-                      <span>Export CSV</span>
+                      <span>Export CSV ({reels.length} items)</span>
                     </button>
                     <button
                       onClick={async () => {

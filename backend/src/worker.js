@@ -385,32 +385,81 @@ async function processReel(reel) {
 
   // Clean up any empty categories for this user
   try {
-    const { data: userCats } = await supabase
-      .from('categories')
-      .select('id, parent_id')
-      .eq('user_id', reel.user_id);
+    // Paginate categories to ensure all rows are fetched
+    let allUserCats = [];
+    let catFrom = 0;
+    const catPageSize = 1000;
+    let hasMoreCats = true;
+    while (hasMoreCats) {
+      const { data: page, error: catErr } = await supabase
+        .from('categories')
+        .select('id, parent_id, created_at')
+        .eq('user_id', reel.user_id)
+        .range(catFrom, catFrom + catPageSize - 1);
 
-    const { data: userReels } = await supabase
-      .from('reels')
-      .select('category_id, subcategory_id')
-      .eq('user_id', reel.user_id);
+      if (catErr) {
+        throw new Error(`Failed to fetch categories page: ${catErr.message}`);
+      }
+      if (page && page.length > 0) {
+        allUserCats.push(...page);
+        catFrom += catPageSize;
+        if (page.length < catPageSize) hasMoreCats = false;
+      } else {
+        hasMoreCats = false;
+      }
+    }
 
-    if (userCats && userReels) {
+    // Paginate reels to ensure all rows are fetched
+    let allUserReels = [];
+    let reelFrom = 0;
+    const reelPageSize = 1000;
+    let hasMoreReels = true;
+    while (hasMoreReels) {
+      const { data: page, error: reelErr } = await supabase
+        .from('reels')
+        .select('category_id, subcategory_id')
+        .eq('user_id', reel.user_id)
+        .range(reelFrom, reelFrom + reelPageSize - 1);
+
+      if (reelErr) {
+        throw new Error(`Failed to fetch reels page: ${reelErr.message}`);
+      }
+      if (page && page.length > 0) {
+        allUserReels.push(...page);
+        reelFrom += reelPageSize;
+        if (page.length < reelPageSize) hasMoreReels = false;
+      } else {
+        hasMoreReels = false;
+      }
+    }
+
+    if (allUserCats.length > 0) {
       const usedIds = new Set();
-      for (const r of userReels) {
+      for (const r of allUserReels) {
         if (r.category_id) usedIds.add(r.category_id);
         if (r.subcategory_id) usedIds.add(r.subcategory_id);
       }
 
-      const emptyIds = userCats.filter(cat => {
+      // Safeguard: protect manually/recently created categories (created in the last 15 minutes)
+      const now = Date.now();
+      const recentGracePeriodMs = 15 * 60 * 1000;
+
+      const emptyIds = allUserCats.filter(cat => {
         if (usedIds.has(cat.id)) return false;
-        const hasChildWithReel = userCats.some(sub => sub.parent_id === cat.id && usedIds.has(sub.id));
+        if (cat.created_at && (now - new Date(cat.created_at).getTime()) < recentGracePeriodMs) {
+          return false;
+        }
+        const hasChildWithReel = allUserCats.some(sub => sub.parent_id === cat.id && usedIds.has(sub.id));
         return !hasChildWithReel;
       }).map(c => c.id);
 
       if (emptyIds.length > 0) {
-        await supabase.from('categories').delete().in('id', emptyIds);
-        console.log(`[Worker] Cleaned up ${emptyIds.length} empty categories for user ${reel.user_id}`);
+        const { error: delErr } = await supabase.from('categories').delete().in('id', emptyIds);
+        if (delErr) {
+          console.error(`[Worker] Error deleting empty categories:`, delErr.message);
+        } else {
+          console.log(`[Worker] Cleaned up ${emptyIds.length} empty categories for user ${reel.user_id}`);
+        }
       }
     }
   } catch (cleanErr) {

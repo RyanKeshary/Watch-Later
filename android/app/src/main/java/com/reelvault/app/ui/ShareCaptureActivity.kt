@@ -98,6 +98,8 @@ class ShareCaptureActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        var duplicateDialogShown = false
+
         try {
             if (intent?.action == Intent.ACTION_SEND && intent.type?.startsWith("text/") == true) {
                 val sharedText = intent.getStringExtra(Intent.EXTRA_TEXT)
@@ -169,6 +171,7 @@ class ShareCaptureActivity : Activity() {
                     if (isAlreadyExists) {
                         val areNotificationsEnabled = androidx.core.app.NotificationManagerCompat.from(this).areNotificationsEnabled()
                         if (!areNotificationsEnabled) {
+                            duplicateDialogShown = true
                             android.app.AlertDialog.Builder(this)
                                 .setTitle("Reel Already Saved")
                                 .setMessage("This reel already exists in Watch Later. Would you like to re-share and re-sync it?")
@@ -204,13 +207,8 @@ class ShareCaptureActivity : Activity() {
         } catch (e: Exception) {
             Log.e("ShareCaptureActivity", "Error processing share intent", e)
         } finally {
-            if (!isFinishing && !isChangingConfigurations) {
-                // If not waiting on dialog
-                val areNotificationsEnabled = androidx.core.app.NotificationManagerCompat.from(this).areNotificationsEnabled()
-                val isDuplicateWithoutNotifications = intent?.getBooleanExtra("force_reshare", false) == false && !areNotificationsEnabled
-                if (!isDuplicateWithoutNotifications) {
-                    finish()
-                }
+            if (!duplicateDialogShown && !isFinishing) {
+                finish()
             }
         }
     }
