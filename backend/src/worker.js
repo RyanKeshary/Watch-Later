@@ -395,6 +395,7 @@ async function processReel(reel) {
         .from('categories')
         .select('id, parent_id, created_at')
         .eq('user_id', reel.user_id)
+        .order('id', { ascending: true })
         .range(catFrom, catFrom + catPageSize - 1);
 
       if (catErr) {
@@ -417,8 +418,9 @@ async function processReel(reel) {
     while (hasMoreReels) {
       const { data: page, error: reelErr } = await supabase
         .from('reels')
-        .select('category_id, subcategory_id')
+        .select('id, category_id, subcategory_id')
         .eq('user_id', reel.user_id)
+        .order('id', { ascending: true })
         .range(reelFrom, reelFrom + reelPageSize - 1);
 
       if (reelErr) {
@@ -444,9 +446,22 @@ async function processReel(reel) {
       const now = Date.now();
       const recentGracePeriodMs = 15 * 60 * 1000;
 
+      // Find all categories protected by recent grace period, plus their parent IDs
+      const protectedRecentParentIds = new Set();
+      for (const cat of allUserCats) {
+        if (cat.created_at && (now - new Date(cat.created_at).getTime()) < recentGracePeriodMs) {
+          if (cat.parent_id) {
+            protectedRecentParentIds.add(cat.parent_id);
+          }
+        }
+      }
+
       const emptyIds = allUserCats.filter(cat => {
         if (usedIds.has(cat.id)) return false;
         if (cat.created_at && (now - new Date(cat.created_at).getTime()) < recentGracePeriodMs) {
+          return false;
+        }
+        if (protectedRecentParentIds.has(cat.id)) {
           return false;
         }
         const hasChildWithReel = allUserCats.some(sub => sub.parent_id === cat.id && usedIds.has(sub.id));

@@ -171,8 +171,7 @@ class ShareCaptureActivity : Activity() {
                     if (isAlreadyExists) {
                         val areNotificationsEnabled = androidx.core.app.NotificationManagerCompat.from(this).areNotificationsEnabled()
                         if (!areNotificationsEnabled) {
-                            duplicateDialogShown = true
-                            android.app.AlertDialog.Builder(this)
+                            val dialog = android.app.AlertDialog.Builder(this)
                                 .setTitle("Reel Already Saved")
                                 .setMessage("This reel already exists in Watch Later. Would you like to re-share and re-sync it?")
                                 .setPositiveButton("Re-share") { _, _ ->
@@ -185,12 +184,14 @@ class ShareCaptureActivity : Activity() {
                                     startActivity(reshareIntent)
                                     finish()
                                 }
-                                .setNegativeButton("Cancel") { dialog, _ ->
-                                    dialog.dismiss()
+                                .setNegativeButton("Cancel") { dialogInterface, _ ->
+                                    dialogInterface.dismiss()
                                     finish()
                                 }
                                 .setOnCancelListener { finish() }
-                                .show()
+                                .create()
+                            dialog.show()
+                            duplicateDialogShown = true
                             return
                         } else {
                             Toast.makeText(

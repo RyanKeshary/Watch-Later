@@ -106,6 +106,11 @@ export default function App() {
   const [isCreatingCategory, setIsCreatingCategory] = useState(false);
   const [categoryInsertPending, setCategoryInsertPending] = useState(false);
 
+  // Clear history lightbox
+  const [showClearHistoryLightbox, setShowClearHistoryLightbox] = useState(false);
+  const [clearCategoriesAlso, setClearCategoriesAlso] = useState(false);
+  const [isClearingHistory, setIsClearingHistory] = useState(false);
+
   // Load preferences from localStorage
   useEffect(() => {
     try {
@@ -499,7 +504,7 @@ export default function App() {
     }
   };
 
-  const exportData = (format: 'csv') => {
+  const exportData = () => {
     const headers = ['id', 'url', 'ai_title', 'creator_username', 'completion_status', 'created_at'];
     const sanitizeCell = (val: string | null | undefined) => {
       let text = val ? String(val) : '';
@@ -1039,7 +1044,7 @@ export default function App() {
           {/* HOME VIEW: STATS & NICHE DISTRIBUTION */}
           {currentPage === 'home' && (
             <div className="space-y-6 max-w-6xl">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
                   <span className="text-xs text-zinc-500 block mb-1">Total Saved Posts</span>
                   <div className="text-2xl font-bold text-white">{reels.length}</div>
@@ -1053,16 +1058,6 @@ export default function App() {
                   <div className="text-2xl font-bold text-white">{categories.length}</div>
                   <span className="text-[11px] text-zinc-400 mt-1 block">
                     {rootCategories.length} primary, {categories.length - rootCategories.length} sub-niches
-                  </span>
-                </div>
-
-                <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
-                  <span className="text-xs text-zinc-500 block mb-1">Extraction Rate</span>
-                  <div className="text-2xl font-bold text-emerald-400">
-                    {reels.length > 0 ? Math.round(((reels.length - counts.failed) / reels.length) * 100) : 100}%
-                  </div>
-                  <span className="text-[11px] text-zinc-500 mt-1 block">
-                    {counts.failed} failed items
                   </span>
                 </div>
 
@@ -1231,23 +1226,6 @@ export default function App() {
               )}
 
               {/* Live Incoming Queue & Processing Banner for Inbox */}
-              {currentPage === 'inbox' && (
-                <div className="mb-4 rounded-xl border border-indigo-900/50 bg-indigo-950/20 p-4">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
-                      <h4 className="text-xs font-semibold text-indigo-300">Live Incoming Queue & Background Worker</h4>
-                    </div>
-                    <span className="text-[10px] font-mono text-zinc-400">
-                      {reels.filter(r => r.processing_status === 'pending' || r.processing_status === 'resolving').length} in queue
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-zinc-400 leading-relaxed">
-                    Reels shared from your phone appear here after they sync. The background worker parses OpenGraph metadata and classifies content via Groq (<span className="text-indigo-300 font-mono">gpt-oss-20b</span>) into niche taxonomy.
-                  </p>
-                </div>
-              )}
-
               {selectedCategoryId && (
                 <div className="mb-4 flex items-center gap-2">
                   <button
@@ -1602,46 +1580,11 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Ingestion & Processing Controls */}
-              <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                    <Sliders className="h-4 w-4 text-indigo-400" />
-                    <span>2. Ingestion &amp; Processing Controls</span>
-                  </h3>
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-indigo-400 bg-indigo-950/80 px-2 py-0.5 rounded border border-indigo-800/50">
-                    Backend Managed
-                  </span>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between max-w-xl py-1 border-b border-zinc-850">
-                    <div>
-                      <span className="text-xs font-medium text-zinc-300 block">Back-to-back Reel Spam Protection</span>
-                      <span className="text-[11px] text-zinc-500">Mutex queue locks ensure every shared reel is reliably captured</span>
-                    </div>
-                    <span className="text-xs font-semibold text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/40">
-                      Active
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between max-w-xl py-1 border-b border-zinc-850">
-                    <div>
-                      <span className="text-xs font-medium text-zinc-300 block">Niche Multi-domain Categorization</span>
-                      <span className="text-[11px] text-zinc-500">GPT-OSS 20B taxonomist with deep domain tree</span>
-                    </div>
-                    <span className="text-xs font-semibold text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/40">
-                      Active
-                    </span>
-                  </div>
-                </div>
-              </div>
-
               {/* Appearance & Density */}
               <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
                 <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
                   <Palette className="h-4 w-4 text-indigo-400" />
-                  <span>3. Appearance &amp; Density</span>
+                  <span>2. Appearance &amp; Density</span>
                 </h3>
 
                 <div className="space-y-4 max-w-xl">
@@ -1662,25 +1605,6 @@ export default function App() {
                       <option value="compact">Compact (Dense / More items)</option>
                       <option value="comfortable">Comfortable (Balanced)</option>
                       <option value="spacious">Spacious (Large cards)</option>
-                    </select>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-xs text-zinc-300 block">Default Layout</span>
-                      <span className="text-[11px] text-zinc-500">Choose between card grid and compact list view</span>
-                    </div>
-                    <select
-                      value={viewLayout}
-                      onChange={(e) => {
-                        const val = e.target.value as any;
-                        setViewLayout(val);
-                        localStorage.setItem('watchlater_view_layout', val);
-                      }}
-                      className="bg-zinc-800 border border-zinc-700 text-xs rounded-lg px-2.5 py-1 text-zinc-200"
-                    >
-                      <option value="grid">Grid View</option>
-                      <option value="list">List View</option>
                     </select>
                   </div>
 
@@ -1740,7 +1664,7 @@ export default function App() {
               <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
                 <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
                   <Clock className="h-4 w-4 text-indigo-400" />
-                  <span>4. Archive Auto-Delete &amp; Retention Cap</span>
+                  <span>3. Archive Auto-Delete &amp; Retention Cap</span>
                 </h3>
                 <p className="text-xs text-zinc-400 mb-3">
                   Archiving a post marks it for automatic deletion after your chosen retention period. Cap is 1 month.
@@ -1787,7 +1711,7 @@ export default function App() {
               <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
                 <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
                   <Download className="h-4 w-4 text-indigo-400" />
-                  <span>5. Data Management &amp; Export</span>
+                  <span>4. Data Management &amp; Export</span>
                 </h3>
 
                 <div className="space-y-3">
@@ -1797,11 +1721,21 @@ export default function App() {
 
                   <div className="flex flex-wrap gap-2">
                     <button
-                      onClick={() => exportData('csv')}
+                      onClick={() => exportData()}
                       className="flex items-center gap-1.5 rounded-lg border border-zinc-700 bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 text-xs font-medium text-white transition"
                     >
                       <Download className="h-3.5 w-3.5" />
                       <span>Export CSV ({reels.length} items)</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setClearCategoriesAlso(false);
+                        setShowClearHistoryLightbox(true);
+                      }}
+                      className="flex items-center gap-1.5 rounded-lg border border-red-900/40 bg-red-950/20 hover:bg-red-950/40 hover:border-red-800/60 text-red-300 px-3 py-1.5 text-xs font-medium transition"
+                    >
+                      <Trash2 className="h-3.5 w-3.5 text-red-400" />
+                      <span>Clear Watch History</span>
                     </button>
                     <button
                       onClick={async () => {
@@ -1832,7 +1766,7 @@ export default function App() {
               <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
                 <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
                   <Smartphone className="h-4 w-4 text-indigo-400" />
-                  <span>6. Registered Devices &amp; Synchronization</span>
+                  <span>5. Registered Devices &amp; Synchronization</span>
                 </h3>
 
                 <div className="space-y-3">
@@ -2066,6 +2000,93 @@ export default function App() {
                   </div>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Clear Watch History Lightbox */}
+      {showClearHistoryLightbox && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+          onClick={() => !isClearingHistory && setShowClearHistoryLightbox(false)}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl space-y-4"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-red-950/60 border border-red-800/40 flex items-center justify-center text-red-400 shrink-0">
+                <Trash2 className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-white">Clear Watch History</h3>
+                <p className="text-xs text-zinc-400">Permanently delete saved items from your account.</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-zinc-300 leading-relaxed">
+              This will permanently remove all {reels.length} saved item(s) from Watch Later. This action cannot be undone.
+            </p>
+
+            <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-3.5 flex items-start gap-3">
+              <input
+                id="clear-categories-check"
+                type="checkbox"
+                checked={clearCategoriesAlso}
+                onChange={e => setClearCategoriesAlso(e.target.checked)}
+                className="mt-0.5 rounded accent-red-600 cursor-pointer"
+              />
+              <label htmlFor="clear-categories-check" className="text-xs text-zinc-300 cursor-pointer select-none">
+                <span className="font-medium text-white block">Also clear all categories &amp; sub-folders</span>
+                <span className="text-[11px] text-zinc-500">
+                  Delete all {categories.length} category folder(s) alongside saved posts.
+                </span>
+              </label>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                disabled={isClearingHistory}
+                onClick={() => setShowClearHistoryLightbox(false)}
+                className="rounded-lg border border-zinc-700 bg-zinc-800 hover:bg-zinc-700 px-4 py-2 text-xs font-medium text-zinc-300 transition disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                disabled={isClearingHistory}
+                onClick={async () => {
+                  setIsClearingHistory(true);
+                  try {
+                    const { error: reelsErr } = await supabase
+                      .from('reels')
+                      .delete()
+                      .eq('user_id', session?.user?.id);
+                    if (reelsErr) throw reelsErr;
+
+                    if (clearCategoriesAlso) {
+                      const { error: catErr } = await supabase
+                        .from('categories')
+                        .delete()
+                        .eq('user_id', session?.user?.id);
+                      if (catErr) throw catErr;
+                      setCategories([]);
+                      setSelectedCategoryId(null);
+                    }
+
+                    setReels([]);
+                    setShowClearHistoryLightbox(false);
+                    await loadData();
+                  } catch (err: any) {
+                    alert(`Failed to clear history: ${err.message || err}`);
+                  } finally {
+                    setIsClearingHistory(false);
+                  }
+                }}
+                className="rounded-lg bg-red-600 hover:bg-red-500 px-4 py-2 text-xs font-semibold text-white transition disabled:opacity-50"
+              >
+                {isClearingHistory ? 'Clearing...' : 'Clear History'}
+              </button>
             </div>
           </div>
         </div>
