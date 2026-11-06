@@ -1173,6 +1173,24 @@ export default function App() {
                 </div>
               )}
 
+              {/* Live Incoming Queue & Processing Banner for Inbox */}
+              {currentPage === 'inbox' && (
+                <div className="mb-4 rounded-xl border border-indigo-900/50 bg-indigo-950/20 p-4">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
+                      <h4 className="text-xs font-semibold text-indigo-300">Live Incoming Queue & Background Worker</h4>
+                    </div>
+                    <span className="text-[10px] font-mono text-zinc-400">
+                      {reels.filter(r => r.processing_status === 'pending' || r.processing_status === 'resolving').length} in queue
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-zinc-400 leading-relaxed">
+                    Reels shared from your phone appear here instantly in real-time. The background worker parses OpenGraph metadata and classifies content via Groq (<span className="text-indigo-300 font-mono">gpt-oss-20b</span>) into niche taxonomy.
+                  </p>
+                </div>
+              )}
+
               {selectedCategoryId && (
                 <div className="mb-4 flex items-center gap-2">
                   <button

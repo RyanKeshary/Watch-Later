@@ -51,20 +51,20 @@ async function extractViaOpenGraph(url) {
 
   const html = await res.text();
 
-  const propTitleMatch = html.match(/<meta\s+property=(["'])og:title\1\s+content=(["'])(.*?)\2/i);
-  const contentTitleMatch = !propTitleMatch ? html.match(/<meta\s+content=(["'])(.*?)\1\s+property=(["'])og:title\3/i) : null;
+  const propTitleMatch = html.match(/<meta\s+property=(["'])og:title\1\s+content=(["'])(.*?)\2/is);
+  const contentTitleMatch = !propTitleMatch ? html.match(/<meta\s+content=(["'])(.*?)\1\s+property=(["'])og:title\3/is) : null;
   const rawTitle = propTitleMatch
     ? decodeHtmlEntities(propTitleMatch[3])
     : (contentTitleMatch ? decodeHtmlEntities(contentTitleMatch[2]) : '');
 
-  const propDescMatch = html.match(/<meta\s+property=(["'])og:description\1\s+content=(["'])(.*?)\2/i);
-  const contentDescMatch = !propDescMatch ? html.match(/<meta\s+content=(["'])(.*?)\1\s+property=(["'])og:description\3/i) : null;
+  const propDescMatch = html.match(/<meta\s+property=(["'])og:description\1\s+content=(["'])(.*?)\2/is);
+  const contentDescMatch = !propDescMatch ? html.match(/<meta\s+content=(["'])(.*?)\1\s+property=(["'])og:description\3/is) : null;
   const rawDesc = propDescMatch
     ? decodeHtmlEntities(propDescMatch[3])
     : (contentDescMatch ? decodeHtmlEntities(contentDescMatch[2]) : '');
 
-  const propImageMatch = html.match(/<meta\s+property=(["'])og:image\1\s+content=(["'])(.*?)\2/i);
-  const contentImageMatch = !propImageMatch ? html.match(/<meta\s+content=(["'])(.*?)\1\s+property=(["'])og:image\3/i) : null;
+  const propImageMatch = html.match(/<meta\s+property=(["'])og:image\1\s+content=(["'])(.*?)\2/is);
+  const contentImageMatch = !propImageMatch ? html.match(/<meta\s+content=(["'])(.*?)\1\s+property=(["'])og:image\3/is) : null;
   const image = propImageMatch
     ? decodeHtmlEntities(propImageMatch[3])
     : (contentImageMatch ? decodeHtmlEntities(contentImageMatch[2]) : null);

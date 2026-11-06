@@ -93,6 +93,8 @@ class ShareCaptureActivity : Activity() {
                     CoroutineScope(Dispatchers.IO).launch {
                         try {
                             val existing = db.reelDao().getReelByUrl(normalizedUrl)
+                            val isAlreadySynced = existing != null && (existing.syncStatus == "synced" || existing.remoteId != null)
+
                             if (existing == null) {
                                 val syncStatus = if (isLoggedIn) "local_pending_sync" else "pending_auth"
                                 val newReel = LocalReel(
@@ -101,27 +103,26 @@ class ShareCaptureActivity : Activity() {
                                     syncStatus = syncStatus
                                 )
                                 db.reelDao().insertReel(newReel)
+                            } else if (!isAlreadySynced) {
+                                // If previously pending or failed, ensure it's marked pending sync
+                                val resetStatus = if (isLoggedIn) "local_pending_sync" else "pending_auth"
+                                db.reelDao().updateReel(existing.copy(syncStatus = resetStatus))
+                            }
 
-                                val pendingList = db.reelDao().getPendingReels()
-                                showProgressNotification("Uploading (${pendingList.size} in queue)...", 60, pendingList.size)
+                            val pendingList = db.reelDao().getPendingReels()
+                            showProgressNotification("Uploading (${pendingList.size} in queue)...", 60, pendingList.size)
 
-                                if (isLoggedIn) {
-                                    ReelSyncWorker.syncNow(applicationContext)
-                                } else {
-                                    ReelSyncWorker.enqueue(applicationContext)
-                                }
-
-                                val remaining = db.reelDao().getPendingReels().size
-                                if (remaining == 0) {
-                                    showProgressNotification("Saved to Watch Later", 100, 0)
-                                } else {
-                                    showProgressNotification("Saved locally ($remaining waiting to upload)", 100, remaining)
-                                }
+                            if (isLoggedIn) {
+                                ReelSyncWorker.syncNow(applicationContext)
                             } else {
-                                if (isLoggedIn) {
-                                    ReelSyncWorker.syncNow(applicationContext)
-                                }
-                                showProgressNotification("Reel already in Watch Later", 100, 0)
+                                ReelSyncWorker.enqueue(applicationContext)
+                            }
+
+                            val remaining = db.reelDao().getPendingReels().size
+                            if (remaining == 0) {
+                                showProgressNotification("Saved to Watch Later", 100, 0)
+                            } else {
+                                showProgressNotification("Saved locally ($remaining waiting to upload)", 100, remaining)
                             }
                         } catch (e: Exception) {
                             Log.e("ShareCaptureActivity", "Error queuing reel", e)
