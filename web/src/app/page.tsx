@@ -9,7 +9,6 @@ import {
   FolderTree,
   Folder,
   Inbox,
-  HelpCircle,
   AlertTriangle,
   CheckCircle,
   Archive,
@@ -18,10 +17,8 @@ import {
   ExternalLink,
   Search,
   LogOut,
-  Sparkles,
+  Bookmark,
   RotateCcw,
-  ChevronRight,
-  ChevronDown,
   Plus,
   Trash2,
   PanelLeftClose,
@@ -35,29 +32,36 @@ import {
   Palette,
   Download,
   Smartphone,
-  Info,
-  Calendar,
   X,
+  Play,
   Eye,
+  EyeOff,
+  Bell,
+  PieChart,
   Activity,
   Layers,
-  PieChart,
-  HardDrive
+  Filter
 } from 'lucide-react';
 
 type NavPage = 'home' | 'all' | 'categories' | 'watched' | 'inbox' | 'failed' | 'archived' | 'settings';
+type PostTypeFilter = 'all' | 'reels' | 'posts' | 'carousels';
 
 export default function App() {
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showAuthPassword, setShowAuthPassword] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const [authError, setAuthError] = useState<string | null>(null);
 
   // Active navigation page
   const [currentPage, setCurrentPage] = useState<NavPage>('home');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [postTypeFilter, setPostTypeFilter] = useState<PostTypeFilter>('all');
+
+  // Real-time toast arrival banner on dashboard
+  const [incomingAlert, setIncomingAlert] = useState<string | null>(null);
 
   // Data
   const [reels, setReels] = useState<Reel[]>([]);
@@ -73,10 +77,58 @@ export default function App() {
     return detailReelId ? reels.find(r => r.id === detailReelId) || null : null;
   }, [detailReelId, reels]);
 
-  // Category Lightbox Modal (Categories page: drill down 3 generations deeper)
+  // Category Lightbox Modal (interactive folder view with drill-down)
   const [categoryLightbox, setCategoryLightbox] = useState<Category | null>(null);
 
-  // Reconcile selectedCategoryId and categoryLightbox whenever categories change
+  // UI customization states
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [pinnedFolderIds, setPinnedFolderIds] = useState<string[]>([]);
+
+  // Settings & Preferences
+  const [maxGenerations, setMaxGenerations] = useState(3);
+  const [theme, setTheme] = useState<'dark' | 'light' | 'system'>('dark');
+  const [density, setDensity] = useState<'compact' | 'comfortable'>('comfortable');
+  const [viewLayout, setViewLayout] = useState<'grid' | 'list'>('grid');
+  const [showThumbnails, setShowThumbnails] = useState(true);
+  const [retentionPeriod, setRetentionPeriod] = useState<'day' | 'week' | 'month'>('week');
+
+  // Change password state
+  const [newPassword, setNewPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [passwordMsg, setPasswordMsg] = useState<string | null>(null);
+
+  // Category creation
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [categoryParentId, setCategoryParentId] = useState<string | null>(null);
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
+
+  // Load preferences from localStorage
+  useEffect(() => {
+    try {
+      const savedPins = localStorage.getItem('watchlater_pinned_folders');
+      if (savedPins) setPinnedFolderIds(JSON.parse(savedPins));
+
+      const savedMaxGen = localStorage.getItem('watchlater_max_generations');
+      if (savedMaxGen) setMaxGenerations(parseInt(savedMaxGen, 10));
+
+      const savedDensity = localStorage.getItem('watchlater_density');
+      if (savedDensity) setDensity(savedDensity as any);
+
+      const savedLayout = localStorage.getItem('watchlater_view_layout');
+      if (savedLayout) setViewLayout(savedLayout as any);
+
+      const savedThumbs = localStorage.getItem('watchlater_show_thumbnails');
+      if (savedThumbs !== null) setShowThumbnails(savedThumbs === 'true');
+
+      const savedSidebar = localStorage.getItem('watchlater_sidebar_collapsed');
+      if (savedSidebar !== null) setSidebarCollapsed(savedSidebar === 'true');
+
+      const savedRetention = localStorage.getItem('watchlater_archive_retention') as any;
+      if (savedRetention) setRetentionPeriod(savedRetention);
+    } catch (e) {}
+  }, []);
+
+  // Category state reconciliation
   useEffect(() => {
     if (selectedCategoryId && !categories.some(c => c.id === selectedCategoryId)) {
       setSelectedCategoryId(null);
@@ -86,67 +138,12 @@ export default function App() {
     }
   }, [categories, selectedCategoryId, categoryLightbox]);
 
-  // UI customization states
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [pinnedFolderIds, setPinnedFolderIds] = useState<string[]>([]);
-
-  // Settings: Preferences & Ingestion Rules
-  const [maxGenerations, setMaxGenerations] = useState(3);
-  const [theme, setTheme] = useState<'dark' | 'light' | 'system'>('dark');
-  const [density, setDensity] = useState<'compact' | 'comfortable'>('comfortable');
-  const [viewLayout, setViewLayout] = useState<'grid' | 'list'>('grid');
-  const [showThumbnails, setShowThumbnails] = useState(true);
-  const [autoProcess, setAutoProcess] = useState(true);
-  const [detectDuplicates, setDetectDuplicates] = useState(true);
-  const [keepFailedInLib, setKeepFailedInLib] = useState(true);
-  const [autoRetryFailed, setAutoRetryFailed] = useState(true);
-  const [showProcessingNotifications, setShowProcessingNotifications] = useState(false);
-  const [retentionPeriod, setRetentionPeriod] = useState<'day' | 'week' | 'month'>('week');
-
-  // Change password state
-  const [newPassword, setNewPassword] = useState('');
-  const [passwordMsg, setPasswordMsg] = useState<string | null>(null);
-
-  // Category creation modal/inline
-  const [newCategoryName, setNewCategoryName] = useState('');
-  const [categoryParentId, setCategoryParentId] = useState<string | null>(null);
-  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
-
-  // Load local preferences
-  useEffect(() => {
-    try {
-      const savedPins = localStorage.getItem('reelvault_pinned_folders');
-      if (savedPins) setPinnedFolderIds(JSON.parse(savedPins));
-
-      const savedMaxGen = localStorage.getItem('reelvault_max_generations');
-      if (savedMaxGen) setMaxGenerations(parseInt(savedMaxGen, 10));
-
-      const savedTheme = localStorage.getItem('reelvault_theme');
-      if (savedTheme) setTheme(savedTheme as any);
-
-      const savedDensity = localStorage.getItem('reelvault_density');
-      if (savedDensity) setDensity(savedDensity as any);
-
-      const savedLayout = localStorage.getItem('reelvault_view_layout');
-      if (savedLayout) setViewLayout(savedLayout as any);
-
-      const savedThumbs = localStorage.getItem('reelvault_show_thumbnails');
-      if (savedThumbs !== null) setShowThumbnails(savedThumbs === 'true');
-
-      const savedSidebar = localStorage.getItem('reelvault_sidebar_collapsed');
-      if (savedSidebar !== null) setSidebarCollapsed(savedSidebar === 'true');
-
-      const savedRetention = localStorage.getItem('reelvault_archive_retention') as any;
-      if (savedRetention) setRetentionPeriod(savedRetention);
-    } catch (e) {}
-  }, []);
-
   const togglePin = (catId: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     setPinnedFolderIds(prev => {
       const next = prev.includes(catId) ? prev.filter(id => id !== catId) : [...prev, catId];
       try {
-        localStorage.setItem('reelvault_pinned_folders', JSON.stringify(next));
+        localStorage.setItem('watchlater_pinned_folders', JSON.stringify(next));
       } catch (err) {}
       return next;
     });
@@ -162,7 +159,6 @@ export default function App() {
       }
       const requestUserId = currentSession.user.id;
 
-      // Paginate through all reels
       const pageSize = 1000;
       let allReels: Reel[] = [];
       let from = 0;
@@ -246,7 +242,7 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Real-time synchronization
+  // Real-time synchronization & new reel alert banner
   useEffect(() => {
     if (session) {
       loadData();
@@ -263,9 +259,11 @@ export default function App() {
                 if (prev.some(r => r.id === newReel.id)) return prev;
                 return [newReel, ...prev];
               });
+              // Show instantaneous banner notification on dashboard
+              setIncomingAlert(newReel.url);
+              setTimeout(() => setIncomingAlert(null), 5000);
             } else if (payload.eventType === 'UPDATE') {
               const updated = payload.new as Reel;
-              // If failed or updated, fetch extracted_content so extraction error updates in real time
               if (updated.is_failed || updated.processing_status === 'extraction_failed') {
                 supabase
                   .from('extracted_content')
@@ -318,8 +316,8 @@ export default function App() {
     const retentionMs = retentionPeriod === 'day'
       ? 1 * msPerDay
       : retentionPeriod === 'month'
-      ? 30 * msPerDay // capped at 30 days
-      : 7 * msPerDay; // 1 week default
+      ? 30 * msPerDay
+      : 7 * msPerDay;
 
     const now = Date.now();
     const expiredArchived = reels.filter(r => {
@@ -441,7 +439,6 @@ export default function App() {
     }
   };
 
-  // User collection export with formula injection prevention & Blob URLs
   const exportData = (format: 'json' | 'csv') => {
     if (format === 'json') {
       const jsonStr = JSON.stringify(reels, null, 2);
@@ -449,19 +446,16 @@ export default function App() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.setAttribute('href', url);
-      link.setAttribute('download', `reelvault_export_${new Date().toISOString().slice(0, 10)}.json`);
+      link.setAttribute('download', `watchlater_export_${new Date().toISOString().slice(0, 10)}.json`);
       document.body.appendChild(link);
       link.click();
       link.remove();
       URL.revokeObjectURL(url);
     } else {
-      const headers = ['id', 'url', 'ai_title', 'creator_username', 'difficulty', 'completion_status', 'created_at'];
-      // Neutralize spreadsheet formula injection (=, +, -, @, \t, \r)
+      const headers = ['id', 'url', 'ai_title', 'creator_username', 'completion_status', 'created_at'];
       const sanitizeCell = (val: string | null | undefined) => {
         let text = val ? String(val) : '';
-        if (/^[=+\-@\t\r]/.test(text)) {
-          text = "'" + text;
-        }
+        if (/^[=+\-@\t\r]/.test(text)) text = "'" + text;
         return `"${text.replace(/"/g, '""')}"`;
       };
 
@@ -470,7 +464,6 @@ export default function App() {
         sanitizeCell(r.url),
         sanitizeCell(r.ai_title),
         sanitizeCell(r.creator_username),
-        sanitizeCell(r.difficulty),
         sanitizeCell(r.completion_status),
         sanitizeCell(r.created_at)
       ]);
@@ -480,7 +473,7 @@ export default function App() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.setAttribute('href', url);
-      link.setAttribute('download', `reelvault_export_${new Date().toISOString().slice(0, 10)}.csv`);
+      link.setAttribute('download', `watchlater_export_${new Date().toISOString().slice(0, 10)}.csv`);
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -488,7 +481,6 @@ export default function App() {
     }
   };
 
-  // Change password
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPassword || newPassword.length < 6) {
@@ -503,7 +495,6 @@ export default function App() {
     }
   };
 
-  // Remove Device
   const handleRemoveDevice = async (deviceId: string) => {
     if (!confirm('Remove this device registration?')) return;
     setDevices(prev => prev.filter(d => d.id !== deviceId));
@@ -514,27 +505,38 @@ export default function App() {
     }
   };
 
-  // Filtered reels according to active page and search
+  // Filtered reels according to active page, search query, and post type filter
   const displayedReels = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+
     return reels.filter((reel) => {
-      const matchesSearch = searchQuery
-        ? (reel.ai_title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-           reel.ai_description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-           reel.ai_summary?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-           reel.caption?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-           reel.creator_username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-           reel.url.toLowerCase().includes(searchQuery.toLowerCase()))
-        : true;
+      // Dynamic Search
+      if (q) {
+        const titleMatch = reel.ai_title?.toLowerCase().includes(q);
+        const descMatch = reel.ai_description?.toLowerCase().includes(q);
+        const sumMatch = reel.ai_summary?.toLowerCase().includes(q);
+        const capMatch = reel.caption?.toLowerCase().includes(q);
+        const userMatch = reel.creator_username?.toLowerCase().includes(q);
+        const urlMatch = reel.url.toLowerCase().includes(q);
+        if (!titleMatch && !descMatch && !sumMatch && !capMatch && !userMatch && !urlMatch) {
+          return false;
+        }
+      }
 
-      if (!matchesSearch) return false;
+      // Post Type Filter
+      if (postTypeFilter !== 'all') {
+        const isReel = reel.url.includes('/reel/') || reel.url.includes('/reels/');
+        const isCarousel = reel.caption?.toLowerCase().includes('carousel') || (reel.raw_shared_text?.includes('CAROUSEL'));
+        if (postTypeFilter === 'reels' && !isReel) return false;
+        if (postTypeFilter === 'carousels' && !isCarousel) return false;
+        if (postTypeFilter === 'posts' && (isReel || isCarousel)) return false;
+      }
 
-      // Filter based on currentPage
+      // Page Filters
       switch (currentPage) {
         case 'all':
-          // All reels except archived
           return reel.completion_status !== 'archived';
         case 'watched':
-          // All reels that are checked off completed
           return reel.completion_status === 'completed';
         case 'inbox':
           return reel.processing_status === 'pending' || reel.processing_status === 'resolving';
@@ -549,9 +551,9 @@ export default function App() {
           return true;
       }
     });
-  }, [reels, currentPage, selectedCategoryId, searchQuery]);
+  }, [reels, currentPage, selectedCategoryId, searchQuery, postTypeFilter]);
 
-  // Insights / "What it says about user" (only includes categorized reels)
+  // Persona insights
   const userPersonaInsight = useMemo(() => {
     if (reels.length === 0) return 'Save a few reels to generate your personalized interest profile.';
     const counts: Record<string, number> = {};
@@ -571,16 +573,14 @@ export default function App() {
     const top = sorted[0];
     const top2 = sorted[1];
     if (top) {
-      return `You are intensely drawn to ${top[0]}${top2 ? ` and ${top2[0]}` : ''}. You curate high-value knowledge and entertainment in rapid succession, with a strong focus on actionable and trending content.`;
+      return `You are intensely drawn to ${top[0]}${top2 ? ` and ${top2[0]}` : ''}. You curate high-value knowledge and trending media with laser focus.`;
     }
     return 'Your vault captures a diverse set of topics with active curiosity.';
   }, [reels, categories]);
 
-  // Root categories
   const rootCategories = useMemo(() => categories.filter(c => !c.parent_id), [categories]);
   const getSubcategories = (parentId: string) => categories.filter(c => c.parent_id === parentId);
 
-  // Pinned categories for navigation
   const pinnedCategories = useMemo(() => {
     return categories.filter(c => pinnedFolderIds.includes(c.id));
   }, [categories, pinnedFolderIds]);
@@ -607,7 +607,10 @@ export default function App() {
       <div className="flex min-h-screen items-center justify-center bg-zinc-950 p-4 text-zinc-100">
         <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-900/50 p-8 backdrop-blur">
           <div className="mb-8 text-center">
-            <h1 className="text-3xl font-bold tracking-tight text-white">ReelVault</h1>
+            <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-indigo-600/10 border border-indigo-500/20 mb-3">
+              <Bookmark className="h-7 w-7 text-indigo-400" />
+            </div>
+            <h1 className="text-3xl font-bold tracking-tight text-white">Watch Later</h1>
             <p className="mt-2 text-sm text-zinc-400">Capture effortlessly. Organize intelligently.</p>
           </div>
 
@@ -625,14 +628,23 @@ export default function App() {
             </div>
             <div>
               <label className="text-xs font-semibold text-zinc-400">Password</label>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-800/80 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-indigo-500 focus:outline-none"
-                placeholder="••••••••"
-              />
+              <div className="relative mt-1">
+                <input
+                  type={showAuthPassword ? 'text' : 'password'}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full rounded-lg border border-zinc-700 bg-zinc-800/80 px-3 py-2 pr-10 text-sm text-white placeholder-zinc-500 focus:border-indigo-500 focus:outline-none"
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowAuthPassword(!showAuthPassword)}
+                  className="absolute right-3 top-2.5 text-zinc-400 hover:text-white transition"
+                >
+                  {showAuthPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
 
             {authError && (
@@ -666,7 +678,19 @@ export default function App() {
   }
 
   return (
-    <div className={`flex h-screen ${theme === 'light' ? 'bg-zinc-50 text-zinc-900' : 'bg-zinc-950 text-zinc-100'} font-sans`}>
+    <div className="flex h-screen bg-zinc-950 text-zinc-100 font-sans">
+      {/* Toast Alert for Incoming Reels */}
+      {incomingAlert && (
+        <div className="fixed top-4 right-4 z-50 flex items-center gap-3 rounded-xl border border-indigo-500/40 bg-zinc-900/90 p-4 shadow-2xl backdrop-blur animate-in slide-in-from-top-2">
+          <Bell className="h-5 w-5 text-indigo-400 animate-bounce" />
+          <div>
+            <p className="text-xs font-semibold text-white">New Content Captured!</p>
+            <p className="text-[11px] text-zinc-400 truncate max-w-xs">{incomingAlert}</p>
+          </div>
+          <button onClick={() => setIncomingAlert(null)} className="text-zinc-500 hover:text-white">✕</button>
+        </div>
+      )}
+
       {/* Navigation Sidebar */}
       <aside
         className={`${
@@ -678,8 +702,8 @@ export default function App() {
           <div className="flex items-center justify-between px-2 py-3 mb-2">
             {!sidebarCollapsed && (
               <div className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-indigo-400" />
-                <span className="text-lg font-bold tracking-tight text-white">ReelVault</span>
+                <Bookmark className="h-5 w-5 text-indigo-400" />
+                <span className="text-lg font-bold tracking-tight text-white">Watch Later</span>
               </div>
             )}
             <button
@@ -691,7 +715,7 @@ export default function App() {
             </button>
           </div>
 
-          {/* Core Navigation Items */}
+          {/* Navigation Items */}
           <div className="space-y-1">
             <button
               onClick={() => { setCurrentPage('home'); setSelectedCategoryId(null); }}
@@ -709,25 +733,26 @@ export default function App() {
               className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${
                 currentPage === 'all' && !selectedCategoryId ? 'bg-indigo-600/15 text-indigo-400 font-semibold' : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
               }`}
-              title="All Reels (Except Archived)"
+              title="All Content"
             >
               <div className="flex items-center gap-2.5">
                 <Film className="h-4 w-4 shrink-0" />
-                {!sidebarCollapsed && <span>All Reels</span>}
+                {!sidebarCollapsed && <span>All Content</span>}
               </div>
               {!sidebarCollapsed && <span className="text-[11px] text-zinc-500">{counts.all}</span>}
             </button>
 
+            {/* Renamed from Sorted Saves to Categories */}
             <button
               onClick={() => { setCurrentPage('categories'); setSelectedCategoryId(null); }}
               className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${
-                currentPage === 'categories' ? 'bg-indigo-600/15 text-indigo-400 font-semibold' : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
+                currentPage === 'categories' && !selectedCategoryId ? 'bg-indigo-600/15 text-indigo-400 font-semibold' : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
               }`}
-              title="Sorted Saves & Categories"
+              title="Categories"
             >
               <div className="flex items-center gap-2.5">
                 <FolderTree className="h-4 w-4 shrink-0 text-indigo-400" />
-                {!sidebarCollapsed && <span>Sorted Saves</span>}
+                {!sidebarCollapsed && <span>Categories</span>}
               </div>
               {!sidebarCollapsed && <span className="text-[11px] text-zinc-500">{counts.categories}</span>}
             </button>
@@ -737,7 +762,7 @@ export default function App() {
               className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${
                 currentPage === 'watched' ? 'bg-indigo-600/15 text-indigo-400 font-semibold' : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
               }`}
-              title="Watched Reels"
+              title="Watched"
             >
               <div className="flex items-center gap-2.5">
                 <CheckCircle className="h-4 w-4 shrink-0 text-emerald-400" />
@@ -789,7 +814,7 @@ export default function App() {
             </button>
           </div>
 
-          {/* Pinned Folders Section */}
+          {/* Pinned Folders */}
           <div className="mt-5 space-y-1">
             {!sidebarCollapsed && (
               <div className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wider text-zinc-500 flex items-center gap-1.5">
@@ -832,7 +857,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* Footer: Settings & Sign Out */}
+        {/* Footer */}
         <div className="border-t border-zinc-800/80 pt-3 mt-2 space-y-1">
           <button
             onClick={() => setCurrentPage('settings')}
@@ -859,29 +884,63 @@ export default function App() {
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col overflow-hidden">
         {/* Top Header */}
-        <header className="flex items-center justify-between border-b border-zinc-800 px-6 py-3.5">
-          <div className="flex items-center gap-4">
-            <h2 className="text-base font-semibold text-white tracking-tight capitalize">
-              {currentPage === 'home' && 'Vault Analytics & Overview'}
-              {currentPage === 'all' && 'All Saved Reels'}
-              {currentPage === 'categories' && (selectedCategoryId ? categories.find(c => c.id === selectedCategoryId)?.name || 'Categories' : 'Sorted Saves & Folders')}
-              {currentPage === 'watched' && 'Watched Reels'}
-              {currentPage === 'inbox' && 'Inbox (Processing)'}
-              {currentPage === 'failed' && 'Failed Extractions'}
-              {currentPage === 'archived' && 'Archived Reels'}
+        <header className="flex flex-wrap items-center justify-between border-b border-zinc-800 px-6 py-3 gap-3">
+          <div className="flex items-center gap-4 flex-wrap">
+            <h2 className="text-base font-semibold text-white tracking-tight">
+              {currentPage === 'home' && 'Analytics & Intelligence'}
+              {currentPage === 'all' && 'All Saved Content'}
+              {currentPage === 'categories' && (selectedCategoryId ? categories.find(c => c.id === selectedCategoryId)?.name || 'Category' : 'Categories Directory')}
+              {currentPage === 'watched' && 'Watched Collection'}
+              {currentPage === 'inbox' && 'Processing Inbox'}
+              {currentPage === 'failed' && 'Extraction Issues'}
+              {currentPage === 'archived' && 'Archived Content'}
               {currentPage === 'settings' && 'Settings'}
             </h2>
 
+            {/* Dynamic, Reactive Search Bar */}
             {currentPage !== 'home' && currentPage !== 'settings' && !(currentPage === 'categories' && !selectedCategoryId) && (
-              <div className="flex items-center gap-2 w-80 bg-zinc-900/80 px-2.5 py-1.5 rounded-lg border border-zinc-800">
-                <Search className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
+              <div className="flex items-center gap-2 w-80 bg-zinc-900/80 px-3 py-1.5 rounded-lg border border-zinc-800 focus-within:border-indigo-500/80 transition">
+                <Search className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search reels by title, summary, or creator..."
+                  placeholder="Instant search by title, summary, or user..."
                   className="w-full bg-transparent text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none"
                 />
+                {searchQuery && (
+                  <button onClick={() => setSearchQuery('')} className="text-zinc-500 hover:text-white text-xs">✕</button>
+                )}
+              </div>
+            )}
+
+            {/* Post Type Filters (Reels vs Posts vs Carousels) */}
+            {currentPage !== 'home' && currentPage !== 'settings' && (
+              <div className="flex items-center bg-zinc-900 p-0.5 rounded-lg border border-zinc-800 text-[11px]">
+                <button
+                  onClick={() => setPostTypeFilter('all')}
+                  className={`px-2 py-1 rounded transition ${postTypeFilter === 'all' ? 'bg-indigo-600 text-white font-medium' : 'text-zinc-400 hover:text-white'}`}
+                >
+                  All
+                </button>
+                <button
+                  onClick={() => setPostTypeFilter('reels')}
+                  className={`px-2 py-1 rounded transition ${postTypeFilter === 'reels' ? 'bg-indigo-600 text-white font-medium' : 'text-zinc-400 hover:text-white'}`}
+                >
+                  Reels
+                </button>
+                <button
+                  onClick={() => setPostTypeFilter('carousels')}
+                  className={`px-2 py-1 rounded transition ${postTypeFilter === 'carousels' ? 'bg-indigo-600 text-white font-medium' : 'text-zinc-400 hover:text-white'}`}
+                >
+                  Carousels
+                </button>
+                <button
+                  onClick={() => setPostTypeFilter('posts')}
+                  className={`px-2 py-1 rounded transition ${postTypeFilter === 'posts' ? 'bg-indigo-600 text-white font-medium' : 'text-zinc-400 hover:text-white'}`}
+                >
+                  Posts
+                </button>
               </div>
             )}
           </div>
@@ -898,15 +957,14 @@ export default function App() {
           </div>
         </header>
 
-        {/* Dynamic Page Views */}
+        {/* Dynamic Views */}
         <div className="flex-1 overflow-y-auto p-6">
-          {/* HOME VIEW: STATS & INSIGHTS */}
+          {/* HOME VIEW: STATS & NICHE DISTRIBUTION */}
           {currentPage === 'home' && (
             <div className="space-y-6 max-w-6xl">
-              {/* Quick Summary Cards */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
-                  <span className="text-xs text-zinc-500 block mb-1">Total Saved Reels</span>
+                  <span className="text-xs text-zinc-500 block mb-1">Total Saved Posts</span>
                   <div className="text-2xl font-bold text-white">{reels.length}</div>
                   <span className="text-[11px] text-indigo-400 mt-1 block">
                     {counts.watched} completed ({reels.length > 0 ? Math.round((counts.watched / reels.length) * 100) : 0}%)
@@ -914,25 +972,25 @@ export default function App() {
                 </div>
 
                 <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
-                  <span className="text-xs text-zinc-500 block mb-1">Total Folders / Categories</span>
+                  <span className="text-xs text-zinc-500 block mb-1">Total Categories &amp; Subfolders</span>
                   <div className="text-2xl font-bold text-white">{categories.length}</div>
                   <span className="text-[11px] text-zinc-400 mt-1 block">
-                    {rootCategories.length} primary, {categories.length - rootCategories.length} subfolders
+                    {rootCategories.length} primary, {categories.length - rootCategories.length} sub-niches
                   </span>
                 </div>
 
                 <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
-                  <span className="text-xs text-zinc-500 block mb-1">Processing Success Rate</span>
+                  <span className="text-xs text-zinc-500 block mb-1">Extraction Rate</span>
                   <div className="text-2xl font-bold text-emerald-400">
                     {reels.length > 0 ? Math.round(((reels.length - counts.failed) / reels.length) * 100) : 100}%
                   </div>
                   <span className="text-[11px] text-zinc-500 mt-1 block">
-                    {counts.failed} failed extractions
+                    {counts.failed} failed items
                   </span>
                 </div>
 
                 <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
-                  <span className="text-xs text-zinc-500 block mb-1">Synced Devices</span>
+                  <span className="text-xs text-zinc-500 block mb-1">Connected Phone</span>
                   <div className="text-2xl font-bold text-white">{devices.length}</div>
                   <span className="text-[11px] text-zinc-400 mt-1 block">
                     {devices.length > 0 ? (devices[0]?.device_name || 'Active Android') : 'No devices yet'}
@@ -940,10 +998,10 @@ export default function App() {
                 </div>
               </div>
 
-              {/* What it says about the user */}
+              {/* Persona Insights */}
               <div className="rounded-xl border border-indigo-900/40 bg-gradient-to-r from-indigo-950/40 to-zinc-900/60 p-5">
                 <div className="flex items-center gap-2 mb-2">
-                  <Sparkles className="h-5 w-5 text-indigo-400" />
+                  <Bookmark className="h-5 w-5 text-indigo-400" />
                   <h3 className="text-sm font-semibold text-white">What Your Saves Say About You</h3>
                 </div>
                 <p className="text-sm text-zinc-300 leading-relaxed">
@@ -951,67 +1009,40 @@ export default function App() {
                 </p>
               </div>
 
-              {/* Reel Types Breakdown */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5">
-                  <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
-                    <PieChart className="h-4 w-4 text-indigo-400" />
-                    <span>Distribution by Category</span>
-                  </h3>
-                  <div className="space-y-3">
-                    {rootCategories.map(cat => {
-                      const count = reels.filter(r => r.category_id === cat.id).length;
-                      const pct = reels.length > 0 ? Math.round((count / reels.length) * 100) : 0;
-                      return (
-                        <div key={cat.id}>
-                          <div className="flex items-center justify-between text-xs text-zinc-300 mb-1">
-                            <span>{cat.name}</span>
-                            <span className="text-zinc-500">{count} ({pct}%)</span>
-                          </div>
-                          <div className="h-2 w-full rounded-full bg-zinc-800 overflow-hidden">
-                            <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${pct}%` }} />
-                          </div>
+              {/* Niche Category Distribution */}
+              <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5">
+                <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
+                  <PieChart className="h-4 w-4 text-indigo-400" />
+                  <span>Niche Category Breakdown</span>
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {rootCategories.map(cat => {
+                    const count = reels.filter(r => r.category_id === cat.id).length;
+                    const pct = reels.length > 0 ? Math.round((count / reels.length) * 100) : 0;
+                    return (
+                      <div key={cat.id} className="p-3 rounded-lg border border-zinc-800 bg-zinc-950/40">
+                        <div className="flex items-center justify-between text-xs text-zinc-300 mb-1">
+                          <span className="font-semibold">{cat.name}</span>
+                          <span className="text-zinc-500">{count} posts ({pct}%)</span>
                         </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Difficulty & Engagement Types */}
-                <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5">
-                  <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
-                    <Activity className="h-4 w-4 text-emerald-400" />
-                    <span>Content Complexity</span>
-                  </h3>
-                  <div className="space-y-3">
-                    {['General', 'Beginner', 'Intermediate', 'Advanced'].map(diff => {
-                      const count = reels.filter(r => (r.difficulty || 'General') === diff).length;
-                      const pct = reels.length > 0 ? Math.round((count / reels.length) * 100) : 0;
-                      return (
-                        <div key={diff}>
-                          <div className="flex items-center justify-between text-xs text-zinc-300 mb-1">
-                            <span>{diff}</span>
-                            <span className="text-zinc-500">{count} ({pct}%)</span>
-                          </div>
-                          <div className="h-2 w-full rounded-full bg-zinc-800 overflow-hidden">
-                            <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${pct}%` }} />
-                          </div>
+                        <div className="h-2 w-full rounded-full bg-zinc-800 overflow-hidden">
+                          <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${pct}%` }} />
                         </div>
-                      );
-                    })}
-                  </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
           )}
 
-          {/* CATEGORIES PAGE: HIERARCHY & LIGHTBOX */}
+          {/* CATEGORIES DIRECTORY: INTERACTIVE FOLDER TILES */}
           {currentPage === 'categories' && !selectedCategoryId && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-semibold text-white">Hierarchical Categories</h3>
-                  <p className="text-xs text-zinc-400">Drill down up to {maxGenerations} generations deep or open in lightbox.</p>
+                  <h3 className="text-sm font-semibold text-white">Categories Directory</h3>
+                  <p className="text-xs text-zinc-400">Click any folder icon to inspect subcategories or view saved posts.</p>
                 </div>
                 <button
                   onClick={() => setIsCreatingCategory(!isCreatingCategory)}
@@ -1048,7 +1079,8 @@ export default function App() {
                 </form>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Folder-Type Tiles */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                 {rootCategories.map(cat => {
                   const subcats = getSubcategories(cat.id);
                   const count = reels.filter(r => r.category_id === cat.id).length;
@@ -1057,71 +1089,23 @@ export default function App() {
                   return (
                     <div
                       key={cat.id}
-                      className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 hover:border-zinc-700 transition flex flex-col justify-between"
+                      onClick={() => setCategoryLightbox(cat)}
+                      className="group flex flex-col items-center justify-center p-4 rounded-2xl border border-zinc-800 bg-zinc-900/40 hover:bg-zinc-850 hover:border-indigo-500/50 cursor-pointer transition text-center"
                     >
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <button
-                            onClick={() => setCategoryLightbox(cat)}
-                            className="text-sm font-semibold text-white hover:text-indigo-400 flex items-center gap-1.5 transition text-left"
-                          >
-                            <Folder className="h-4 w-4 text-indigo-400 shrink-0" />
-                            <span>{cat.name}</span>
-                          </button>
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() => togglePin(cat.id)}
-                              className={`p-1 rounded text-xs transition ${isPinned ? 'text-indigo-400' : 'text-zinc-600 hover:text-zinc-300'}`}
-                              title={isPinned ? 'Unpin' : 'Pin'}
-                            >
-                              <Pin className={`h-3 w-3 ${isPinned ? 'fill-indigo-400' : ''}`} />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteCategory(cat.id)}
-                              className="p-1 rounded text-zinc-600 hover:text-red-400 transition"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </button>
-                          </div>
-                        </div>
-
-                        <p className="text-xs text-zinc-500 mb-3">{count} saved reels</p>
-
-                        {/* Subcategories (Level 2) */}
+                      <div className="relative mb-2">
+                        <Folder className="h-12 w-12 text-indigo-400 group-hover:scale-105 transition" />
                         {subcats.length > 0 && (
-                          <div className="pl-3 border-l border-zinc-800 space-y-1">
-                            {subcats.slice(0, 4).map(sub => (
-                              <button
-                                key={sub.id}
-                                onClick={() => setCategoryLightbox(sub)}
-                                className="block w-full text-left text-[11px] text-zinc-400 hover:text-indigo-300 truncate"
-                              >
-                                ↳ {sub.name} ({reels.filter(r => r.subcategory_id === sub.id).length})
-                              </button>
-                            ))}
-                            {subcats.length > 4 && (
-                              <span className="text-[10px] text-zinc-600 italic block">
-                                +{subcats.length - 4} more subcategories
-                              </span>
-                            )}
-                          </div>
+                          <span className="absolute -bottom-1 -right-1 bg-zinc-800 text-[9px] font-mono text-zinc-300 rounded px-1 border border-zinc-700">
+                            +{subcats.length}
+                          </span>
                         )}
                       </div>
-
-                      <div className="mt-4 pt-3 border-t border-zinc-800 flex justify-between">
-                        <button
-                          onClick={() => setSelectedCategoryId(cat.id)}
-                          className="text-xs text-indigo-400 hover:text-indigo-300 font-medium"
-                        >
-                          View Reels →
-                        </button>
-                        <button
-                          onClick={() => setCategoryLightbox(cat)}
-                          className="text-xs text-zinc-500 hover:text-zinc-300"
-                        >
-                          Inspect Hierarchy
-                        </button>
-                      </div>
+                      <span className="text-xs font-semibold text-white group-hover:text-indigo-300 truncate w-full mb-0.5">
+                        {cat.name}
+                      </span>
+                      <span className="text-[10px] text-zinc-500 font-mono">
+                        {count} items
+                      </span>
                     </div>
                   );
                 })}
@@ -1132,13 +1116,23 @@ export default function App() {
           {/* REELS GRID / LIST VIEW */}
           {(currentPage !== 'home' && currentPage !== 'settings' && (currentPage !== 'categories' || selectedCategoryId)) && (
             <div>
+              {/* Warning Notice in Archived Folder */}
+              {currentPage === 'archived' && (
+                <div className="mb-4 rounded-xl border border-amber-900/50 bg-amber-950/20 p-3 flex items-center gap-2.5 text-xs text-amber-300">
+                  <Clock className="h-4 w-4 text-amber-400 shrink-0" />
+                  <span>
+                    <strong>Automatic Deletion Notice:</strong> Posts stored in the Archived folder are permanently purged based on your retention preference ({retentionPeriod === 'day' ? '1 day' : retentionPeriod === 'week' ? '1 week' : '1 month cap'}).
+                  </span>
+                </div>
+              )}
+
               {selectedCategoryId && (
                 <div className="mb-4 flex items-center gap-2">
                   <button
                     onClick={() => setSelectedCategoryId(null)}
                     className="text-xs text-indigo-400 hover:underline"
                   >
-                    ← Back to All Categories
+                    ← Back to Categories
                   </button>
                   <span className="text-zinc-600">/</span>
                   <span className="text-xs text-zinc-300 font-semibold">
@@ -1150,13 +1144,13 @@ export default function App() {
               {displayedReels.length === 0 ? (
                 <div className="flex h-80 flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-800 text-center">
                   <Film className="h-10 w-10 text-zinc-600 mb-2" />
-                  <p className="text-xs font-medium text-zinc-400">No reels found in this view</p>
+                  <p className="text-xs font-medium text-zinc-400">No content found in this view</p>
                   <p className="mt-1 text-[11px] text-zinc-600">
-                    Share a Reel from your phone via ReelVault to see it appear here.
+                    Share a Reel from your phone to Watch Later to see it appear here.
                   </p>
                 </div>
               ) : (
-                <div className={viewLayout === 'grid' ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" : "space-y-3"}>
+                <div className={viewLayout === 'grid' ? (density === 'compact' ? "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5") : "space-y-3"}>
                   {displayedReels.map((reel) => {
                     const extractionErr = Array.isArray(reel.extracted_content)
                       ? reel.extracted_content[0]?.extraction_error
@@ -1173,56 +1167,60 @@ export default function App() {
                         className={`flex flex-col justify-between rounded-xl border border-zinc-800 bg-zinc-900/50 ${density === 'compact' ? 'p-3' : 'p-4'} backdrop-blur hover:border-zinc-700 cursor-pointer transition`}
                       >
                         <div>
-                          {/* Thumbnail */}
+                          {/* Thumbnail with direct Play / Redirect action */}
                           {showThumbnails && reel.thumbnail_url ? (
-                            <div className="relative mb-3 aspect-video w-full overflow-hidden rounded-lg bg-zinc-800">
+                            <div className="relative mb-3 aspect-video w-full overflow-hidden rounded-lg bg-zinc-800 group/thumb">
                               <img
                                 src={reel.thumbnail_url}
-                                alt="Reel thumbnail"
-                                className="h-full w-full object-cover"
+                                alt="Thumbnail"
+                                className="h-full w-full object-cover group-hover/thumb:scale-105 transition"
                               />
+                              <a
+                                href={reel.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover/thumb:opacity-100 transition"
+                                title="Play Reel on Instagram (New Tab)"
+                              >
+                                <div className="h-10 w-10 rounded-full bg-indigo-600 flex items-center justify-center text-white shadow-lg">
+                                  <Play className="h-4 w-4 fill-white ml-0.5" />
+                                </div>
+                              </a>
                             </div>
                           ) : null}
 
                           {/* Header badges */}
                           <div className="flex flex-wrap items-center justify-between gap-1.5 mb-2">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span
-                                className={`rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider ${
-                                  reel.is_failed || reel.processing_status === 'extraction_failed'
-                                    ? 'bg-red-950/80 text-red-400 border border-red-800/50'
-                                    : reel.processing_status === 'processed'
-                                    ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800/50'
-                                    : 'bg-zinc-800 text-zinc-400'
-                                }`}
-                              >
-                                {reel.processing_status}
-                              </span>
+                            <span
+                              className={`rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider ${
+                                reel.is_failed || reel.processing_status === 'extraction_failed'
+                                  ? 'bg-red-950/80 text-red-400 border border-red-800/50'
+                                  : reel.processing_status === 'processed'
+                                  ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800/50'
+                                  : 'bg-zinc-800 text-zinc-400'
+                              }`}
+                            >
+                              {reel.processing_status}
+                            </span>
 
-                              {catObj && (
-                                <span className="rounded bg-indigo-950/60 px-1.5 py-0.5 text-[9px] font-medium text-indigo-300 border border-indigo-800/40">
-                                  {catObj.name}{subObj ? ` / ${subObj.name}` : ''}
-                                </span>
-                              )}
-                            </div>
-
-                            {reel.difficulty && (
-                              <span className="rounded bg-zinc-800 px-1.5 py-0.5 text-[9px] font-medium text-zinc-300">
-                                {reel.difficulty}
+                            {catObj && (
+                              <span className="rounded bg-indigo-950/60 px-1.5 py-0.5 text-[9px] font-medium text-indigo-300 border border-indigo-800/40">
+                                {catObj.name}{subObj ? ` / ${subObj.name}` : ''}
                               </span>
                             )}
                           </div>
 
                           {/* Title & Creator */}
                           <h3 className="font-semibold text-white leading-tight text-sm mb-1 line-clamp-2">
-                            {reel.ai_title || (reel.creator_username ? `@${reel.creator_username}'s Reel` : 'Instagram Reel')}
+                            {reel.ai_title || (reel.creator_username ? `@${reel.creator_username}'s Post` : 'Instagram Post')}
                           </h3>
 
                           {reel.creator_username && (
                             <p className="text-[11px] font-mono text-zinc-400 mb-2">@{reel.creator_username}</p>
                           )}
 
-                          {/* AI Summary / Description */}
+                          {/* AI Summary */}
                           <p className="text-xs text-zinc-400 line-clamp-2 mb-2">
                             {reel.ai_summary || reel.ai_description || reel.caption || 'No summary available'}
                           </p>
@@ -1245,8 +1243,9 @@ export default function App() {
                               rel="noopener noreferrer"
                               className="flex items-center gap-1 text-xs font-medium text-indigo-400 hover:text-indigo-300 transition"
                             >
-                              <span>Open Reel</span>
-                              <ExternalLink className="h-3 w-3" />
+                              <Play className="h-3 w-3 fill-indigo-400" />
+                              <span>Play on Instagram</span>
+                              <ExternalLink className="h-2.5 w-2.5" />
                             </a>
 
                             <span className="text-[10px] text-zinc-500">
@@ -1293,10 +1292,10 @@ export default function App() {
             </div>
           )}
 
-          {/* SETTINGS VIEW: 6 COMPREHENSIVE SECTIONS */}
+          {/* SETTINGS VIEW */}
           {currentPage === 'settings' && (
             <div className="max-w-4xl space-y-8">
-              {/* Section 1: Account Settings */}
+              {/* Account Settings with Password Preview */}
               <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
                 <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
                   <User className="h-4 w-4 text-indigo-400" />
@@ -1324,13 +1323,22 @@ export default function App() {
                   <form onSubmit={handleChangePassword} className="pt-2">
                     <label className="text-xs text-zinc-400 block mb-1">Change Password</label>
                     <div className="flex gap-2 max-w-md">
-                      <input
-                        type="password"
-                        placeholder="New password (min 6 chars)..."
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        className="flex-1 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs text-white"
-                      />
+                      <div className="relative flex-1">
+                        <input
+                          type={showNewPassword ? 'text' : 'password'}
+                          placeholder="New password (min 6 chars)..."
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 pr-9 text-xs text-white"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowNewPassword(!showNewPassword)}
+                          className="absolute right-2.5 top-2 text-zinc-400 hover:text-white"
+                        >
+                          {showNewPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                        </button>
+                      </div>
                       <button type="submit" className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-500">
                         Update
                       </button>
@@ -1340,12 +1348,12 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Section 2: Ingestion & Extraction Rules */}
+              {/* Ingestion & Processing Controls */}
               <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-semibold text-white flex items-center gap-2">
                     <Sliders className="h-4 w-4 text-indigo-400" />
-                    <span>2. Reel Ingestion &amp; Processing Controls</span>
+                    <span>2. Ingestion &amp; Processing Controls</span>
                   </h3>
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-indigo-400 bg-indigo-950/80 px-2 py-0.5 rounded border border-indigo-800/50">
                     Backend Managed
@@ -1355,57 +1363,27 @@ export default function App() {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between max-w-xl py-1 border-b border-zinc-850">
                     <div>
-                      <span className="text-xs font-medium text-zinc-300 block">Automatically process new Reels</span>
-                      <span className="text-[11px] text-zinc-500">Trigger OpenGraph &amp; AI categorization immediately upon receipt</span>
+                      <span className="text-xs font-medium text-zinc-300 block">Back-to-back Reel Spam Protection</span>
+                      <span className="text-[11px] text-zinc-500">Mutex queue locks ensure every shared reel is reliably captured</span>
                     </div>
                     <span className="text-xs font-semibold text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/40">
-                      Active (Always On)
+                      Active
                     </span>
                   </div>
 
                   <div className="flex items-center justify-between max-w-xl py-1 border-b border-zinc-850">
                     <div>
-                      <span className="text-xs font-medium text-zinc-300 block">Detect duplicate URLs</span>
-                      <span className="text-[11px] text-zinc-500">Prevent adding the exact same Instagram Reel multiple times</span>
+                      <span className="text-xs font-medium text-zinc-300 block">Niche Multi-domain Categorization</span>
+                      <span className="text-[11px] text-zinc-500">GPT-OSS 20B taxonomist with deep domain tree</span>
                     </div>
                     <span className="text-xs font-semibold text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/40">
-                      Active (Enforced)
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between max-w-xl py-1 border-b border-zinc-850">
-                    <div>
-                      <span className="text-xs font-medium text-zinc-300 block">Keep failed Reels in library</span>
-                      <span className="text-[11px] text-zinc-500">Retain unresolvable reels in the Failed folder for manual retries</span>
-                    </div>
-                    <span className="text-xs font-semibold text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/40">
-                      Active (Enforced)
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between max-w-xl py-1 border-b border-zinc-850">
-                    <div>
-                      <span className="text-xs font-medium text-zinc-300 block">Automatically retry failed extraction</span>
-                      <span className="text-[11px] text-zinc-500">Bounded retries with exponential backoff on network failures</span>
-                    </div>
-                    <span className="text-xs font-semibold text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/40">
-                      Active (Worker)
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between max-w-xl py-1">
-                    <div>
-                      <span className="text-xs font-medium text-zinc-300 block">Desktop processing notifications</span>
-                      <span className="text-[11px] text-zinc-500">Native browser notifications when extraction completes</span>
-                    </div>
-                    <span className="text-xs text-zinc-500 bg-zinc-800/60 px-2 py-0.5 rounded">
-                      Coming Soon
+                      Active
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* Section 3: Appearance & Display Preferences */}
+              {/* Appearance & Density */}
               <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
                 <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
                   <Palette className="h-4 w-4 text-indigo-400" />
@@ -1415,64 +1393,40 @@ export default function App() {
                 <div className="space-y-4 max-w-xl">
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-xs text-zinc-300 block">Theme</span>
-                      <span className="text-[11px] text-zinc-500">Full light theme coming in a future update</span>
+                      <span className="text-xs text-zinc-300 block">Card Density</span>
+                      <span className="text-[11px] text-zinc-500">Adjust padding and grid columns</span>
                     </div>
-                    <select
-                      value="dark"
-                      disabled
-                      className="bg-zinc-900 border border-zinc-700 text-xs rounded-lg px-2.5 py-1 text-zinc-400 cursor-not-allowed"
-                    >
-                      <option value="dark">Dark (Default)</option>
-                    </select>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-zinc-300">Card Density</span>
                     <select
                       value={density}
                       onChange={(e) => {
                         const val = e.target.value as any;
                         setDensity(val);
-                        localStorage.setItem('reelvault_density', val);
+                        localStorage.setItem('watchlater_density', val);
                       }}
                       className="bg-zinc-800 border border-zinc-700 text-xs rounded-lg px-2.5 py-1 text-zinc-200"
                     >
                       <option value="comfortable">Comfortable</option>
-                      <option value="compact">Compact</option>
-                    </select>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-zinc-300">Default Layout</span>
-                    <select
-                      value={viewLayout}
-                      onChange={(e) => {
-                        const val = e.target.value as any;
-                        setViewLayout(val);
-                        localStorage.setItem('reelvault_view_layout', val);
-                      }}
-                      className="bg-zinc-800 border border-zinc-700 text-xs rounded-lg px-2.5 py-1 text-zinc-200"
-                    >
-                      <option value="grid">Grid</option>
-                      <option value="list">List</option>
+                      <option value="compact">Compact (More items per row)</option>
                     </select>
                   </div>
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-xs text-zinc-300 block">Sidebar Collapsed by Default</span>
-                      <span className="text-[11px] text-zinc-500">Keep navigation sidebar minimized</span>
+                      <span className="text-xs text-zinc-300 block">Default Layout</span>
+                      <span className="text-[11px] text-zinc-500">Choose between card grid and compact list view</span>
                     </div>
-                    <input
-                      type="checkbox"
-                      checked={sidebarCollapsed}
+                    <select
+                      value={viewLayout}
                       onChange={(e) => {
-                        setSidebarCollapsed(e.target.checked);
-                        localStorage.setItem('reelvault_sidebar_collapsed', String(e.target.checked));
+                        const val = e.target.value as any;
+                        setViewLayout(val);
+                        localStorage.setItem('watchlater_view_layout', val);
                       }}
-                      className="rounded accent-indigo-600"
-                    />
+                      className="bg-zinc-800 border border-zinc-700 text-xs rounded-lg px-2.5 py-1 text-zinc-200"
+                    >
+                      <option value="grid">Grid View</option>
+                      <option value="list">List View</option>
+                    </select>
                   </div>
 
                   <div className="flex items-center justify-between">
@@ -1485,7 +1439,7 @@ export default function App() {
                       checked={showThumbnails}
                       onChange={(e) => {
                         setShowThumbnails(e.target.checked);
-                        localStorage.setItem('reelvault_show_thumbnails', String(e.target.checked));
+                        localStorage.setItem('watchlater_show_thumbnails', String(e.target.checked));
                       }}
                       className="rounded accent-indigo-600"
                     />
@@ -1493,42 +1447,37 @@ export default function App() {
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-xs text-zinc-300 block">Category Depth Generations</span>
-                      <span className="text-[11px] text-zinc-500">Max tree depth before requiring drill-down expansion</span>
+                      <span className="text-xs text-zinc-300 block">Sidebar Collapsed by Default</span>
+                      <span className="text-[11px] text-zinc-500">Keep navigation sidebar minimized</span>
                     </div>
-                    <select
-                      value={maxGenerations}
+                    <input
+                      type="checkbox"
+                      checked={sidebarCollapsed}
                       onChange={(e) => {
-                        const val = parseInt(e.target.value, 10);
-                        setMaxGenerations(val);
-                        localStorage.setItem('reelvault_max_generations', String(val));
+                        setSidebarCollapsed(e.target.checked);
+                        localStorage.setItem('watchlater_sidebar_collapsed', String(e.target.checked));
                       }}
-                      className="bg-zinc-800 border border-zinc-700 text-xs rounded-lg px-2.5 py-1 text-zinc-200"
-                    >
-                      <option value="2">2 Generations</option>
-                      <option value="3">3 Generations (Default)</option>
-                      <option value="4">4 Generations</option>
-                      <option value="5">5 Generations</option>
-                    </select>
+                      className="rounded accent-indigo-600"
+                    />
                   </div>
                 </div>
               </div>
 
-              {/* Section 4: Archive Auto-Delete & Retention Cap */}
+              {/* Archive Auto-Delete */}
               <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
                 <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
                   <Clock className="h-4 w-4 text-indigo-400" />
                   <span>4. Archive Auto-Delete &amp; Retention Cap</span>
                 </h3>
                 <p className="text-xs text-zinc-400 mb-3">
-                  Archiving a reel moves it out of regular view. It will be permanently deleted after the chosen retention period. Cap is 1 month.
+                  Archiving a post marks it for automatic deletion after your chosen retention period. Cap is 1 month.
                 </p>
 
                 <div className="grid grid-cols-3 gap-2 max-w-md bg-zinc-950 p-1 rounded-xl border border-zinc-800">
                   <button
                     onClick={() => {
                       setRetentionPeriod('day');
-                      localStorage.setItem('reelvault_archive_retention', 'day');
+                      localStorage.setItem('watchlater_archive_retention', 'day');
                     }}
                     className={`py-1.5 text-xs font-medium rounded-lg transition ${
                       retentionPeriod === 'day' ? 'bg-indigo-600 text-white' : 'text-zinc-400 hover:text-zinc-200'
@@ -1539,7 +1488,7 @@ export default function App() {
                   <button
                     onClick={() => {
                       setRetentionPeriod('week');
-                      localStorage.setItem('reelvault_archive_retention', 'week');
+                      localStorage.setItem('watchlater_archive_retention', 'week');
                     }}
                     className={`py-1.5 text-xs font-medium rounded-lg transition ${
                       retentionPeriod === 'week' ? 'bg-indigo-600 text-white' : 'text-zinc-400 hover:text-zinc-200'
@@ -1550,7 +1499,7 @@ export default function App() {
                   <button
                     onClick={() => {
                       setRetentionPeriod('month');
-                      localStorage.setItem('reelvault_archive_retention', 'month');
+                      localStorage.setItem('watchlater_archive_retention', 'month');
                     }}
                     className={`py-1.5 text-xs font-medium rounded-lg transition ${
                       retentionPeriod === 'month' ? 'bg-indigo-600 text-white' : 'text-zinc-400 hover:text-zinc-200'
@@ -1561,7 +1510,7 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Section 5: Data Management & Export */}
+              {/* Data Management & Export */}
               <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
                 <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
                   <Download className="h-4 w-4 text-indigo-400" />
@@ -1570,7 +1519,7 @@ export default function App() {
 
                 <div className="space-y-3">
                   <p className="text-xs text-zinc-400">
-                    Export your entire curated reel library and metadata to standard formats for permanent offline archival.
+                    Export your curated library or clean completed items.
                   </p>
 
                   <div className="flex flex-wrap gap-2">
@@ -1579,7 +1528,7 @@ export default function App() {
                       className="flex items-center gap-1.5 rounded-lg border border-zinc-700 bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 text-xs font-medium text-white transition"
                     >
                       <Download className="h-3.5 w-3.5" />
-                      <span>Export JSON ({reels.length} reels)</span>
+                      <span>Export JSON ({reels.length} items)</span>
                     </button>
                     <button
                       onClick={() => exportData('csv')}
@@ -1592,10 +1541,10 @@ export default function App() {
                       onClick={async () => {
                         const completedReels = reels.filter(r => r.completion_status === 'completed');
                         if (completedReels.length === 0) {
-                          alert('No completed reels to delete.');
+                          alert('No completed items to delete.');
                           return;
                         }
-                        if (!confirm(`Permanently delete ${completedReels.length} completed reel(s)?`)) return;
+                        if (!confirm(`Permanently delete ${completedReels.length} completed item(s)?`)) return;
                         const ids = completedReels.map(r => r.id);
                         setReels(prev => prev.filter(r => r.completion_status !== 'completed'));
                         const { error } = await supabase.from('reels').delete().in('id', ids);
@@ -1607,33 +1556,13 @@ export default function App() {
                       className="flex items-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900 hover:bg-red-950/40 hover:border-red-800/50 hover:text-red-400 px-3 py-1.5 text-xs font-medium text-zinc-400 transition"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
-                      <span>Delete Completed Content</span>
-                    </button>
-                    <button
-                      onClick={async () => {
-                        if (reels.length === 0) {
-                          alert('Vault is already empty.');
-                          return;
-                        }
-                        if (!confirm(`Warning: This will delete ALL ${reels.length} saved reels from your vault permanently. Proceed?`)) return;
-                        const ids = reels.map(r => r.id);
-                        setReels([]);
-                        const { error } = await supabase.from('reels').delete().in('id', ids);
-                        if (error) {
-                          alert(`Failed: ${error.message}`);
-                          await loadData();
-                        }
-                      }}
-                      className="flex items-center gap-1.5 rounded-lg border border-red-900/40 bg-red-950/20 hover:bg-red-950/50 px-3 py-1.5 text-xs font-medium text-red-400 transition"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                      <span>Delete All Saved Content</span>
+                      <span>Delete Watched Content</span>
                     </button>
                   </div>
                 </div>
               </div>
 
-              {/* Section 6: Registered Devices & Synchronization */}
+              {/* Registered Devices */}
               <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
                 <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
                   <Smartphone className="h-4 w-4 text-indigo-400" />
@@ -1661,11 +1590,6 @@ export default function App() {
                       </div>
                     ))
                   )}
-
-                  <div className="mt-4 p-3 rounded-lg bg-zinc-950 border border-zinc-800/80 text-[11px] text-zinc-400 max-w-xl">
-                    <span className="font-semibold text-white block mb-0.5">Sync Troubleshooting</span>
-                    If reels take longer than a few seconds to appear, ensure the Android app has background battery permissions enabled and active network connectivity.
-                  </div>
                 </div>
               </div>
             </div>
@@ -1673,16 +1597,15 @@ export default function App() {
         </div>
       </main>
 
-      {/* DEDICATED REEL DETAIL PANEL / LIGHTBOX */}
+      {/* REEL DETAIL PANEL / LIGHTBOX */}
       {detailReel && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
           <div className="w-full max-w-3xl max-h-[90vh] flex flex-col rounded-2xl border border-zinc-800 bg-zinc-900 shadow-2xl overflow-hidden">
-            {/* Header */}
             <div className="flex items-center justify-between border-b border-zinc-800 px-6 py-4">
               <div className="flex items-center gap-2 truncate">
                 <Film className="h-5 w-5 text-indigo-400 shrink-0" />
                 <h3 className="text-base font-bold text-white truncate">
-                  {detailReel.ai_title || 'Reel Details'}
+                  {detailReel.ai_title || 'Post Details'}
                 </h3>
               </div>
               <button
@@ -1693,17 +1616,26 @@ export default function App() {
               </button>
             </div>
 
-            {/* Body */}
             <div className="flex-1 overflow-y-auto p-6 space-y-5">
-              {/* Media Preview & Core Info */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 {detailReel.thumbnail_url ? (
-                  <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-zinc-800 border border-zinc-700/50">
+                  <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-zinc-800 border border-zinc-700/50 group/preview">
                     <img
                       src={detailReel.thumbnail_url}
                       alt="Thumbnail"
                       className="h-full w-full object-cover"
                     />
+                    <a
+                      href={detailReel.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-preview:opacity-100 transition"
+                      title="Play Reel on Instagram"
+                    >
+                      <div className="h-12 w-12 rounded-full bg-indigo-600 flex items-center justify-center text-white shadow-lg">
+                        <Play className="h-5 w-5 fill-white ml-0.5" />
+                      </div>
+                    </a>
                   </div>
                 ) : (
                   <div className="aspect-video w-full rounded-xl bg-zinc-850 flex items-center justify-center text-zinc-600 text-xs">
@@ -1728,13 +1660,6 @@ export default function App() {
                   </div>
 
                   <div>
-                    <span className="text-[10px] uppercase font-semibold text-zinc-500 block mb-1">Complexity / Difficulty</span>
-                    <span className="rounded bg-zinc-800 px-2 py-0.5 text-xs text-zinc-300">
-                      {detailReel.difficulty || 'General'}
-                    </span>
-                  </div>
-
-                  <div>
                     <span className="text-[10px] uppercase font-semibold text-zinc-500 block mb-1">Saved On</span>
                     <span className="text-xs text-zinc-400 font-mono">
                       {new Date(detailReel.created_at).toLocaleString()}
@@ -1743,7 +1668,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* AI Title & Summary */}
               {detailReel.ai_summary && (
                 <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-800">
                   <span className="text-[10px] uppercase font-semibold text-indigo-400 block mb-1">AI Summary</span>
@@ -1753,7 +1677,6 @@ export default function App() {
                 </div>
               )}
 
-              {/* AI Description */}
               {detailReel.ai_description && (
                 <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-800">
                   <span className="text-[10px] uppercase font-semibold text-zinc-400 block mb-1">AI Description</span>
@@ -1763,7 +1686,6 @@ export default function App() {
                 </div>
               )}
 
-              {/* Full Original Caption */}
               <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-800">
                 <span className="text-[10px] uppercase font-semibold text-zinc-400 block mb-1">Full Caption</span>
                 <p className="text-xs text-zinc-400 whitespace-pre-wrap max-h-40 overflow-y-auto">
@@ -1771,7 +1693,7 @@ export default function App() {
                 </p>
               </div>
 
-              {/* Original Instagram Link (Always Clickable Fallback) */}
+              {/* Play Link opens on new tab */}
               <div className="flex items-center justify-between p-3 rounded-xl bg-indigo-950/30 border border-indigo-900/40">
                 <div>
                   <span className="text-xs font-semibold text-white block">Watch Original Instagram Reel</span>
@@ -1783,13 +1705,13 @@ export default function App() {
                   rel="noopener noreferrer"
                   className="flex items-center gap-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 text-xs font-medium text-white transition"
                 >
-                  <span>Open Instagram</span>
-                  <ExternalLink className="h-3.5 w-3.5" />
+                  <Play className="h-3.5 w-3.5 fill-white" />
+                  <span>Play Reel</span>
+                  <ExternalLink className="h-3 w-3" />
                 </a>
               </div>
             </div>
 
-            {/* Footer Completion Controls */}
             <div className="border-t border-zinc-800 px-6 py-4 flex items-center justify-between bg-zinc-950">
               <span className="text-xs text-zinc-500 capitalize">
                 Status: {detailReel.completion_status} ({detailReel.processing_status})
@@ -1806,7 +1728,7 @@ export default function App() {
                   onClick={() => handleStatusChange(detailReel.id, 'archived')}
                   className="rounded-lg bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-300 transition"
                 >
-                  Archive Reel
+                  Archive
                 </button>
               </div>
             </div>
@@ -1814,14 +1736,17 @@ export default function App() {
         </div>
       )}
 
-      {/* CATEGORY DRILL-DOWN LIGHTBOX (3 GENERATIONS DEEP) */}
+      {/* CATEGORY EXPLORER LIGHTBOX (FOLDER-TYPE DRILL-DOWN) */}
       {categoryLightbox && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
           <div className="w-full max-w-2xl max-h-[85vh] flex flex-col rounded-2xl border border-zinc-800 bg-zinc-900 shadow-2xl overflow-hidden">
             <div className="flex items-center justify-between border-b border-zinc-800 px-6 py-4">
               <div className="flex items-center gap-2">
-                <FolderTree className="h-5 w-5 text-indigo-400" />
+                <Folder className="h-5 w-5 text-indigo-400" />
                 <h3 className="text-base font-bold text-white">{categoryLightbox.name}</h3>
+                <span className="text-xs text-zinc-400 font-mono">
+                  ({reels.filter(r => r.category_id === categoryLightbox.id || r.subcategory_id === categoryLightbox.id).length} items)
+                </span>
               </div>
               <button
                 onClick={() => setCategoryLightbox(null)}
@@ -1831,48 +1756,49 @@ export default function App() {
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-zinc-400">
-                  Subcategories (max depth: {maxGenerations} generations)
-                </span>
+            <div className="flex-1 overflow-y-auto p-6 space-y-5">
+              {/* Direct View Posts Button */}
+              <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-950 border border-zinc-800">
+                <span className="text-xs text-zinc-300">View all reels in this folder:</span>
                 <button
                   onClick={() => {
                     setSelectedCategoryId(categoryLightbox.id);
                     setCategoryLightbox(null);
                   }}
-                  className="text-xs text-indigo-400 hover:underline"
+                  className="rounded-lg bg-indigo-600 hover:bg-indigo-500 px-3 py-1 text-xs font-medium text-white transition"
                 >
-                  View All Reels in Category →
+                  Open {categoryLightbox.name} Posts →
                 </button>
               </div>
 
-              {/* Subcategories Tree */}
-              <div className="space-y-2">
-                {getSubcategories(categoryLightbox.id).map(sub => {
-                  const subSub = maxGenerations >= 3 ? getSubcategories(sub.id) : [];
-                  return (
-                    <div key={sub.id} className="p-3 rounded-lg border border-zinc-800 bg-zinc-950">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-white">↳ {sub.name}</span>
-                        <span className="text-[10px] text-zinc-500">
-                          {reels.filter(r => r.subcategory_id === sub.id).length} reels
-                        </span>
-                      </div>
-
-                      {/* Generation 3: Deeper Sub-subcategories (conditioned on maxGenerations) */}
-                      {subSub.length > 0 && (
-                        <div className="mt-2 ml-4 pl-3 border-l border-zinc-800 space-y-1">
-                          {subSub.map(s3 => (
-                            <div key={s3.id} className="text-[11px] text-zinc-400">
-                              ↳↳ {s3.name}
-                            </div>
-                          ))}
+              {/* Subcategory Folders */}
+              <div>
+                <span className="text-xs font-semibold text-zinc-400 block mb-3 uppercase tracking-wider">
+                  Sub-Folders &amp; Niches
+                </span>
+                {getSubcategories(categoryLightbox.id).length === 0 ? (
+                  <p className="text-xs text-zinc-600 italic">No nested sub-folders.</p>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {getSubcategories(categoryLightbox.id).map(sub => {
+                      const count = reels.filter(r => r.subcategory_id === sub.id).length;
+                      return (
+                        <div
+                          key={sub.id}
+                          onClick={() => {
+                            setSelectedCategoryId(sub.id);
+                            setCategoryLightbox(null);
+                          }}
+                          className="flex flex-col items-center justify-center p-3 rounded-xl border border-zinc-800 bg-zinc-950/60 hover:border-indigo-500/50 hover:bg-zinc-850 cursor-pointer transition text-center"
+                        >
+                          <Folder className="h-8 w-8 text-indigo-400 mb-1" />
+                          <span className="text-xs font-medium text-white truncate w-full">{sub.name}</span>
+                          <span className="text-[10px] text-zinc-500 font-mono">{count} posts</span>
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           </div>

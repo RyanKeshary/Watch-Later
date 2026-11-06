@@ -5,7 +5,6 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
-import android.media.AudioAttributes
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -22,12 +21,12 @@ import kotlinx.coroutines.launch
 
 /**
  * Invisible translucent activity that silently intercepts Instagram Share intents.
- * Shows silent visual notification and handles sync.
+ * Shows silent visual notification and handles high-volume back-to-back sharing.
  */
 class ShareCaptureActivity : Activity() {
 
     private val notificationId = 1001
-    private val channelId = "reelvault_silent_progress"
+    private val channelId = "watchlater_silent_progress"
 
     private fun getNotificationManager(): NotificationManager {
         val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -36,8 +35,8 @@ class ShareCaptureActivity : Activity() {
             if (existing == null) {
                 val channel = NotificationChannel(
                     channelId,
-                    "ReelVault Captures",
-                    NotificationManager.IMPORTANCE_LOW // Silent with no sound or vibration
+                    "Watch Later Captures",
+                    NotificationManager.IMPORTANCE_LOW
                 ).apply {
                     description = "Visual progress when saving reels"
                     setSound(null, null)
@@ -50,20 +49,22 @@ class ShareCaptureActivity : Activity() {
         return manager
     }
 
-    private fun showProgressNotification(message: String, progress: Int, indeterminate: Boolean = false) {
+    private fun showProgressNotification(message: String, progress: Int, pendingCount: Int = 0) {
         val manager = getNotificationManager()
+        val title = if (pendingCount > 1) "Watch Later ($pendingCount in queue)" else "Watch Later"
+
         val builder = NotificationCompat.Builder(this, channelId)
             .setSmallIcon(android.R.drawable.stat_sys_upload)
-            .setContentTitle("ReelVault")
+            .setContentTitle(title)
             .setContentText(message)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setSound(null)
             .setVibrate(null)
             .setOnlyAlertOnce(true)
-            .setOngoing(indeterminate || progress < 100)
 
-        if (indeterminate || progress < 100) {
-            builder.setProgress(100, progress, indeterminate)
+        if (progress < 100) {
+            builder.setProgress(100, progress, false)
+            builder.setOngoing(true)
         } else {
             builder.setProgress(0, 0, false)
             builder.setSmallIcon(android.R.drawable.stat_sys_upload_done)
@@ -85,11 +86,10 @@ class ShareCaptureActivity : Activity() {
                     val isLoggedIn = PreferenceManager.isLoggedIn(this)
                     val db = AppDatabase.getDatabase(applicationContext)
 
-                    // 1. Immediate visual progress notification at top (Silent)
-                    showProgressNotification("Capturing Reel...", 25, false)
-                    Toast.makeText(applicationContext, "Saving to ReelVault...", Toast.LENGTH_SHORT).show()
+                    // Immediate visual response
+                    showProgressNotification("Capturing Reel...", 20, 1)
+                    Toast.makeText(applicationContext, "Saving to Watch Later...", Toast.LENGTH_SHORT).show()
 
-                    // Background thread saves locally and syncs immediately
                     CoroutineScope(Dispatchers.IO).launch {
                         try {
                             val existing = db.reelDao().getReelByUrl(normalizedUrl)
@@ -101,32 +101,36 @@ class ShareCaptureActivity : Activity() {
                                     syncStatus = syncStatus
                                 )
                                 db.reelDao().insertReel(newReel)
-                                showProgressNotification("Uploading Reel to Vault...", 65, false)
+
+                                val pendingList = db.reelDao().getPendingReels()
+                                showProgressNotification("Uploading (${pendingList.size} in queue)...", 60, pendingList.size)
 
                                 if (isLoggedIn) {
                                     ReelSyncWorker.syncNow(applicationContext)
                                 } else {
                                     ReelSyncWorker.enqueue(applicationContext)
                                 }
-                                showProgressNotification("Saved to ReelVault", 100, false)
+
+                                val remaining = db.reelDao().getPendingReels().size
+                                if (remaining == 0) {
+                                    showProgressNotification("Saved to Watch Later", 100, 0)
+                                } else {
+                                    showProgressNotification("Saved ($remaining uploading)...", 75, remaining)
+                                }
                             } else {
-                                // Already in library - trigger immediate sync check just in case
                                 if (isLoggedIn) {
                                     ReelSyncWorker.syncNow(applicationContext)
                                 }
-                                showProgressNotification("Reel already in Vault", 100, false)
+                                showProgressNotification("Reel already in Watch Later", 100, 0)
                             }
                         } catch (e: Exception) {
-                            Log.e("ShareCaptureActivity", "Error saving reel", e)
-                            if (isLoggedIn) {
-                                ReelSyncWorker.enqueue(applicationContext)
-                            }
-                            showProgressNotification("Saved locally (offline)", 100, false)
+                            Log.e("ShareCaptureActivity", "Error queuing reel", e)
+                            ReelSyncWorker.enqueue(applicationContext)
+                            showProgressNotification("Saved locally (offline)", 100, 0)
                         }
                     }
                 } else {
-                    Log.w("ShareCaptureActivity", "Invalid Reel URL: $sharedText")
-                    Toast.makeText(applicationContext, "Invalid Instagram Reel link", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(applicationContext, "Invalid Instagram link", Toast.LENGTH_SHORT).show()
                 }
             }
         } catch (e: Exception) {
