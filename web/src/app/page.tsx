@@ -40,7 +40,9 @@ import {
   PieChart,
   Activity,
   Layers,
-  Filter
+  Filter,
+  LayoutGrid,
+  List as ListIcon
 } from 'lucide-react';
 
 type NavPage = 'home' | 'all' | 'categories' | 'watched' | 'inbox' | 'failed' | 'archived' | 'settings';
@@ -87,7 +89,7 @@ export default function App() {
   // Settings & Preferences
   const [maxGenerations, setMaxGenerations] = useState(3);
   const [theme, setTheme] = useState<'dark' | 'light' | 'system'>('dark');
-  const [density, setDensity] = useState<'compact' | 'comfortable'>('comfortable');
+  const [density, setDensity] = useState<'compact' | 'comfortable' | 'spacious'>('comfortable');
   const [viewLayout, setViewLayout] = useState<'grid' | 'list'>('grid');
   const [showThumbnails, setShowThumbnails] = useState(true);
   const [retentionPeriod, setRetentionPeriod] = useState<'day' | 'week' | 'month'>('week');
@@ -946,6 +948,32 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-2.5">
+            {/* View Layout Toggle */}
+            {currentPage !== 'home' && currentPage !== 'settings' && (currentPage !== 'categories' || selectedCategoryId) && (
+              <div className="flex items-center bg-zinc-900 p-0.5 rounded-lg border border-zinc-800">
+                <button
+                  onClick={() => {
+                    setViewLayout('grid');
+                    localStorage.setItem('watchlater_view_layout', 'grid');
+                  }}
+                  className={`p-1.5 rounded transition ${viewLayout === 'grid' ? 'bg-indigo-600 text-white' : 'text-zinc-400 hover:text-white'}`}
+                  title="Grid View"
+                >
+                  <LayoutGrid className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  onClick={() => {
+                    setViewLayout('list');
+                    localStorage.setItem('watchlater_view_layout', 'list');
+                  }}
+                  className={`p-1.5 rounded transition ${viewLayout === 'list' ? 'bg-indigo-600 text-white' : 'text-zinc-400 hover:text-white'}`}
+                  title="List View"
+                >
+                  <ListIcon className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
+
             <button
               onClick={() => loadData()}
               disabled={refreshing}
@@ -1093,7 +1121,7 @@ export default function App() {
                       className="group relative flex flex-col items-center justify-center p-4 rounded-2xl border border-zinc-800 bg-zinc-900/40 hover:bg-zinc-850 hover:border-indigo-500/50 cursor-pointer transition text-center"
                     >
                       {/* Top Action Buttons (Pin & Delete) */}
-                      <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition z-10">
+                      <div className="absolute top-2 right-2 flex items-center gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition z-10">
                         <button
                           onClick={(e) => togglePin(cat.id, e)}
                           title={isPinned ? 'Unpin category' : 'Pin category'}
@@ -1167,8 +1195,14 @@ export default function App() {
                     Share a Reel from your phone to Watch Later to see it appear here.
                   </p>
                 </div>
-              ) : (
-                <div className={viewLayout === 'grid' ? (density === 'compact' ? "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5") : "space-y-3"}>
+              ) : viewLayout === 'grid' ? (
+                <div className={
+                  density === 'compact'
+                    ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5"
+                    : density === 'spacious'
+                    ? "grid grid-cols-1 md:grid-cols-2 gap-6"
+                    : "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5"
+                }>
                   {displayedReels.map((reel) => {
                     const extractionErr = Array.isArray(reel.extracted_content)
                       ? reel.extracted_content[0]?.extraction_error
@@ -1182,7 +1216,9 @@ export default function App() {
                       <div
                         key={reel.id}
                         onClick={() => setDetailReelId(reel.id)}
-                        className={`flex flex-col justify-between rounded-xl border border-zinc-800 bg-zinc-900/50 ${density === 'compact' ? 'p-3' : 'p-4'} backdrop-blur hover:border-zinc-700 cursor-pointer transition`}
+                        className={`flex flex-col justify-between rounded-xl border border-zinc-800 bg-zinc-900/50 ${
+                          density === 'compact' ? 'p-3' : density === 'spacious' ? 'p-5' : 'p-4'
+                        } backdrop-blur hover:border-zinc-700 cursor-pointer transition`}
                       >
                         <div>
                           {/* Thumbnail with direct Play / Redirect action */}
@@ -1306,6 +1342,130 @@ export default function App() {
                     );
                   })}
                 </div>
+              ) : (
+                /* Dedicated List View */
+                <div className="space-y-2.5">
+                  {displayedReels.map((reel) => {
+                    const extractionErr = Array.isArray(reel.extracted_content)
+                      ? reel.extracted_content[0]?.extraction_error
+                      : reel.extracted_content?.extraction_error;
+                    const isThisRetrying = retryingId === reel.id || reel.processing_status === 'pending' || reel.processing_status === 'resolving';
+
+                    const catObj = categories.find(c => c.id === reel.category_id);
+                    const subObj = categories.find(c => c.id === reel.subcategory_id);
+
+                    return (
+                      <div
+                        key={reel.id}
+                        onClick={() => setDetailReelId(reel.id)}
+                        className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-xl border border-zinc-800 bg-zinc-900/50 ${
+                          density === 'compact' ? 'p-2.5 sm:py-2 sm:px-3' : density === 'spacious' ? 'p-4' : 'p-3'
+                        } backdrop-blur hover:border-zinc-700 cursor-pointer transition`}
+                      >
+                        <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                          {showThumbnails && reel.thumbnail_url && (
+                            <div className="relative h-16 w-16 sm:h-14 sm:w-20 shrink-0 overflow-hidden rounded-lg bg-zinc-800 group/thumb">
+                              <img
+                                src={reel.thumbnail_url}
+                                alt="Thumbnail"
+                                className="h-full w-full object-cover group-hover/thumb:scale-105 transition"
+                              />
+                              <a
+                                href={reel.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover/thumb:opacity-100 transition"
+                                title="Play Reel"
+                              >
+                                <Play className="h-4 w-4 fill-white text-white ml-0.5" />
+                              </a>
+                            </div>
+                          )}
+
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span
+                                className={`rounded px-1.5 py-0.2 text-[8px] font-semibold uppercase tracking-wider ${
+                                  reel.is_failed || reel.processing_status === 'extraction_failed'
+                                    ? 'bg-red-950/80 text-red-400 border border-red-800/50'
+                                    : reel.processing_status === 'processed'
+                                    ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800/50'
+                                    : 'bg-zinc-800 text-zinc-400'
+                                }`}
+                              >
+                                {reel.processing_status}
+                              </span>
+
+                              {catObj && (
+                                <span className="rounded bg-indigo-950/60 px-1.5 py-0.2 text-[8px] font-medium text-indigo-300 border border-indigo-800/40 truncate">
+                                  {catObj.name}{subObj ? ` / ${subObj.name}` : ''}
+                                </span>
+                              )}
+
+                              {reel.creator_username && (
+                                <span className="text-[10px] font-mono text-zinc-400 truncate">@{reel.creator_username}</span>
+                              )}
+                            </div>
+
+                            <h3 className="font-semibold text-white leading-tight text-xs sm:text-sm truncate">
+                              {reel.ai_title || (reel.creator_username ? `@${reel.creator_username}'s Post` : 'Instagram Post')}
+                            </h3>
+
+                            <p className="text-[11px] text-zinc-400 truncate mt-0.5">
+                              {reel.ai_summary || reel.ai_description || reel.caption || 'No summary available'}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* List Row Right Controls */}
+                        <div
+                          className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-zinc-800/60"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <a
+                            href={reel.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 p-1.5 rounded-lg hover:bg-zinc-800 transition"
+                            title="Open on Instagram"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </a>
+
+                          {(reel.is_failed || reel.processing_status === 'extraction_failed') && (
+                            <button
+                              onClick={() => handleRetryExtraction(reel.id)}
+                              disabled={isThisRetrying}
+                              className="flex items-center gap-1 rounded bg-zinc-800 hover:bg-zinc-700 px-2.5 py-1 text-xs text-zinc-200"
+                            >
+                              <RotateCcw className={`h-3 w-3 ${isThisRetrying ? 'animate-spin text-indigo-400' : ''}`} />
+                              <span>Retry</span>
+                            </button>
+                          )}
+
+                          {reel.completion_status !== 'completed' && (
+                            <button
+                              onClick={() => handleStatusChange(reel.id, 'completed')}
+                              className="rounded bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 px-2.5 py-1 text-xs font-medium text-emerald-300 transition"
+                            >
+                              Watched
+                            </button>
+                          )}
+
+                          {reel.completion_status !== 'archived' && (
+                            <button
+                              onClick={() => handleStatusChange(reel.id, 'archived')}
+                              className="rounded bg-zinc-800 hover:bg-zinc-700 px-2.5 py-1 text-xs font-medium text-zinc-300 transition"
+                            >
+                              Archive
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
           )}
@@ -1423,8 +1583,9 @@ export default function App() {
                       }}
                       className="bg-zinc-800 border border-zinc-700 text-xs rounded-lg px-2.5 py-1 text-zinc-200"
                     >
-                      <option value="comfortable">Comfortable</option>
-                      <option value="compact">Compact (More items per row)</option>
+                      <option value="compact">Compact (Dense / More items)</option>
+                      <option value="comfortable">Comfortable (Balanced)</option>
+                      <option value="spacious">Spacious (Large cards)</option>
                     </select>
                   </div>
 

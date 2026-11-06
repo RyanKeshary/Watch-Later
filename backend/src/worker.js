@@ -51,16 +51,23 @@ async function extractViaOpenGraph(url) {
 
   const html = await res.text();
 
-  const titleMatch = html.match(/<meta\s+property=(["'])og:title\1\s+content=(["'])(.*?)\2/i) ||
-                     html.match(/<meta\s+content=(["'])(.*?)\1\s+property=(["'])og:title\3/i);
-  const descMatch = html.match(/<meta\s+property=(["'])og:description\1\s+content=(["'])(.*?)\2/i) ||
-                    html.match(/<meta\s+content=(["'])(.*?)\1\s+property=(["'])og:description\3/i);
-  const imageMatch = html.match(/<meta\s+property=(["'])og:image\1\s+content=(["'])(.*?)\2/i) ||
-                     html.match(/<meta\s+content=(["'])(.*?)\1\s+property=(["'])og:image\3/i);
+  const propTitleMatch = html.match(/<meta\s+property=(["'])og:title\1\s+content=(["'])(.*?)\2/i);
+  const contentTitleMatch = !propTitleMatch ? html.match(/<meta\s+content=(["'])(.*?)\1\s+property=(["'])og:title\3/i) : null;
+  const rawTitle = propTitleMatch
+    ? decodeHtmlEntities(propTitleMatch[3])
+    : (contentTitleMatch ? decodeHtmlEntities(contentTitleMatch[2]) : '');
 
-  const rawTitle = titleMatch ? decodeHtmlEntities(titleMatch[3] || titleMatch[2]) : '';
-  const rawDesc = descMatch ? decodeHtmlEntities(descMatch[3] || descMatch[2]) : '';
-  const image = imageMatch ? decodeHtmlEntities(imageMatch[3] || imageMatch[2]) : null;
+  const propDescMatch = html.match(/<meta\s+property=(["'])og:description\1\s+content=(["'])(.*?)\2/i);
+  const contentDescMatch = !propDescMatch ? html.match(/<meta\s+content=(["'])(.*?)\1\s+property=(["'])og:description\3/i) : null;
+  const rawDesc = propDescMatch
+    ? decodeHtmlEntities(propDescMatch[3])
+    : (contentDescMatch ? decodeHtmlEntities(contentDescMatch[2]) : '');
+
+  const propImageMatch = html.match(/<meta\s+property=(["'])og:image\1\s+content=(["'])(.*?)\2/i);
+  const contentImageMatch = !propImageMatch ? html.match(/<meta\s+content=(["'])(.*?)\1\s+property=(["'])og:image\3/i) : null;
+  const image = propImageMatch
+    ? decodeHtmlEntities(propImageMatch[3])
+    : (contentImageMatch ? decodeHtmlEntities(contentImageMatch[2]) : null);
 
   let creator = null;
   if (rawTitle) {
