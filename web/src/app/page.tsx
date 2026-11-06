@@ -151,6 +151,13 @@ export default function App() {
     });
   };
 
+  const updateViewLayout = (val: 'grid' | 'list') => {
+    setViewLayout(val);
+    try {
+      localStorage.setItem('watchlater_view_layout', val);
+    } catch (err) {}
+  };
+
   const loadData = useCallback(async () => {
     setRefreshing(true);
     try {
@@ -952,20 +959,14 @@ export default function App() {
             {currentPage !== 'home' && currentPage !== 'settings' && (currentPage !== 'categories' || selectedCategoryId) && (
               <div className="flex items-center bg-zinc-900 p-0.5 rounded-lg border border-zinc-800">
                 <button
-                  onClick={() => {
-                    setViewLayout('grid');
-                    localStorage.setItem('watchlater_view_layout', 'grid');
-                  }}
+                  onClick={() => updateViewLayout('grid')}
                   className={`p-1.5 rounded transition ${viewLayout === 'grid' ? 'bg-indigo-600 text-white' : 'text-zinc-400 hover:text-white'}`}
                   title="Grid View"
                 >
                   <LayoutGrid className="h-3.5 w-3.5" />
                 </button>
                 <button
-                  onClick={() => {
-                    setViewLayout('list');
-                    localStorage.setItem('watchlater_view_layout', 'list');
-                  }}
+                  onClick={() => updateViewLayout('list')}
                   className={`p-1.5 rounded transition ${viewLayout === 'list' ? 'bg-indigo-600 text-white' : 'text-zinc-400 hover:text-white'}`}
                   title="List View"
                 >
@@ -1121,7 +1122,7 @@ export default function App() {
                       className="group relative flex flex-col items-center justify-center p-4 rounded-2xl border border-zinc-800 bg-zinc-900/40 hover:bg-zinc-850 hover:border-indigo-500/50 cursor-pointer transition text-center"
                     >
                       {/* Top Action Buttons (Pin & Delete) */}
-                      <div className="absolute top-2 right-2 flex items-center gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition z-10">
+                      <div className="absolute top-2 right-2 flex items-center gap-1 opacity-100 [@media(hover:hover)]:opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition z-10">
                         <button
                           onClick={(e) => togglePin(cat.id, e)}
                           title={isPinned ? 'Unpin category' : 'Pin category'}
@@ -1386,7 +1387,7 @@ export default function App() {
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2 mb-1">
                               <span
-                                className={`rounded px-1.5 py-0.2 text-[8px] font-semibold uppercase tracking-wider ${
+                                className={`rounded px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wider ${
                                   reel.is_failed || reel.processing_status === 'extraction_failed'
                                     ? 'bg-red-950/80 text-red-400 border border-red-800/50'
                                     : reel.processing_status === 'processed'
@@ -1398,7 +1399,7 @@ export default function App() {
                               </span>
 
                               {catObj && (
-                                <span className="rounded bg-indigo-950/60 px-1.5 py-0.2 text-[8px] font-medium text-indigo-300 border border-indigo-800/40 truncate">
+                                <span className="rounded bg-indigo-950/60 px-1.5 py-0.5 text-[8px] font-medium text-indigo-300 border border-indigo-800/40 truncate">
                                   {catObj.name}{subObj ? ` / ${subObj.name}` : ''}
                                 </span>
                               )}
