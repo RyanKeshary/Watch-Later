@@ -134,6 +134,79 @@ class ReelSyncWorker(
     }
 
     companion object {
+        suspend fun syncNow(context: Context) {
+            val db = AppDatabase.getDatabase(context)
+            val dao = db.reelDao()
+
+            var accessToken = PreferenceManager.getAccessToken(context)
+            val refreshToken = PreferenceManager.getRefreshToken(context)
+            val userId = PreferenceManager.getUserId(context)
+            val userEmail = PreferenceManager.getUserEmail(context)
+
+            if (accessToken.isNullOrEmpty() || userId.isNullOrEmpty()) {
+                enqueue(context)
+                return
+            }
+
+            val pending = dao.getPendingReels()
+            if (pending.isEmpty()) return
+
+            val client = HttpClient(Android)
+            for (reel in pending) {
+                try {
+                    val payload = buildJsonObject {
+                        put("user_id", userId)
+                        put("url", reel.url)
+                        put("raw_shared_text", reel.rawSharedText)
+                        put("processing_status", "pending")
+                        put("completion_status", "pending")
+                    }.toString()
+
+                    var response = client.post("${BuildConfig.SUPABASE_URL}/rest/v1/reels") {
+                        header("apikey", BuildConfig.SUPABASE_ANON_KEY)
+                        header("Authorization", "Bearer $accessToken")
+                        header("Prefer", "return=representation")
+                        contentType(ContentType.Application.Json)
+                        setBody(payload)
+                    }
+
+                    if (response.status.value == 401 && !refreshToken.isNullOrEmpty()) {
+                        val refRes = client.post("${BuildConfig.SUPABASE_URL}/auth/v1/token?grant_type=refresh_token") {
+                            header("apikey", BuildConfig.SUPABASE_ANON_KEY)
+                            contentType(ContentType.Application.Json)
+                            setBody(buildJsonObject { put("refresh_token", refreshToken) }.toString())
+                        }
+                        if (refRes.status.isSuccess()) {
+                            val json = Json.parseToJsonElement(refRes.bodyAsText()).jsonObject
+                            val newAccess = json["access_token"]?.jsonPrimitive?.content
+                            val newRefresh = json["refresh_token"]?.jsonPrimitive?.content ?: refreshToken
+                            if (newAccess != null) {
+                                PreferenceManager.saveSession(context, userId, userEmail ?: "", newAccess, newRefresh)
+                                accessToken = newAccess
+                                response = client.post("${BuildConfig.SUPABASE_URL}/rest/v1/reels") {
+                                    header("apikey", BuildConfig.SUPABASE_ANON_KEY)
+                                    header("Authorization", "Bearer $accessToken")
+                                    header("Prefer", "return=representation")
+                                    contentType(ContentType.Application.Json)
+                                    setBody(payload)
+                                }
+                            }
+                        }
+                    }
+
+                    if (response.status.isSuccess()) {
+                        val parsed = Json.parseToJsonElement(response.bodyAsText()).jsonArray
+                        val remoteId = parsed.firstOrNull()?.jsonObject?.get("id")?.jsonPrimitive?.content ?: ""
+                        dao.markSynced(reel.id, remoteId, "synced")
+                    } else {
+                        enqueue(context)
+                    }
+                } catch (e: Exception) {
+                    enqueue(context)
+                }
+            }
+        }
+
         fun enqueue(context: Context) {
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)

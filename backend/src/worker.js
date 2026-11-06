@@ -136,21 +136,23 @@ async function categorizeWithGroq(caption, existingCategories) {
     return null;
   }
 
-  const systemPrompt = `You are an AI assistant that analyzes and categorizes Instagram Reels based on their captions.
-You must return only a valid JSON object matching this schema:
+  const systemPrompt = `You are an expert content categorization engine for Instagram Reels.
+Analyze the caption thoroughly to determine the exact subject matter and assign deep hierarchical categorization (Primary Category, Subcategory, and Specific Topic).
+
+Return strictly a valid JSON object matching this schema:
 {
-  "category": string,
-  "subcategory": string,
-  "topic": string,
-  "tags": string[],
+  "category": string (broad domain: e.g. "Software & Tech", "Fitness & Health", "Film & TV", "Finance & Investing", "Comedy & Humor", "Design & Creative", "Self-Improvement"),
+  "subcategory": string (specific subgenre: e.g. "Web Development", "Strength Training", "Sitcoms", "Personal Finance", "Sketch Comedy", "UI/UX"),
+  "topic": string (laser-focused subject: e.g. "React State Management", "Squat Form", "Young Sheldon Sequels", "Budgeting Tips"),
+  "tags": string[] (3-6 precise keywords),
   "difficulty": "Beginner" | "Intermediate" | "Advanced" | "General",
-  "ai_title": string,
-  "ai_description": string,
-  "ai_summary": string,
+  "ai_title": string (catchy, informative headline, max 65 chars),
+  "ai_description": string (clear summary of context and main takeaway, 1-2 sentences),
+  "ai_summary": string (actionable bulleted or concise breakdown, 2-3 sentences),
   "confidence": number (between 0.0 and 1.0)
 }
 
-Reuse existing user categories where appropriate:
+Whenever an existing category from this list accurately fits, reuse it:
 Existing categories: ${JSON.stringify(existingCategories || [])}
 `;
 
@@ -164,7 +166,7 @@ Existing categories: ${JSON.stringify(existingCategories || [])}
         'Authorization': `Bearer ${GROQ_API_KEY}`
       },
       body: JSON.stringify({
-        model: 'llama-3.1-8b-instant',
+        model: 'openai/gpt-oss-20b',
         response_format: { type: 'json_object' },
         messages: [
           { role: 'system', content: systemPrompt },
