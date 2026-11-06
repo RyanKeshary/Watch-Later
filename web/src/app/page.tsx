@@ -405,6 +405,16 @@ export default function App() {
     const trimmed = newCategoryName.trim();
     if (!trimmed || !session?.user?.id) return;
 
+    // Prevent duplicate category creation
+    const existing = categories.find(
+      c => c.name.trim().toLowerCase() === trimmed.toLowerCase() &&
+           (categoryParentId ? c.parent_id === categoryParentId : !c.parent_id)
+    );
+    if (existing) {
+      alert('A category with this name already exists at this level.');
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('categories')
@@ -1186,7 +1196,7 @@ export default function App() {
                     </span>
                   </div>
                   <p className="text-[11px] text-zinc-400 leading-relaxed">
-                    Reels shared from your phone appear here instantly in real-time. The background worker parses OpenGraph metadata and classifies content via Groq (<span className="text-indigo-300 font-mono">gpt-oss-20b</span>) into niche taxonomy.
+                    Reels shared from your phone appear here after they sync. The background worker parses OpenGraph metadata and classifies content via Groq (<span className="text-indigo-300 font-mono">gpt-oss-20b</span>) into niche taxonomy.
                   </p>
                 </div>
               )}
