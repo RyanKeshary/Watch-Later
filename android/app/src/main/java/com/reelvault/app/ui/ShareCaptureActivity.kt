@@ -79,12 +79,13 @@ class ShareCaptureActivity : Activity() {
                 val reshareIntent = Intent(this, ShareCaptureActivity::class.java).apply {
                     action = Intent.ACTION_SEND
                     type = "text/plain"
+                    data = android.net.Uri.parse(reshareUrl)
                     putExtra(Intent.EXTRA_TEXT, reshareUrl)
                     putExtra("force_reshare", true)
                 }
                 val pendingIntent = android.app.PendingIntent.getActivity(
                     this,
-                    reshareUrl.hashCode(),
+                    0,
                     reshareIntent,
                     android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
                 )
@@ -111,6 +112,8 @@ class ShareCaptureActivity : Activity() {
                     // Immediate visual response
                     showProgressNotification("Capturing Reel...", 20, 1)
 
+                    var isAlreadyExists = false
+
                     // Execute synchronously on IO to guarantee persistence before finishing activity
                     kotlinx.coroutines.runBlocking(Dispatchers.IO) {
                         try {
@@ -118,14 +121,7 @@ class ShareCaptureActivity : Activity() {
                             val isAlreadySynced = existing != null && (existing.syncStatus == "synced" || existing.remoteId != null)
 
                             if (existing != null && isAlreadySynced && !isForceReshare) {
-                                // Reel already exists in Watch Later
-                                kotlinx.coroutines.withContext(Dispatchers.Main) {
-                                    Toast.makeText(
-                                        applicationContext,
-                                        "Reel already in Watch Later! Click Re-share notification if you wish to re-sync.",
-                                        Toast.LENGTH_LONG
-                                    ).show()
-                                }
+                                isAlreadyExists = true
                                 showProgressNotification(
                                     message = "Reel already exists in Watch Later",
                                     progress = 100,
@@ -144,9 +140,9 @@ class ShareCaptureActivity : Activity() {
                                 )
                                 db.reelDao().insertReel(newReel)
                             } else {
-                                // Re-share or retry sync
+                                // Re-share or retry sync - preserve existing remoteId until sync completes
                                 val resetStatus = if (isLoggedIn) "local_pending_sync" else "pending_auth"
-                                db.reelDao().updateReel(existing.copy(syncStatus = resetStatus, remoteId = null))
+                                db.reelDao().updateReel(existing.copy(syncStatus = resetStatus))
                             }
 
                             val pendingList = db.reelDao().getPendingReels()
@@ -169,6 +165,14 @@ class ShareCaptureActivity : Activity() {
                             ReelSyncWorker.enqueue(applicationContext)
                             showProgressNotification("Saved locally (offline)", 100, 0)
                         }
+                    }
+
+                    if (isAlreadyExists) {
+                        Toast.makeText(
+                            applicationContext,
+                            "Reel already in Watch Later! Click Re-share notification if you wish to re-sync.",
+                            Toast.LENGTH_LONG
+                        ).show()
                     }
                 } else {
                     Toast.makeText(applicationContext, "Invalid Instagram link", Toast.LENGTH_SHORT).show()

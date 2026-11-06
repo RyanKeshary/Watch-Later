@@ -52,8 +52,10 @@ async function extractViaOpenGraph(url) {
   const html = await res.text();
 
   function extractMetaProperty(htmlContent, propertyName) {
-    const metaTags = htmlContent.match(/<meta\s+[^>]*>/gi) || [];
-    for (const tag of metaTags) {
+    const metaTagRegex = /<meta\s+(?:[^>"']|"[^"]*"|'[^']*')*>/gi;
+    let match;
+    while ((match = metaTagRegex.exec(htmlContent)) !== null) {
+      const tag = match[0];
       const propMatch = tag.match(new RegExp(`property=(["'])${propertyName}\\1`, 'i'));
       if (propMatch) {
         const contentMatch = tag.match(/content=(["'])([\s\S]*?)\1/i);
@@ -139,32 +141,37 @@ async function extractInstagramData(url) {
   return await extractViaOpenGraph(url);
 }
 
-async function categorizeWithGroq(metadata, existingCategories) {
+async function categorizeWithGroq(metadata, existingCategoryTree) {
   if (!GROQ_API_KEY) return null;
 
-  const systemPrompt = `You are an expert AI content classifier and taxonomist.
-Your goal is to categorize saved social content with high specificity and niche depth.
-DO NOT use vague broad categories like "General", "Random", "Other", or "Misc".
+  const categoriesContext = (existingCategoryTree || []).map(cat => ({
+    name: cat.name,
+    subcategories: (cat.subcategories || []).map(s => s.name)
+  }));
 
-Choose an accurate, focused Domain Category (e.g., "Software Engineering & AI", "Fitness & Calisthenics", "Cinema & Pop Culture", "Finance & Investing", "Comedy & Satire", "Cooking & Culinary", "Design & Architecture", "Music & Audio Production").
-Choose a distinct Subcategory that represents the specific niche (e.g., "AI Coding Assistants", "Hypertrophy Training", "Anime & Manga", "Stock Market Strategies", "Stand-Up Clips").
-Choose a specific Topic (e.g., "Claude Code CLI", "Deadlift Technique", "One Piece Discussion").
+  const systemPrompt = `You are an expert AI content classifier and taxonomist.
+Your task is to structure user social saves efficiently into hierarchical categories.
+
+IMPORTANT STRUCTURING RULES:
+1. ALWAYS inspect the existing category hierarchy first:
+${JSON.stringify(categoriesContext, null, 2)}
+2. If this post belongs to an existing parent category, REUSE that category name exactly.
+3. Only choose an existing subcategory if it is an exact fit, or suggest a new subcategory ONLY if the reel represents a distinct niche within that category. If the category has few items or the post fits broadly, you can leave subcategory empty ("").
+4. If no existing category fits this post, create ONE appropriate parent category.
+5. NEVER create duplicate categories or create a subcategory with the same name as a parent category.
+6. DO NOT use vague labels like "General", "Misc", "Other".
 
 Return strictly a valid JSON object matching this schema:
 {
-  "category": string (specific domain),
-  "subcategory": string (specific subgenre),
+  "category": string (domain category name),
+  "subcategory": string (subgenre niche, or "" if none needed),
   "topic": string (laser-focused topic),
   "tags": string[] (3-6 precise keywords),
   "ai_title": string (engaging, informative headline, max 65 chars),
   "ai_description": string (clear 1-2 sentence overview),
   "ai_summary": string (actionable bulleted breakdown, 2-3 points),
   "confidence": number (between 0.0 and 1.0)
-}
-
-Reuse existing user categories when they are an exact or logical match:
-Existing Categories: ${JSON.stringify(existingCategories || [])}
-`;
+}`;
 
   const userPrompt = `Reel Details:
 - Caption: """${metadata.caption || ''}"""
@@ -250,16 +257,20 @@ async function processReel(reel) {
     extracted_at: new Date().toISOString()
   }, { onConflict: 'reel_id' });
 
-  // Fetch user categories for context
+  // Fetch full category hierarchy for context
   const { data: userCategories } = await supabase
     .from('categories')
-    .select('name')
+    .select('id, name, parent_id')
     .eq('user_id', reel.user_id);
 
-  const existingCategoryNames = (userCategories || []).map(c => c.name);
+  const rootCategories = (userCategories || []).filter(c => !c.parent_id);
+  const categoryTree = rootCategories.map(parent => ({
+    name: parent.name,
+    subcategories: (userCategories || []).filter(c => c.parent_id === parent.id)
+  }));
 
-  // Deep categorization with full metadata
-  const aiResult = await categorizeWithGroq(extractionData, existingCategoryNames);
+  // Deep categorization with full metadata and existing category tree
+  const aiResult = await categorizeWithGroq(extractionData, categoryTree);
 
   let categoryId = null;
   let subcategoryId = null;

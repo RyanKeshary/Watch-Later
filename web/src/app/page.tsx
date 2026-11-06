@@ -92,6 +92,7 @@ export default function App() {
   const [density, setDensity] = useState<'compact' | 'comfortable' | 'spacious'>('comfortable');
   const [viewLayout, setViewLayout] = useState<'grid' | 'list'>('grid');
   const [showThumbnails, setShowThumbnails] = useState(true);
+  const [showPersonaInsights, setShowPersonaInsights] = useState(true);
   const [retentionPeriod, setRetentionPeriod] = useState<'day' | 'week' | 'month'>('week');
 
   // Change password state
@@ -122,6 +123,9 @@ export default function App() {
 
       const savedThumbs = localStorage.getItem('watchlater_show_thumbnails');
       if (savedThumbs !== null) setShowThumbnails(savedThumbs === 'true');
+
+      const savedPersona = localStorage.getItem('watchlater_show_persona');
+      if (savedPersona !== null) setShowPersonaInsights(savedPersona === 'true');
 
       const savedSidebar = localStorage.getItem('watchlater_sidebar_collapsed');
       if (savedSidebar !== null) setSidebarCollapsed(savedSidebar === 'true');
@@ -420,12 +424,14 @@ export default function App() {
 
     setCategoryInsertPending(true);
     try {
-      // Re-check database to prevent race conditions across tabs/clients
+      // Re-check database to prevent race conditions across tabs/clients with literal escaped pattern
+      const escapedName = trimmed.replace(/[%_\\]/g, '\\$&');
       let query = supabase
         .from('categories')
         .select('id')
         .eq('user_id', session.user.id)
-        .ilike('name', trimmed);
+        .ilike('name', escapedName)
+        .limit(1);
 
       if (categoryParentId) {
         query = query.eq('parent_id', categoryParentId);
@@ -433,7 +439,13 @@ export default function App() {
         query = query.is('parent_id', null);
       }
 
-      const { data: remoteExisting } = await query.maybeSingle();
+      const { data: remoteExisting, error: lookupError } = await query.maybeSingle();
+      if (lookupError) {
+        alert(`Failed to verify category uniqueness: ${lookupError.message}`);
+        setCategoryInsertPending(false);
+        return;
+      }
+
       if (remoteExisting) {
         alert('A category with this name already exists at this level.');
         setCategoryInsertPending(false);
@@ -538,10 +550,15 @@ export default function App() {
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     if (error) {
       setPasswordMsg(error.message);
+      return;
+    }
+
+    const { error: signOutError } = await supabase.auth.signOut({ scope: 'global' });
+    if (signOutError) {
+      setPasswordMsg(`Password changed, but global sign out encountered an issue: ${signOutError.message}`);
     } else {
       alert('Password updated successfully! You have been logged out from all sessions. Please log in again with your new password.');
       setNewPassword('');
-      await supabase.auth.signOut({ scope: 'global' });
       setSession(null);
     }
   };
@@ -604,9 +621,11 @@ export default function App() {
     });
   }, [reels, currentPage, selectedCategoryId, searchQuery, postTypeFilter]);
 
-  // Persona insights
+  // Persona insights (requires at least 20 reels to unlock)
   const userPersonaInsight = useMemo(() => {
-    if (reels.length === 0) return 'Save a few reels to generate your personalized interest profile.';
+    if (reels.length < 20) {
+      return `You have saved ${reels.length}/20 reels. Save at least 20 reels to unlock deep AI persona analysis of your interest profile.`;
+    }
     const counts: Record<string, number> = {};
     let categorizedCount = 0;
     for (const r of reels) {
@@ -1070,15 +1089,24 @@ export default function App() {
               </div>
 
               {/* Persona Insights */}
-              <div className="rounded-xl border border-indigo-900/40 bg-gradient-to-r from-indigo-950/40 to-zinc-900/60 p-5">
-                <div className="flex items-center gap-2 mb-2">
-                  <Bookmark className="h-5 w-5 text-indigo-400" />
-                  <h3 className="text-sm font-semibold text-white">What Your Saves Say About You</h3>
+              {showPersonaInsights && (
+                <div className="rounded-xl border border-indigo-900/40 bg-gradient-to-r from-indigo-950/40 to-zinc-900/60 p-5">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Bookmark className="h-5 w-5 text-indigo-400" />
+                      <h3 className="text-sm font-semibold text-white">What Your Saves Say About You</h3>
+                    </div>
+                    {reels.length < 20 && (
+                      <span className="text-[10px] font-mono text-zinc-400 bg-zinc-800/80 px-2 py-0.5 rounded-full border border-zinc-700/60">
+                        {reels.length} / 20 Saved
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-zinc-300 leading-relaxed">
+                    {userPersonaInsight}
+                  </p>
                 </div>
-                <p className="text-sm text-zinc-300 leading-relaxed">
-                  {userPersonaInsight}
-                </p>
-              </div>
+              )}
 
               {/* Niche Category Distribution */}
               <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5">
@@ -1680,6 +1708,22 @@ export default function App() {
                       onChange={(e) => {
                         setShowThumbnails(e.target.checked);
                         localStorage.setItem('watchlater_show_thumbnails', String(e.target.checked));
+                      }}
+                      className="rounded accent-indigo-600"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-xs text-zinc-300 block">Show Persona Insights</span>
+                      <span className="text-[11px] text-zinc-500">Display &quot;What Your Saves Say About You&quot; panel</span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={showPersonaInsights}
+                      onChange={(e) => {
+                        setShowPersonaInsights(e.target.checked);
+                        localStorage.setItem('watchlater_show_persona', String(e.target.checked));
                       }}
                       className="rounded accent-indigo-600"
                     />
