@@ -54,6 +54,13 @@ class MainActivity : ComponentActivity() {
                     var userEmail by remember { mutableStateOf(PreferenceManager.getUserEmail(this) ?: "") }
 
                     if (isLoggedIn) {
+                        LaunchedEffect(Unit) {
+                            lifecycleScope.launch(Dispatchers.IO) {
+                                val db = AppDatabase.getDatabase(applicationContext)
+                                db.reelDao().markPendingAuthAsPendingSync()
+                                ReelSyncWorker.enqueue(applicationContext)
+                            }
+                        }
                         SettingsScreen(
                             email = userEmail,
                             onLogout = {

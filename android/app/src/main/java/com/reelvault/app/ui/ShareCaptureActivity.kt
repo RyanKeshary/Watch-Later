@@ -32,13 +32,13 @@ class ShareCaptureActivity : Activity() {
                     val isLoggedIn = PreferenceManager.isLoggedIn(this)
                     val db = AppDatabase.getDatabase(applicationContext)
 
-                    // Fire asynchronous DB insertion & WorkManager enqueue, finishing instantly
-                    CoroutineScope(Dispatchers.IO).launch {
+                    // Execute Room save & WorkManager sync on IO and finish safely
+                    kotlinx.coroutines.runBlocking(Dispatchers.IO) {
                         try {
                             val existing = db.reelDao().getReelByUrl(normalizedUrl)
                             if (existing != null) {
                                 runOnUiThread {
-                                    Toast.makeText(this@ShareCaptureActivity, "Already saved", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(applicationContext, "Already saved", Toast.LENGTH_SHORT).show()
                                 }
                             } else {
                                 val syncStatus = if (isLoggedIn) "local_pending_sync" else "pending_auth"
@@ -53,7 +53,7 @@ class ShareCaptureActivity : Activity() {
                                     ReelSyncWorker.enqueue(applicationContext)
                                 }
                                 runOnUiThread {
-                                    Toast.makeText(this@ShareCaptureActivity, "Saved to ReelVault", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(applicationContext, "Saved to ReelVault", Toast.LENGTH_SHORT).show()
                                 }
                             }
                         } catch (e: Exception) {

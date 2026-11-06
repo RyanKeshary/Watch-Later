@@ -41,8 +41,10 @@ class ReelSyncWorker(
         val db = AppDatabase.getDatabase(context)
         val dao = db.reelDao()
 
-        val accessToken = PreferenceManager.getAccessToken(context)
+        var accessToken = PreferenceManager.getAccessToken(context)
+        val refreshToken = PreferenceManager.getRefreshToken(context)
         val userId = PreferenceManager.getUserId(context)
+        val userEmail = PreferenceManager.getUserEmail(context)
 
         if (accessToken.isNullOrEmpty() || userId.isNullOrEmpty()) {
             Log.w("ReelSyncWorker", "User not authenticated; syncing deferred until login.")
@@ -52,6 +54,35 @@ class ReelSyncWorker(
         val pendingReels = dao.getPendingReels()
         if (pendingReels.isEmpty()) {
             return Result.success()
+        }
+
+        // Auto-refresh token if expired using Supabase refresh-token grant
+        suspend fun tryRefreshToken(): Boolean {
+            if (refreshToken.isNullOrEmpty()) return false
+            return try {
+                val refreshPayload = buildJsonObject {
+                    put("refresh_token", refreshToken)
+                }.toString()
+
+                val refreshResponse = httpClient.post("${BuildConfig.SUPABASE_URL}/auth/v1/token?grant_type=refresh_token") {
+                    header("apikey", BuildConfig.SUPABASE_ANON_KEY)
+                    contentType(ContentType.Application.Json)
+                    setBody(refreshPayload)
+                }
+
+                if (refreshResponse.status.isSuccess()) {
+                    val json = Json.parseToJsonElement(refreshResponse.bodyAsText()).jsonObject
+                    val newAccess = json["access_token"]?.jsonPrimitive?.content
+                    val newRefresh = json["refresh_token"]?.jsonPrimitive?.content ?: refreshToken
+                    if (newAccess != null) {
+                        PreferenceManager.saveSession(context, userId, userEmail ?: "", newAccess, newRefresh)
+                        accessToken = newAccess
+                        true
+                    } else false
+                } else false
+            } catch (e: Exception) {
+                false
+            }
         }
 
         for (reel in pendingReels) {
@@ -64,12 +95,23 @@ class ReelSyncWorker(
                     put("completion_status", "pending")
                 }.toString()
 
-                val response = httpClient.post("${BuildConfig.SUPABASE_URL}/rest/v1/reels") {
+                var response = httpClient.post("${BuildConfig.SUPABASE_URL}/rest/v1/reels") {
                     header("apikey", BuildConfig.SUPABASE_ANON_KEY)
                     header("Authorization", "Bearer $accessToken")
                     header("Prefer", "return=representation")
                     contentType(ContentType.Application.Json)
                     setBody(payload)
+                }
+
+                // If JWT expired (401), refresh and retry request once
+                if (response.status.value == 401 && tryRefreshToken()) {
+                    response = httpClient.post("${BuildConfig.SUPABASE_URL}/rest/v1/reels") {
+                        header("apikey", BuildConfig.SUPABASE_ANON_KEY)
+                        header("Authorization", "Bearer $accessToken")
+                        header("Prefer", "return=representation")
+                        contentType(ContentType.Application.Json)
+                        setBody(payload)
+                    }
                 }
 
                 if (response.status.isSuccess()) {
