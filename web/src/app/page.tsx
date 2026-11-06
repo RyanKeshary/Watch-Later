@@ -322,7 +322,30 @@ export default function App() {
     }
   }, [session, loadData]);
 
-  // Purge expired archived reels
+  // Automatically delete empty categories (no reels associated as category or subcategory)
+  useEffect(() => {
+    if (!session || categories.length === 0 || reels.length === 0) return;
+
+    // A category is considered in-use if any reel references it directly as category_id or subcategory_id,
+    // OR if it has a child subcategory that is in-use.
+    const directlyUsedIds = new Set<string>();
+    for (const r of reels) {
+      if (r.category_id) directlyUsedIds.add(r.category_id);
+      if (r.subcategory_id) directlyUsedIds.add(r.subcategory_id);
+    }
+
+    const emptyCategoryIds = categories.filter(cat => {
+      if (directlyUsedIds.has(cat.id)) return false;
+      // If parent, check if any subcategory has reels
+      const hasActiveSub = categories.some(sub => sub.parent_id === cat.id && directlyUsedIds.has(sub.id));
+      return !hasActiveSub;
+    }).map(c => c.id);
+
+    if (emptyCategoryIds.length > 0) {
+      setCategories(prev => prev.filter(c => !emptyCategoryIds.includes(c.id)));
+      supabase.from('categories').delete().in('id', emptyCategoryIds).then();
+    }
+  }, [categories, reels, session]);
   useEffect(() => {
     if (!session || reels.length === 0) return;
 
@@ -621,10 +644,10 @@ export default function App() {
     });
   }, [reels, currentPage, selectedCategoryId, searchQuery, postTypeFilter]);
 
-  // Persona insights (requires at least 20 reels to unlock)
+  // Persona insights (requires at least 20 items to unlock)
   const userPersonaInsight = useMemo(() => {
     if (reels.length < 20) {
-      return `You have saved ${reels.length}/20 reels. Save at least 20 reels to unlock deep AI persona analysis of your interest profile.`;
+      return `You have saved ${reels.length}/20 items. Save at least 20 items to unlock persona insights.`;
     }
     const counts: Record<string, number> = {};
     let categorizedCount = 0;
@@ -1715,17 +1738,19 @@ export default function App() {
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-xs text-zinc-300 block">Show Persona Insights</span>
+                      <label htmlFor="show-persona-insights" className="text-xs text-zinc-300 block cursor-pointer">Show Persona Insights</label>
                       <span className="text-[11px] text-zinc-500">Display &quot;What Your Saves Say About You&quot; panel</span>
                     </div>
                     <input
+                      id="show-persona-insights"
+                      aria-label="Show Persona Insights"
                       type="checkbox"
                       checked={showPersonaInsights}
                       onChange={(e) => {
                         setShowPersonaInsights(e.target.checked);
                         localStorage.setItem('watchlater_show_persona', String(e.target.checked));
                       }}
-                      className="rounded accent-indigo-600"
+                      className="rounded accent-indigo-600 cursor-pointer"
                     />
                   </div>
 

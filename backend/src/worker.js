@@ -86,6 +86,11 @@ async function extractViaOpenGraph(url) {
     caption = quoteMatch[1];
   }
 
+  // Extract hashtags and mentions from caption and descriptions
+  const allText = `${rawTitle || ''} ${rawDesc || ''}`;
+  const hashtags = Array.from(new Set(allText.match(/#[a-zA-Z0-9_]+/g) || []));
+  const mentions = Array.from(new Set(allText.match(/@[a-zA-Z0-9._]+/g) || []));
+
   if (!caption && !rawDesc) {
     throw new Error('OpenGraph fallback could not find caption or description text');
   }
@@ -94,10 +99,14 @@ async function extractViaOpenGraph(url) {
     caption: caption || rawDesc || null,
     creator_username: creator || null,
     thumbnail_url: image || null,
+    hashtags: hashtags,
+    mentions: mentions,
     raw: {
       source: 'opengraph_fallback',
       raw_title: rawTitle,
-      raw_desc: rawDesc
+      raw_desc: rawDesc,
+      hashtags: hashtags,
+      mentions: mentions
     }
   };
 }
@@ -176,6 +185,8 @@ Return strictly a valid JSON object matching this schema:
   const userPrompt = `Reel Details:
 - Caption: """${metadata.caption || ''}"""
 - Creator: @${metadata.creator_username || 'unknown'}
+- Hashtags: ${metadata.hashtags?.join(' ') || 'none'}
+- Mentions: ${metadata.mentions?.join(' ') || 'none'}
 - Raw Description/Context: """${metadata.raw?.raw_desc || ''}"""`;
 
   try {
@@ -371,6 +382,40 @@ async function processReel(reel) {
     .eq('id', reel.id);
 
   console.log(`[Worker] Reel ${reel.id} processing finished. Status: ${processingStatus}`);
+
+  // Clean up any empty categories for this user
+  try {
+    const { data: userCats } = await supabase
+      .from('categories')
+      .select('id, parent_id')
+      .eq('user_id', reel.user_id);
+
+    const { data: userReels } = await supabase
+      .from('reels')
+      .select('category_id, subcategory_id')
+      .eq('user_id', reel.user_id);
+
+    if (userCats && userReels) {
+      const usedIds = new Set();
+      for (const r of userReels) {
+        if (r.category_id) usedIds.add(r.category_id);
+        if (r.subcategory_id) usedIds.add(r.subcategory_id);
+      }
+
+      const emptyIds = userCats.filter(cat => {
+        if (usedIds.has(cat.id)) return false;
+        const hasChildWithReel = userCats.some(sub => sub.parent_id === cat.id && usedIds.has(sub.id));
+        return !hasChildWithReel;
+      }).map(c => c.id);
+
+      if (emptyIds.length > 0) {
+        await supabase.from('categories').delete().in('id', emptyIds);
+        console.log(`[Worker] Cleaned up ${emptyIds.length} empty categories for user ${reel.user_id}`);
+      }
+    }
+  } catch (cleanErr) {
+    console.warn('[Worker] Empty category cleanup warning:', cleanErr.message);
+  }
 }
 
 async function runLoop() {

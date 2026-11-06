@@ -78,8 +78,7 @@ class ShareCaptureActivity : Activity() {
             if (!reshareUrl.isNullOrEmpty()) {
                 val reshareIntent = Intent(this, ShareCaptureActivity::class.java).apply {
                     action = Intent.ACTION_SEND
-                    type = "text/plain"
-                    data = android.net.Uri.parse(reshareUrl)
+                    setDataAndType(android.net.Uri.parse(reshareUrl), "text/plain")
                     putExtra(Intent.EXTRA_TEXT, reshareUrl)
                     putExtra("force_reshare", true)
                 }
@@ -168,11 +167,35 @@ class ShareCaptureActivity : Activity() {
                     }
 
                     if (isAlreadyExists) {
-                        Toast.makeText(
-                            applicationContext,
-                            "Reel already in Watch Later! Click Re-share notification if you wish to re-sync.",
-                            Toast.LENGTH_LONG
-                        ).show()
+                        val areNotificationsEnabled = androidx.core.app.NotificationManagerCompat.from(this).areNotificationsEnabled()
+                        if (!areNotificationsEnabled) {
+                            android.app.AlertDialog.Builder(this)
+                                .setTitle("Reel Already Saved")
+                                .setMessage("This reel already exists in Watch Later. Would you like to re-share and re-sync it?")
+                                .setPositiveButton("Re-share") { _, _ ->
+                                    val reshareIntent = Intent(this, ShareCaptureActivity::class.java).apply {
+                                        action = Intent.ACTION_SEND
+                                        setDataAndType(android.net.Uri.parse(normalizedUrl), "text/plain")
+                                        putExtra(Intent.EXTRA_TEXT, normalizedUrl)
+                                        putExtra("force_reshare", true)
+                                    }
+                                    startActivity(reshareIntent)
+                                    finish()
+                                }
+                                .setNegativeButton("Cancel") { dialog, _ ->
+                                    dialog.dismiss()
+                                    finish()
+                                }
+                                .setOnCancelListener { finish() }
+                                .show()
+                            return
+                        } else {
+                            Toast.makeText(
+                                applicationContext,
+                                "Reel already in Watch Later! Click Re-share notification if you wish to re-sync.",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
                     }
                 } else {
                     Toast.makeText(applicationContext, "Invalid Instagram link", Toast.LENGTH_SHORT).show()
@@ -181,7 +204,14 @@ class ShareCaptureActivity : Activity() {
         } catch (e: Exception) {
             Log.e("ShareCaptureActivity", "Error processing share intent", e)
         } finally {
-            finish()
+            if (!isFinishing && !isChangingConfigurations) {
+                // If not waiting on dialog
+                val areNotificationsEnabled = androidx.core.app.NotificationManagerCompat.from(this).areNotificationsEnabled()
+                val isDuplicateWithoutNotifications = intent?.getBooleanExtra("force_reshare", false) == false && !areNotificationsEnabled
+                if (!isDuplicateWithoutNotifications) {
+                    finish()
+                }
+            }
         }
     }
 }
