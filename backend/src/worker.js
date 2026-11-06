@@ -51,16 +51,16 @@ async function extractViaOpenGraph(url) {
 
   const html = await res.text();
 
-  const titleMatch = html.match(/<meta\s+property=["']og:title["']\s+content=["'](.*?)["']/i) ||
-                     html.match(/<meta\s+content=["'](.*?)["']\s+property=["']og:title["']/i);
-  const descMatch = html.match(/<meta\s+property=["']og:description["']\s+content=["'](.*?)["']/i) ||
-                    html.match(/<meta\s+content=["'](.*?)["']\s+property=["']og:description["']/i);
-  const imageMatch = html.match(/<meta\s+property=["']og:image["']\s+content=["'](.*?)["']/i) ||
-                     html.match(/<meta\s+content=["'](.*?)["']\s+property=["']og:image["']/i);
+  const titleMatch = html.match(/<meta\s+property=(["'])og:title\1\s+content=(["'])(.*?)\2/i) ||
+                     html.match(/<meta\s+content=(["'])(.*?)\1\s+property=(["'])og:title\3/i);
+  const descMatch = html.match(/<meta\s+property=(["'])og:description\1\s+content=(["'])(.*?)\2/i) ||
+                    html.match(/<meta\s+content=(["'])(.*?)\1\s+property=(["'])og:description\3/i);
+  const imageMatch = html.match(/<meta\s+property=(["'])og:image\1\s+content=(["'])(.*?)\2/i) ||
+                     html.match(/<meta\s+content=(["'])(.*?)\1\s+property=(["'])og:image\3/i);
 
-  const rawTitle = titleMatch ? decodeHtmlEntities(titleMatch[1]) : '';
-  const rawDesc = descMatch ? decodeHtmlEntities(descMatch[1]) : '';
-  const image = imageMatch ? decodeHtmlEntities(imageMatch[1]) : null;
+  const rawTitle = titleMatch ? decodeHtmlEntities(titleMatch[3] || titleMatch[2]) : '';
+  const rawDesc = descMatch ? decodeHtmlEntities(descMatch[3] || descMatch[2]) : '';
+  const image = imageMatch ? decodeHtmlEntities(imageMatch[3] || imageMatch[2]) : null;
 
   let creator = null;
   if (rawTitle) {
@@ -76,6 +76,10 @@ async function extractViaOpenGraph(url) {
   const quoteMatch = rawDesc.match(/:\s*["“](.*?)["”]\s*$/s);
   if (quoteMatch) {
     caption = quoteMatch[1];
+  }
+
+  if (!caption && !rawDesc) {
+    throw new Error('OpenGraph fallback could not find caption or description text');
   }
 
   return {
@@ -255,52 +259,81 @@ async function processReel(reel) {
   let subcategoryId = null;
   let processingStatus = 'partially_processed';
 
-  if (aiResult && aiResult.category && aiResult.category.toLowerCase() !== 'general') {
+  const validCategory = (typeof aiResult?.category === 'string') ? aiResult.category.trim() : '';
+  const validSubcategory = (typeof aiResult?.subcategory === 'string') ? aiResult.subcategory.trim() : '';
+
+  const escapeIlike = (str) => str.replace(/[%_\\]/g, '\\$&');
+
+  if (validCategory && validCategory.toLowerCase() !== 'general') {
     // Top-level Category
-    let { data: catRow } = await supabase
-      .from('categories')
-      .select('id')
-      .eq('user_id', reel.user_id)
-      .is('parent_id', null)
-      .ilike('name', aiResult.category)
-      .maybeSingle();
-
-    if (!catRow) {
-      const { data: newCat } = await supabase
-        .from('categories')
-        .insert({ user_id: reel.user_id, name: aiResult.category, parent_id: null })
-        .select('id')
-        .single();
-      catRow = newCat;
-    }
-    categoryId = catRow?.id || null;
-
-    // Subcategory
-    if (aiResult.subcategory && categoryId) {
-      let { data: subRow } = await supabase
+    try {
+      const { data: catRow, error: catSelectErr } = await supabase
         .from('categories')
         .select('id')
         .eq('user_id', reel.user_id)
-        .eq('parent_id', categoryId)
-        .ilike('name', aiResult.subcategory)
+        .is('parent_id', null)
+        .ilike('name', escapeIlike(validCategory))
         .maybeSingle();
 
-      if (!subRow) {
-        const { data: newSub } = await supabase
+      if (catSelectErr) {
+        console.error(`[Worker] Error selecting category "${validCategory}":`, catSelectErr);
+      }
+
+      let resolvedCat = catRow;
+      if (!resolvedCat && !catSelectErr) {
+        const { data: newCat, error: catInsertErr } = await supabase
           .from('categories')
-          .insert({
-            user_id: reel.user_id,
-            name: aiResult.subcategory,
-            parent_id: categoryId
-          })
+          .insert({ user_id: reel.user_id, name: validCategory, parent_id: null })
           .select('id')
           .single();
-        subRow = newSub;
+        if (catInsertErr) {
+          console.error(`[Worker] Error inserting category "${validCategory}":`, catInsertErr);
+        } else {
+          resolvedCat = newCat;
+        }
       }
-      subcategoryId = subRow?.id || null;
-    }
+      categoryId = resolvedCat?.id || null;
 
-    processingStatus = 'processed';
+      // Subcategory
+      if (validSubcategory && categoryId) {
+        const { data: subRow, error: subSelectErr } = await supabase
+          .from('categories')
+          .select('id')
+          .eq('user_id', reel.user_id)
+          .eq('parent_id', categoryId)
+          .ilike('name', escapeIlike(validSubcategory))
+          .maybeSingle();
+
+        if (subSelectErr) {
+          console.error(`[Worker] Error selecting subcategory "${validSubcategory}":`, subSelectErr);
+        }
+
+        let resolvedSub = subRow;
+        if (!resolvedSub && !subSelectErr) {
+          const { data: newSub, error: subInsertErr } = await supabase
+            .from('categories')
+            .insert({
+              user_id: reel.user_id,
+              name: validSubcategory,
+              parent_id: categoryId
+            })
+            .select('id')
+            .single();
+          if (subInsertErr) {
+            console.error(`[Worker] Error inserting subcategory "${validSubcategory}":`, subInsertErr);
+          } else {
+            resolvedSub = newSub;
+          }
+        }
+        subcategoryId = resolvedSub?.id || null;
+      }
+
+      if (categoryId) {
+        processingStatus = 'processed';
+      }
+    } catch (err) {
+      console.error('[Worker] Category resolution unexpected error:', err);
+    }
   }
 
   await supabase

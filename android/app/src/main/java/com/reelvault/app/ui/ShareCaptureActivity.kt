@@ -115,7 +115,7 @@ class ShareCaptureActivity : Activity() {
                                 if (remaining == 0) {
                                     showProgressNotification("Saved to Watch Later", 100, 0)
                                 } else {
-                                    showProgressNotification("Saved ($remaining uploading)...", 75, remaining)
+                                    showProgressNotification("Saved locally ($remaining waiting to upload)", 100, remaining)
                                 }
                             } else {
                                 if (isLoggedIn) {

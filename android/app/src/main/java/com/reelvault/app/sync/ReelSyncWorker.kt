@@ -39,17 +39,25 @@ class ReelSyncWorker(
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
-        return syncInternal(context)
+        val allSynced = syncInternal(context)
+        return if (allSynced) {
+            Result.success()
+        } else {
+            Result.retry()
+        }
     }
 
     companion object {
         private val syncMutex = Mutex()
 
         suspend fun syncNow(context: Context) {
-            syncInternal(context)
+            val allSynced = syncInternal(context)
+            if (!allSynced) {
+                enqueue(context)
+            }
         }
 
-        private suspend fun syncInternal(context: Context): androidx.work.ListenableWorker.Result {
+        private suspend fun syncInternal(context: Context): Boolean {
             return syncMutex.withLock {
                 val db = AppDatabase.getDatabase(context)
                 val dao = db.reelDao()
@@ -60,86 +68,97 @@ class ReelSyncWorker(
                 val userEmail = PreferenceManager.getUserEmail(context)
 
                 if (accessToken.isNullOrEmpty() || userId.isNullOrEmpty()) {
-                    Log.w("ReelSyncWorker", "User not logged in; enqueueing for later sync.")
-                    enqueue(context)
-                    return@withLock androidx.work.ListenableWorker.Result.retry()
+                    Log.w("ReelSyncWorker", "User not logged in; skipping sync.")
+                    return@withLock false
                 }
 
                 // Fetch ALL queued reels (handles back-to-back spam)
                 val pendingReels = dao.getPendingReels()
                 if (pendingReels.isEmpty()) {
-                    return@withLock androidx.work.ListenableWorker.Result.success()
+                    return@withLock true
                 }
 
                 val client = HttpClient(Android)
+                var allSucceeded = true
 
-                suspend fun refreshTokenCall(): Boolean {
-                    if (refreshToken.isNullOrEmpty()) return false
-                    return try {
-                        val refRes = client.post("${BuildConfig.SUPABASE_URL}/auth/v1/token?grant_type=refresh_token") {
-                            header("apikey", BuildConfig.SUPABASE_ANON_KEY)
-                            contentType(ContentType.Application.Json)
-                            setBody(buildJsonObject { put("refresh_token", refreshToken) }.toString())
-                        }
-                        if (refRes.status.isSuccess()) {
-                            val json = Json.parseToJsonElement(refRes.bodyAsText()).jsonObject
-                            val newAccess = json["access_token"]?.jsonPrimitive?.content
-                            val newRefresh = json["refresh_token"]?.jsonPrimitive?.content ?: refreshToken
-                            if (newAccess != null) {
-                                PreferenceManager.saveSession(context, userId, userEmail ?: "", newAccess, newRefresh)
-                                accessToken = newAccess
-                                true
+                try {
+                    suspend fun refreshTokenCall(): Boolean {
+                        if (refreshToken.isNullOrEmpty()) return false
+                        return try {
+                            val refRes = client.post("${BuildConfig.SUPABASE_URL}/auth/v1/token?grant_type=refresh_token") {
+                                header("apikey", BuildConfig.SUPABASE_ANON_KEY)
+                                contentType(ContentType.Application.Json)
+                                setBody(buildJsonObject { put("refresh_token", refreshToken) }.toString())
+                            }
+                            if (refRes.status.isSuccess()) {
+                                val json = Json.parseToJsonElement(refRes.bodyAsText()).jsonObject
+                                val newAccess = json["access_token"]?.jsonPrimitive?.content
+                                val newRefresh = json["refresh_token"]?.jsonPrimitive?.content ?: refreshToken
+                                if (newAccess != null) {
+                                    PreferenceManager.saveSession(context, userId, userEmail ?: "", newAccess, newRefresh)
+                                    accessToken = newAccess
+                                    true
+                                } else false
                             } else false
-                        } else false
-                    } catch (e: Exception) {
-                        false
-                    }
-                }
-
-                for (reel in pendingReels) {
-                    try {
-                        val payload = buildJsonObject {
-                            put("user_id", userId)
-                            put("url", reel.url)
-                            put("raw_shared_text", reel.rawSharedText)
-                            put("processing_status", "pending")
-                            put("completion_status", "pending")
-                        }.toString()
-
-                        var response = client.post("${BuildConfig.SUPABASE_URL}/rest/v1/reels") {
-                            header("apikey", BuildConfig.SUPABASE_ANON_KEY)
-                            header("Authorization", "Bearer $accessToken")
-                            header("Prefer", "return=representation")
-                            contentType(ContentType.Application.Json)
-                            setBody(payload)
+                        } catch (e: Exception) {
+                            false
                         }
+                    }
 
-                        if (response.status.value == 401 && refreshTokenCall()) {
-                            response = client.post("${BuildConfig.SUPABASE_URL}/rest/v1/reels") {
+                    for (reel in pendingReels) {
+                        try {
+                            val payload = buildJsonObject {
+                                put("user_id", userId)
+                                put("url", reel.url)
+                                put("raw_shared_text", reel.rawSharedText)
+                                put("processing_status", "pending")
+                                put("completion_status", "pending")
+                            }.toString()
+
+                            var response = client.post("${BuildConfig.SUPABASE_URL}/rest/v1/reels") {
                                 header("apikey", BuildConfig.SUPABASE_ANON_KEY)
                                 header("Authorization", "Bearer $accessToken")
                                 header("Prefer", "return=representation")
                                 contentType(ContentType.Application.Json)
                                 setBody(payload)
                             }
-                        }
 
-                        if (response.status.isSuccess()) {
-                            val parsed = Json.parseToJsonElement(response.bodyAsText()).jsonArray
-                            val remoteId = parsed.firstOrNull()?.jsonObject?.get("id")?.jsonPrimitive?.content ?: ""
-                            dao.markSynced(reel.id, remoteId, "synced")
-                            Log.i("ReelSyncWorker", "Synced: ${reel.url} -> $remoteId")
-                        } else {
-                            Log.w("ReelSyncWorker", "HTTP ${response.status.value} for reel ${reel.id}. Enqueueing WorkManager retry.")
-                            enqueue(context)
+                            if (response.status.value == 401 && refreshTokenCall()) {
+                                response = client.post("${BuildConfig.SUPABASE_URL}/rest/v1/reels") {
+                                    header("apikey", BuildConfig.SUPABASE_ANON_KEY)
+                                    header("Authorization", "Bearer $accessToken")
+                                    header("Prefer", "return=representation")
+                                    contentType(ContentType.Application.Json)
+                                    setBody(payload)
+                                }
+                            }
+
+                            if (response.status.isSuccess()) {
+                                val parsed = Json.parseToJsonElement(response.bodyAsText()).jsonArray
+                                val remoteId = parsed.firstOrNull()?.jsonObject?.get("id")?.jsonPrimitive?.content ?: ""
+                                dao.markSynced(reel.id, remoteId, "synced")
+                                Log.i("ReelSyncWorker", "Synced: ${reel.url} -> $remoteId")
+                            } else {
+                                val statusCode = response.status.value
+                                Log.w("ReelSyncWorker", "HTTP $statusCode for reel ${reel.id}")
+                                if (statusCode in 400..499 && statusCode != 401 && statusCode != 408 && statusCode != 429) {
+                                    // Permanent client error (e.g. duplicate key, validation violation)
+                                    dao.markSynced(reel.id, "", "failed_permanent")
+                                    Log.e("ReelSyncWorker", "Permanent 4xx ($statusCode) for reel ${reel.id}; marking permanent failure.")
+                                } else {
+                                    allSucceeded = false
+                                }
+                            }
+                        } catch (e: Exception) {
+                            Log.e("ReelSyncWorker", "Sync exception for ${reel.id}", e)
+                            allSucceeded = false
                         }
-                    } catch (e: Exception) {
-                        Log.e("ReelSyncWorker", "Sync exception for ${reel.id}", e)
-                        enqueue(context)
                     }
+                } finally {
+                    client.close()
                 }
 
-                androidx.work.ListenableWorker.Result.success()
+                allSucceeded
             }
         }
 

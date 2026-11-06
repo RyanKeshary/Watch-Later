@@ -915,7 +915,7 @@ export default function App() {
             )}
 
             {/* Post Type Filters (Reels vs Posts vs Carousels) */}
-            {currentPage !== 'home' && currentPage !== 'settings' && (
+            {currentPage !== 'home' && currentPage !== 'settings' && (currentPage !== 'categories' || selectedCategoryId) && (
               <div className="flex items-center bg-zinc-900 p-0.5 rounded-lg border border-zinc-800 text-[11px]">
                 <button
                   onClick={() => setPostTypeFilter('all')}
@@ -1090,8 +1090,26 @@ export default function App() {
                     <div
                       key={cat.id}
                       onClick={() => setCategoryLightbox(cat)}
-                      className="group flex flex-col items-center justify-center p-4 rounded-2xl border border-zinc-800 bg-zinc-900/40 hover:bg-zinc-850 hover:border-indigo-500/50 cursor-pointer transition text-center"
+                      className="group relative flex flex-col items-center justify-center p-4 rounded-2xl border border-zinc-800 bg-zinc-900/40 hover:bg-zinc-850 hover:border-indigo-500/50 cursor-pointer transition text-center"
                     >
+                      {/* Top Action Buttons (Pin & Delete) */}
+                      <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition z-10">
+                        <button
+                          onClick={(e) => togglePin(cat.id, e)}
+                          title={isPinned ? 'Unpin category' : 'Pin category'}
+                          className={`p-1 rounded-md text-xs transition ${isPinned ? 'text-amber-400 bg-amber-500/10 hover:bg-amber-500/20' : 'text-zinc-400 hover:text-amber-300 hover:bg-zinc-800'}`}
+                        >
+                          <Pin className={`h-3.5 w-3.5 ${isPinned ? 'fill-amber-400' : ''}`} />
+                        </button>
+                        <button
+                          onClick={(e) => handleDeleteCategory(cat.id, e)}
+                          title="Delete category"
+                          className="p-1 rounded-md text-zinc-400 hover:text-rose-400 hover:bg-zinc-800 text-xs transition"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+
                       <div className="relative mb-2">
                         <Folder className="h-12 w-12 text-indigo-400 group-hover:scale-105 transition" />
                         {subcats.length > 0 && (
@@ -1629,7 +1647,7 @@ export default function App() {
                       href={detailReel.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-preview:opacity-100 transition"
+                      className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover/preview:opacity-100 transition"
                       title="Play Reel on Instagram"
                     >
                       <div className="h-12 w-12 rounded-full bg-indigo-600 flex items-center justify-center text-white shadow-lg">
