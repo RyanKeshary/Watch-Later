@@ -262,7 +262,19 @@ export default function App() {
               });
             } else if (payload.eventType === 'UPDATE') {
               const updated = payload.new as Reel;
-              setReels((prev) => prev.map(r => r.id === updated.id ? { ...r, ...updated } : r));
+              // If failed or updated, fetch extracted_content so extraction error updates in real time
+              if (updated.is_failed || updated.processing_status === 'extraction_failed') {
+                supabase
+                  .from('extracted_content')
+                  .select('extraction_error, raw_scraper_output')
+                  .eq('reel_id', updated.id)
+                  .maybeSingle()
+                  .then(({ data }) => {
+                    setReels((prev) => prev.map(r => r.id === updated.id ? { ...r, ...updated, extracted_content: data || r.extracted_content } : r));
+                  });
+              } else {
+                setReels((prev) => prev.map(r => r.id === updated.id ? { ...r, ...updated } : r));
+              }
             } else if (payload.eventType === 'DELETE') {
               setReels((prev) => prev.filter(r => r.id !== (payload.old as any).id));
             }
