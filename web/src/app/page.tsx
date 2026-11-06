@@ -76,6 +76,16 @@ export default function App() {
   // Category Lightbox Modal (Categories page: drill down 3 generations deeper)
   const [categoryLightbox, setCategoryLightbox] = useState<Category | null>(null);
 
+  // Reconcile selectedCategoryId and categoryLightbox whenever categories change
+  useEffect(() => {
+    if (selectedCategoryId && !categories.some(c => c.id === selectedCategoryId)) {
+      setSelectedCategoryId(null);
+    }
+    if (categoryLightbox && !categories.some(c => c.id === categoryLightbox.id)) {
+      setCategoryLightbox(null);
+    }
+  }, [categories, selectedCategoryId, categoryLightbox]);
+
   // UI customization states
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [pinnedFolderIds, setPinnedFolderIds] = useState<string[]>([]);
@@ -403,8 +413,6 @@ export default function App() {
 
     setCategories(prev => prev.filter(c => c.id !== catId && c.parent_id !== catId));
     setPinnedFolderIds(prev => prev.filter(id => id !== catId));
-    if (selectedCategoryId === catId) setSelectedCategoryId(null);
-    if (categoryLightbox?.id === catId) setCategoryLightbox(null);
 
     try {
       const { error } = await supabase.from('categories').delete().eq('id', catId);
@@ -528,13 +536,21 @@ export default function App() {
     });
   }, [reels, currentPage, selectedCategoryId, searchQuery]);
 
-  // Insights / "What it says about user"
+  // Insights / "What it says about user" (only includes categorized reels)
   const userPersonaInsight = useMemo(() => {
     if (reels.length === 0) return 'Save a few reels to generate your personalized interest profile.';
     const counts: Record<string, number> = {};
+    let categorizedCount = 0;
     for (const r of reels) {
-      const cat = categories.find(c => c.id === r.category_id)?.name || 'General';
-      counts[cat] = (counts[cat] || 0) + 1;
+      if (!r.category_id) continue;
+      const cat = categories.find(c => c.id === r.category_id)?.name;
+      if (cat) {
+        counts[cat] = (counts[cat] || 0) + 1;
+        categorizedCount++;
+      }
+    }
+    if (categorizedCount === 0) {
+      return 'Your vault captures a diverse set of topics with active curiosity.';
     }
     const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
     const top = sorted[0];
@@ -776,7 +792,7 @@ export default function App() {
                     setSelectedCategoryId(cat.id);
                   }}
                   className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} rounded-lg px-2.5 py-1.5 text-xs font-medium transition group ${
-                    selectedCategoryId === cat.id ? 'bg-indigo-600/15 text-indigo-400 font-semibold' : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
+                    currentPage === 'categories' && selectedCategoryId === cat.id ? 'bg-indigo-600/15 text-indigo-400 font-semibold' : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
                   }`}
                   title={cat.name}
                 >
@@ -1192,9 +1208,17 @@ export default function App() {
                           )}
 
                           {/* AI Summary / Description */}
-                          <p className="text-xs text-zinc-400 line-clamp-2 mb-3">
+                          <p className="text-xs text-zinc-400 line-clamp-2 mb-2">
                             {reel.ai_summary || reel.ai_description || reel.caption || 'No summary available'}
                           </p>
+
+                          {/* Extraction Error Banner for failed reels */}
+                          {(reel.is_failed || reel.processing_status === 'extraction_failed') && extractionErr && (
+                            <div className="mb-3 rounded bg-red-950/40 p-2 text-[11px] text-red-300 border border-red-900/40">
+                              <span className="font-semibold block mb-0.5">Extraction Issue:</span>
+                              <span className="font-mono text-[10px] break-all line-clamp-2">{extractionErr}</span>
+                            </div>
+                          )}
                         </div>
 
                         {/* Card Footer Actions */}
