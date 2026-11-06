@@ -49,7 +49,12 @@ class ShareCaptureActivity : Activity() {
         return manager
     }
 
-    private fun showProgressNotification(message: String, progress: Int, pendingCount: Int = 0) {
+    private fun showProgressNotification(
+        message: String,
+        progress: Int,
+        pendingCount: Int = 0,
+        reshareUrl: String? = null
+    ) {
         val manager = getNotificationManager()
         val title = if (pendingCount > 1) "Watch Later ($pendingCount in queue)" else "Watch Later"
 
@@ -69,6 +74,22 @@ class ShareCaptureActivity : Activity() {
             builder.setProgress(0, 0, false)
             builder.setSmallIcon(android.R.drawable.stat_sys_upload_done)
             builder.setAutoCancel(true)
+
+            if (!reshareUrl.isNullOrEmpty()) {
+                val reshareIntent = Intent(this, ShareCaptureActivity::class.java).apply {
+                    action = Intent.ACTION_SEND
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_TEXT, reshareUrl)
+                    putExtra("force_reshare", true)
+                }
+                val pendingIntent = android.app.PendingIntent.getActivity(
+                    this,
+                    reshareUrl.hashCode(),
+                    reshareIntent,
+                    android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+                )
+                builder.addAction(android.R.drawable.ic_menu_share, "Re-share Reel", pendingIntent)
+            }
         }
 
         manager.notify(notificationId, builder.build())
@@ -85,15 +106,34 @@ class ShareCaptureActivity : Activity() {
                 if (normalizedUrl != null) {
                     val isLoggedIn = PreferenceManager.isLoggedIn(this)
                     val db = AppDatabase.getDatabase(applicationContext)
+                    val isForceReshare = intent.getBooleanExtra("force_reshare", false)
 
                     // Immediate visual response
                     showProgressNotification("Capturing Reel...", 20, 1)
-                    Toast.makeText(applicationContext, "Saving to Watch Later...", Toast.LENGTH_SHORT).show()
 
-                    CoroutineScope(Dispatchers.IO).launch {
+                    // Execute synchronously on IO to guarantee persistence before finishing activity
+                    kotlinx.coroutines.runBlocking(Dispatchers.IO) {
                         try {
                             val existing = db.reelDao().getReelByUrl(normalizedUrl)
                             val isAlreadySynced = existing != null && (existing.syncStatus == "synced" || existing.remoteId != null)
+
+                            if (existing != null && isAlreadySynced && !isForceReshare) {
+                                // Reel already exists in Watch Later
+                                kotlinx.coroutines.withContext(Dispatchers.Main) {
+                                    Toast.makeText(
+                                        applicationContext,
+                                        "Reel already in Watch Later! Click Re-share notification if you wish to re-sync.",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
+                                showProgressNotification(
+                                    message = "Reel already exists in Watch Later",
+                                    progress = 100,
+                                    pendingCount = 0,
+                                    reshareUrl = normalizedUrl
+                                )
+                                return@runBlocking
+                            }
 
                             if (existing == null) {
                                 val syncStatus = if (isLoggedIn) "local_pending_sync" else "pending_auth"
@@ -103,10 +143,10 @@ class ShareCaptureActivity : Activity() {
                                     syncStatus = syncStatus
                                 )
                                 db.reelDao().insertReel(newReel)
-                            } else if (!isAlreadySynced) {
-                                // If previously pending or failed, ensure it's marked pending sync
+                            } else {
+                                // Re-share or retry sync
                                 val resetStatus = if (isLoggedIn) "local_pending_sync" else "pending_auth"
-                                db.reelDao().updateReel(existing.copy(syncStatus = resetStatus))
+                                db.reelDao().updateReel(existing.copy(syncStatus = resetStatus, remoteId = null))
                             }
 
                             val pendingList = db.reelDao().getPendingReels()

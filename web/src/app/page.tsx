@@ -103,6 +103,7 @@ export default function App() {
   const [newCategoryName, setNewCategoryName] = useState('');
   const [categoryParentId, setCategoryParentId] = useState<string | null>(null);
   const [isCreatingCategory, setIsCreatingCategory] = useState(false);
+  const [categoryInsertPending, setCategoryInsertPending] = useState(false);
 
   // Load preferences from localStorage
   useEffect(() => {
@@ -402,10 +403,12 @@ export default function App() {
 
   const handleCreateCategory = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (categoryInsertPending) return;
+
     const trimmed = newCategoryName.trim();
     if (!trimmed || !session?.user?.id) return;
 
-    // Prevent duplicate category creation
+    // Prevent duplicate category creation locally
     const existing = categories.find(
       c => c.name.trim().toLowerCase() === trimmed.toLowerCase() &&
            (categoryParentId ? c.parent_id === categoryParentId : !c.parent_id)
@@ -415,7 +418,28 @@ export default function App() {
       return;
     }
 
+    setCategoryInsertPending(true);
     try {
+      // Re-check database to prevent race conditions across tabs/clients
+      let query = supabase
+        .from('categories')
+        .select('id')
+        .eq('user_id', session.user.id)
+        .ilike('name', trimmed);
+
+      if (categoryParentId) {
+        query = query.eq('parent_id', categoryParentId);
+      } else {
+        query = query.is('parent_id', null);
+      }
+
+      const { data: remoteExisting } = await query.maybeSingle();
+      if (remoteExisting) {
+        alert('A category with this name already exists at this level.');
+        setCategoryInsertPending(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('categories')
         .insert({
@@ -429,13 +453,18 @@ export default function App() {
       if (error) {
         alert(`Failed to create category: ${error.message}`);
       } else if (data) {
-        setCategories(prev => [...prev, data as Category]);
+        setCategories(prev => {
+          if (prev.some(c => c.id === data.id)) return prev;
+          return [...prev, data as Category];
+        });
         setNewCategoryName('');
         setIsCreatingCategory(false);
         setCategoryParentId(null);
       }
     } catch (err: any) {
       alert(`Error creating category: ${err.message || err}`);
+    } finally {
+      setCategoryInsertPending(false);
     }
   };
 
@@ -507,10 +536,13 @@ export default function App() {
       return;
     }
     const { error } = await supabase.auth.updateUser({ password: newPassword });
-    if (error) setPasswordMsg(error.message);
-    else {
-      setPasswordMsg('Password updated successfully!');
+    if (error) {
+      setPasswordMsg(error.message);
+    } else {
+      alert('Password updated successfully! You have been logged out from all sessions. Please log in again with your new password.');
       setNewPassword('');
+      await supabase.auth.signOut({ scope: 'global' });
+      setSession(null);
     }
   };
 
