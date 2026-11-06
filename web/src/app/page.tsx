@@ -1735,7 +1735,7 @@ export default function App() {
                       className="flex items-center gap-1.5 rounded-lg border border-red-900/40 bg-red-950/20 hover:bg-red-950/40 hover:border-red-800/60 text-red-300 px-3 py-1.5 text-xs font-medium transition"
                     >
                       <Trash2 className="h-3.5 w-3.5 text-red-400" />
-                      <span>Clear Watch History</span>
+                      <span>Delete All Saved Items</span>
                     </button>
                     <button
                       onClick={async () => {
@@ -2005,7 +2005,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Clear Watch History Lightbox */}
+      {/* Delete All Saved Items Lightbox */}
       {showClearHistoryLightbox && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
@@ -2020,7 +2020,7 @@ export default function App() {
                 <Trash2 className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-white">Clear Watch History</h3>
+                <h3 className="text-sm font-semibold text-white">Delete All Saved Items</h3>
                 <p className="text-xs text-zinc-400">Permanently delete saved items from your account.</p>
               </div>
             </div>
@@ -2056,19 +2056,24 @@ export default function App() {
               <button
                 disabled={isClearingHistory}
                 onClick={async () => {
+                  const userId = session?.user?.id;
+                  if (!userId) {
+                    alert('You must be logged in to delete items.');
+                    return;
+                  }
                   setIsClearingHistory(true);
                   try {
                     const { error: reelsErr } = await supabase
                       .from('reels')
                       .delete()
-                      .eq('user_id', session?.user?.id);
+                      .eq('user_id', userId);
                     if (reelsErr) throw reelsErr;
 
                     if (clearCategoriesAlso) {
                       const { error: catErr } = await supabase
                         .from('categories')
                         .delete()
-                        .eq('user_id', session?.user?.id);
+                        .eq('user_id', userId);
                       if (catErr) throw catErr;
                       setCategories([]);
                       setSelectedCategoryId(null);
@@ -2078,14 +2083,15 @@ export default function App() {
                     setShowClearHistoryLightbox(false);
                     await loadData();
                   } catch (err: any) {
-                    alert(`Failed to clear history: ${err.message || err}`);
+                    alert(`Failed to delete items: ${err.message || err}`);
+                    await loadData();
                   } finally {
                     setIsClearingHistory(false);
                   }
                 }}
                 className="rounded-lg bg-red-600 hover:bg-red-500 px-4 py-2 text-xs font-semibold text-white transition disabled:opacity-50"
               >
-                {isClearingHistory ? 'Clearing...' : 'Clear History'}
+                {isClearingHistory ? 'Deleting...' : 'Delete All Saved Items'}
               </button>
             </div>
           </div>

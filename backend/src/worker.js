@@ -159,21 +159,23 @@ async function categorizeWithGroq(metadata, existingCategoryTree) {
   }));
 
   const systemPrompt = `You are an expert AI content classifier and taxonomist.
-Your task is to structure user social saves efficiently into hierarchical categories.
+Your task is to organize user social saves into a clean, minimalist hierarchical taxonomy.
 
-IMPORTANT STRUCTURING RULES:
-1. ALWAYS inspect the existing category hierarchy first:
+CRITICAL RULES FOR MINIMALIST, ACCURATE TAXONOMY:
+1. CHECK EXISTING PARENT CATEGORIES FIRST:
 ${JSON.stringify(categoriesContext, null, 2)}
-2. If this post belongs to an existing parent category, REUSE that category name exactly.
-3. Only choose an existing subcategory if it is an exact fit, or suggest a new subcategory ONLY if the reel represents a distinct niche within that category. If the category has few items or the post fits broadly, you can leave subcategory empty ("").
-4. If no existing category fits this post, create ONE appropriate parent category.
-5. NEVER create duplicate categories or create a subcategory with the same name as a parent category.
-6. DO NOT use vague labels like "General", "Misc", "Other".
+- If any existing parent category is broadly related to this post (e.g. if an existing category is "Cooking" or "Food & Cooking", and this post is about food or cooking), you MUST REUSE that exact parent category name! DO NOT create synonyms or variations like "Cooking" vs "Food & Cooking" or "Animal" vs "Animals".
+- If the post fits into an existing parent category, KEEP "subcategory" as "" (empty string) unless there are already multiple reels in this category and this post represents a clearly distinct sub-niche.
+- NEVER create a subcategory if it is redundant with the parent.
+2. ONLY IF NO EXISTING CATEGORY MATCHES:
+- Create ONE concise, high-level parent category name (e.g. "Animals", "Food", "Tech", "Fitness", "Design").
+- Set "subcategory" to "" (empty string). Do not create subcategories for new standalone categories.
+3. NEVER return synonyms or overlapping names.
 
 Return strictly a valid JSON object matching this schema:
 {
-  "category": string (domain category name),
-  "subcategory": string (subgenre niche, or "" if none needed),
+  "category": string (domain category name - REUSE existing where possible),
+  "subcategory": string (sub-niche, or "" if none needed),
   "topic": string (laser-focused topic),
   "tags": string[] (3-6 precise keywords),
   "ai_title": string (engaging, informative headline, max 65 chars),
@@ -458,9 +460,6 @@ async function processReel(reel) {
 
       const emptyIds = allUserCats.filter(cat => {
         if (usedIds.has(cat.id)) return false;
-        if (cat.created_at && (now - new Date(cat.created_at).getTime()) < recentGracePeriodMs) {
-          return false;
-        }
         if (protectedRecentParentIds.has(cat.id)) {
           return false;
         }
@@ -482,8 +481,44 @@ async function processReel(reel) {
   }
 }
 
+async function cleanupEmptyCategories() {
+  try {
+    const { data: allCats } = await supabase
+      .from('categories')
+      .select('id, parent_id');
+
+    const { data: allReels } = await supabase
+      .from('reels')
+      .select('category_id, subcategory_id');
+
+    if (allCats && allReels) {
+      const usedIds = new Set();
+      for (const r of allReels) {
+        if (r.category_id) usedIds.add(r.category_id);
+        if (r.subcategory_id) usedIds.add(r.subcategory_id);
+      }
+
+      const emptyIds = allCats.filter(cat => {
+        if (usedIds.has(cat.id)) return false;
+        const hasChildWithReel = allCats.some(sub => sub.parent_id === cat.id && usedIds.has(sub.id));
+        return !hasChildWithReel;
+      }).map(c => c.id);
+
+      if (emptyIds.length > 0) {
+        const { error } = await supabase.from('categories').delete().in('id', emptyIds);
+        if (!error) {
+          console.log(`[Worker] Startup cleanup removed ${emptyIds.length} empty categories.`);
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[Worker] Startup cleanup warning:', err.message);
+  }
+}
+
 async function runLoop() {
   console.log('[Worker] Watch Later Background Worker running. Polling for pending reels...');
+  await cleanupEmptyCategories();
 
   while (true) {
     try {
