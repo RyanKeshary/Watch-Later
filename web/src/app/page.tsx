@@ -871,22 +871,20 @@ export default function App() {
       />
 
       <aside
-        className={`${sidebarCollapsed ? 'w-16' : 'w-64'
+        className={`${sidebarCollapsed ? 'w-64 md:w-16' : 'w-64'
           } ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
           } fixed md:static inset-y-0 left-0 z-40 transition-all duration-200 border-r border-[#333333] bg-[#0B0B0B]/95 md:bg-[#0B0B0B]/80 backdrop-blur p-3 flex flex-col justify-between select-none shrink-0`}
       >
         <div className="overflow-y-auto overflow-x-hidden">
           {/* Logo & Toggle */}
           <div className="flex items-center justify-between px-2 py-3 mb-2">
-            {!sidebarCollapsed && (
-              <div className="flex items-center gap-2.5">
-                <img src="/logo.jpg" alt="Watch Later" className="h-7 w-7 rounded-lg object-cover border border-[#333333]" />
-                <div>
-                  <span className="font-zolo text-base font-bold tracking-tight text-white block leading-none">Watch Later</span>
-                  <span className="text-[9px] text-[#6B6B6B] block leading-tight mt-0.5">Never lose a reel worth revisiting.</span>
-                </div>
+            <div className={`flex items-center gap-2.5 ${sidebarCollapsed ? 'flex md:hidden' : 'flex'}`}>
+              <img src="/logo.jpg" alt="Watch Later" className="h-7 w-7 rounded-lg object-cover border border-[#333333]" />
+              <div>
+                <span className="font-zolo text-base font-bold tracking-tight text-white block leading-none">Watch Later</span>
+                <span className="text-[9px] text-[#6B6B6B] block leading-tight mt-0.5">Never lose a reel worth revisiting.</span>
               </div>
-            )}
+            </div>
             <div className="flex items-center gap-1">
               <button
                 onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
@@ -897,6 +895,7 @@ export default function App() {
               </button>
               <button
                 onClick={() => setMobileMenuOpen(false)}
+                aria-label="Close navigation"
                 className="md:hidden p-1 rounded hover:bg-zinc-800/80 text-zinc-400 hover:text-white transition"
               >
                 <X className="h-5 w-5" />
@@ -907,103 +906,101 @@ export default function App() {
           {/* Navigation Items */}
           <div className="space-y-1">
             <button
-              onClick={() => { setCurrentPage('home'); setSelectedCategoryId(null); }}
-              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'gap-2.5'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'home' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
+              onClick={() => { setCurrentPage('home'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
+              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-start gap-2.5 md:justify-center' : 'gap-2.5'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'home' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
                 }`}
               title="Home (Stats & Insights)"
             >
               <Home className="h-4 w-4 shrink-0 text-white" />
-              {!sidebarCollapsed && <span>Home</span>}
+              <span className={sidebarCollapsed ? 'inline md:hidden' : 'inline'}>Home</span>
             </button>
 
             <button
-              onClick={() => { setCurrentPage('all'); setSelectedCategoryId(null); }}
-              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'all' && !selectedCategoryId ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
+              onClick={() => { setCurrentPage('all'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
+              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-between md:justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'all' && !selectedCategoryId ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
                 }`}
               title="All Content"
             >
               <div className="flex items-center gap-2.5">
                 <Film className="h-4 w-4 shrink-0" />
-                {!sidebarCollapsed && <span>All Content</span>}
+                <span className={sidebarCollapsed ? 'inline md:hidden' : 'inline'}>All Content</span>
               </div>
-              {!sidebarCollapsed && <span className="font-mono-micro text-[#6B6B6B]">{counts.all}</span>}
+              <span className={`font-mono-micro text-[#6B6B6B] ${sidebarCollapsed ? 'inline md:hidden' : 'inline'}`}>{counts.all}</span>
             </button>
 
             {/* Renamed from Sorted Saves to Categories */}
             <button
-              onClick={() => { setCurrentPage('categories'); setSelectedCategoryId(null); }}
-              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'categories' && !selectedCategoryId ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
+              onClick={() => { setCurrentPage('categories'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
+              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-between md:justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'categories' && !selectedCategoryId ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
                 }`}
               title="Categories"
             >
               <div className="flex items-center gap-2.5">
                 <FolderTree className="h-4 w-4 shrink-0 text-white" />
-                {!sidebarCollapsed && <span>Categories</span>}
+                <span className={sidebarCollapsed ? 'inline md:hidden' : 'inline'}>Categories</span>
               </div>
-              {!sidebarCollapsed && <span className="font-mono-micro text-[#6B6B6B]">{counts.categories}</span>}
+              <span className={`font-mono-micro text-[#6B6B6B] ${sidebarCollapsed ? 'inline md:hidden' : 'inline'}`}>{counts.categories}</span>
             </button>
 
             <button
-              onClick={() => { setCurrentPage('watched'); setSelectedCategoryId(null); }}
-              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'watched' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
+              onClick={() => { setCurrentPage('watched'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
+              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-between md:justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'watched' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
                 }`}
               title="Watched"
             >
               <div className="flex items-center gap-2.5">
                 <CheckCircle className="h-4 w-4 shrink-0 text-[#D9D9D9]" />
-                {!sidebarCollapsed && <span>Watched</span>}
+                <span className={sidebarCollapsed ? 'inline md:hidden' : 'inline'}>Watched</span>
               </div>
-              {!sidebarCollapsed && <span className="font-mono-micro text-[#6B6B6B]">{counts.watched}</span>}
+              <span className={`font-mono-micro text-[#6B6B6B] ${sidebarCollapsed ? 'inline md:hidden' : 'inline'}`}>{counts.watched}</span>
             </button>
 
             <button
-              onClick={() => { setCurrentPage('inbox'); setSelectedCategoryId(null); }}
-              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'inbox' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
+              onClick={() => { setCurrentPage('inbox'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
+              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-between md:justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'inbox' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
                 }`}
               title="Inbox"
             >
               <div className="flex items-center gap-2.5">
                 <Inbox className="h-4 w-4 shrink-0" />
-                {!sidebarCollapsed && <span>Inbox</span>}
+                <span className={sidebarCollapsed ? 'inline md:hidden' : 'inline'}>Inbox</span>
               </div>
-              {!sidebarCollapsed && <span className="font-mono-micro text-[#6B6B6B]">{counts.inbox}</span>}
+              <span className={`font-mono-micro text-[#6B6B6B] ${sidebarCollapsed ? 'inline md:hidden' : 'inline'}`}>{counts.inbox}</span>
             </button>
 
             <button
-              onClick={() => { setCurrentPage('failed'); setSelectedCategoryId(null); }}
-              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'failed' ? 'bg-red-950/30 text-red-400 font-semibold border border-red-900/40' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-red-400'
+              onClick={() => { setCurrentPage('failed'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
+              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-between md:justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'failed' ? 'bg-red-950/30 text-red-400 font-semibold border border-red-900/40' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-red-400'
                 }`}
               title="Failed Extractions"
             >
               <div className="flex items-center gap-2.5">
                 <AlertTriangle className="h-4 w-4 shrink-0 text-red-400" />
-                {!sidebarCollapsed && <span>Failed</span>}
+                <span className={sidebarCollapsed ? 'inline md:hidden' : 'inline'}>Failed</span>
               </div>
-              {!sidebarCollapsed && <span className="font-mono-micro text-red-400 font-semibold">{counts.failed}</span>}
+              <span className={`font-mono-micro text-red-400 font-semibold ${sidebarCollapsed ? 'inline md:hidden' : 'inline'}`}>{counts.failed}</span>
             </button>
 
             <button
-              onClick={() => { setCurrentPage('archived'); setSelectedCategoryId(null); }}
-              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'archived' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
+              onClick={() => { setCurrentPage('archived'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
+              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-between md:justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'archived' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
                 }`}
               title="Archived"
             >
               <div className="flex items-center gap-2.5">
                 <Archive className="h-4 w-4 shrink-0" />
-                {!sidebarCollapsed && <span>Archived</span>}
+                <span className={sidebarCollapsed ? 'inline md:hidden' : 'inline'}>Archived</span>
               </div>
-              {!sidebarCollapsed && <span className="font-mono-micro text-[#6B6B6B]">{counts.archived}</span>}
+              <span className={`font-mono-micro text-[#6B6B6B] ${sidebarCollapsed ? 'inline md:hidden' : 'inline'}`}>{counts.archived}</span>
             </button>
           </div>
 
           {/* Pinned Folders */}
           <div className="mt-5 space-y-1">
-            {!sidebarCollapsed && (
-              <div className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wider text-[#999999] flex items-center gap-1.5">
-                <Pin className="h-3 w-3 text-[#D9D9D9]" />
-                <span>Pinned Folders</span>
-              </div>
-            )}
+            <div className={`px-2 pb-1 text-[11px] font-semibold uppercase tracking-wider text-[#999999] items-center gap-1.5 ${sidebarCollapsed ? 'flex md:hidden' : 'flex'}`}>
+              <Pin className="h-3 w-3 text-[#D9D9D9]" />
+              <span>Pinned Folders</span>
+            </div>
             {pinnedCategories.map((cat) => {
               const count = reels.filter(r => r.category_id === cat.id || r.subcategory_id === cat.id).length;
               return (
@@ -1012,26 +1009,25 @@ export default function App() {
                   onClick={() => {
                     setCurrentPage('categories');
                     setSelectedCategoryId(cat.id);
+                    setMobileMenuOpen(false);
                   }}
-                  className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} rounded-lg px-2.5 py-1.5 text-xs font-medium transition group ${currentPage === 'categories' && selectedCategoryId === cat.id ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#999999] hover:bg-[#1A1A1A] hover:text-white'
+                  className={`flex w-full items-center ${sidebarCollapsed ? 'justify-between md:justify-center' : 'justify-between'} rounded-lg px-2.5 py-1.5 text-xs font-medium transition group ${currentPage === 'categories' && selectedCategoryId === cat.id ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#999999] hover:bg-[#1A1A1A] hover:text-white'
                     }`}
                   title={cat.name}
                 >
                   <div className="flex items-center gap-2 truncate">
                     {renderCategoryIcon(categoryMetaMap[cat.id]?.icon || 'Tag', "h-3.5 w-3.5 shrink-0 text-[#D9D9D9]")}
-                    {!sidebarCollapsed && <span className="truncate">{cat.name}</span>}
+                    <span className={`truncate ${sidebarCollapsed ? 'inline md:hidden' : 'inline'}`}>{cat.name}</span>
                   </div>
-                  {!sidebarCollapsed && (
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-mono-micro text-[#6B6B6B]">{count}</span>
-                      <span
-                        onClick={(e) => togglePin(cat.id, e)}
-                        className="opacity-0 group-hover:opacity-100 hover:text-white p-0.5 rounded transition"
-                      >
-                        <PinOff className="h-3 w-3" />
-                      </span>
-                    </div>
-                  )}
+                  <div className={`items-center gap-1.5 ${sidebarCollapsed ? 'flex md:hidden' : 'flex'}`}>
+                    <span className="font-mono-micro text-[#6B6B6B]">{count}</span>
+                    <span
+                      onClick={(e) => togglePin(cat.id, e)}
+                      className="opacity-0 group-hover:opacity-100 hover:text-white p-0.5 rounded transition"
+                    >
+                      <PinOff className="h-3 w-3" />
+                    </span>
+                  </div>
                 </button>
               );
             })}
@@ -1041,13 +1037,13 @@ export default function App() {
         {/* Footer */}
         <div className="border-t border-[#333333] pt-3 mt-2 space-y-1">
           <button
-            onClick={() => setCurrentPage('settings')}
-            className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'gap-2'} rounded-lg px-2.5 py-1.5 text-xs font-medium transition ${currentPage === 'settings' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
+            onClick={() => { setCurrentPage('settings'); setMobileMenuOpen(false); }}
+            className={`flex w-full items-center ${sidebarCollapsed ? 'justify-start gap-2 md:justify-center' : 'gap-2'} rounded-lg px-2.5 py-1.5 text-xs font-medium transition ${currentPage === 'settings' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
               }`}
             title="Settings"
           >
             <SettingsIcon className="h-3.5 w-3.5 shrink-0" />
-            {!sidebarCollapsed && <span>Settings</span>}
+            <span className={sidebarCollapsed ? 'inline md:hidden' : 'inline'}>Settings</span>
           </button>
         </div>
       </aside>

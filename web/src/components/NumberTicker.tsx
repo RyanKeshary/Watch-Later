@@ -17,10 +17,11 @@ export function NumberTicker({
   prefix = '',
   suffix = ''
 }: NumberTickerProps) {
-  const [displayValue, setDisplayValue] = useState(0);
+  const [displayValue, setDisplayValue] = useState(value);
 
   useEffect(() => {
     let startTimestamp: number | null = null;
+    let animId: number | null = null;
     const startValue = 0;
     const endValue = value;
 
@@ -38,12 +39,16 @@ export function NumberTicker({
       setDisplayValue(current);
 
       if (progress < 1) {
-        window.requestAnimationFrame(step);
+        animId = window.requestAnimationFrame(step);
       }
     };
 
-    const animId = window.requestAnimationFrame(step);
-    return () => window.cancelAnimationFrame(animId);
+    animId = window.requestAnimationFrame(step);
+    return () => {
+      if (animId !== null) {
+        window.cancelAnimationFrame(animId);
+      }
+    };
   }, [value, duration]);
 
   return (
