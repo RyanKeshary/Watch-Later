@@ -1,0 +1,141 @@
+{
+  "projectRoot": "/Users/ryankeshary/Documents/Code & Others/Projects/Watch Later",
+  "batchFiles": [
+    {
+      "path": "brag-output/share-copy.txt",
+      "language": "txt",
+      "sizeLines": 12,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "extract_poster.swift",
+      "language": "swift",
+      "sizeLines": 30,
+      "fileCategory": "code"
+    },
+    {
+      "path": "render_cinematic_brag.swift",
+      "language": "swift",
+      "sizeLines": 333,
+      "fileCategory": "code"
+    },
+    {
+      "path": "render_video.swift",
+      "language": "swift",
+      "sizeLines": 251,
+      "fileCategory": "code"
+    },
+    {
+      "path": "web/next.config.mjs",
+      "language": "javascript",
+      "sizeLines": 4,
+      "fileCategory": "code"
+    },
+    {
+      "path": "web/postcss.config.js",
+      "language": "javascript",
+      "sizeLines": 6,
+      "fileCategory": "code"
+    },
+    {
+      "path": "web/public/launch-video.html",
+      "language": "html",
+      "sizeLines": 234,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "web/src/app/globals.css",
+      "language": "css",
+      "sizeLines": 63,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "web/src/app/layout.tsx",
+      "language": "typescript",
+      "sizeLines": 29,
+      "fileCategory": "code"
+    },
+    {
+      "path": "web/src/app/page.tsx",
+      "language": "typescript",
+      "sizeLines": 2515,
+      "fileCategory": "code"
+    },
+    {
+      "path": "web/src/components/NumberTicker.tsx",
+      "language": "typescript",
+      "sizeLines": 62,
+      "fileCategory": "code"
+    },
+    {
+      "path": "web/src/components/ProductionLaunchVideo.tsx",
+      "language": "typescript",
+      "sizeLines": 408,
+      "fileCategory": "code"
+    },
+    {
+      "path": "web/src/components/ServiceLandingPage.tsx",
+      "language": "typescript",
+      "sizeLines": 787,
+      "fileCategory": "code"
+    },
+    {
+      "path": "web/src/components/SplashCursor.css",
+      "language": "css",
+      "sizeLines": 16,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "web/src/components/SplashCursor.tsx",
+      "language": "typescript",
+      "sizeLines": 1022,
+      "fileCategory": "code"
+    },
+    {
+      "path": "web/src/components/brag-plan.md",
+      "language": "markdown",
+      "sizeLines": 14,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "web/src/lib/supabase.ts",
+      "language": "typescript",
+      "sizeLines": 7,
+      "fileCategory": "code"
+    },
+    {
+      "path": "web/src/types/database.ts",
+      "language": "typescript",
+      "sizeLines": 55,
+      "fileCategory": "code"
+    },
+    {
+      "path": "web/tailwind.config.ts",
+      "language": "typescript",
+      "sizeLines": 30,
+      "fileCategory": "code"
+    }
+  ],
+  "batchImportData": {
+    "brag-output/share-copy.txt": [],
+    "extract_poster.swift": [],
+    "render_cinematic_brag.swift": [],
+    "render_video.swift": [],
+    "web/next.config.mjs": [],
+    "web/postcss.config.js": [],
+    "web/public/launch-video.html": [],
+    "web/src/app/globals.css": [],
+    "web/src/app/layout.tsx": [],
+    "web/src/app/page.tsx": [],
+    "web/src/components/NumberTicker.tsx": [],
+    "web/src/components/ProductionLaunchVideo.tsx": [],
+    "web/src/components/ServiceLandingPage.tsx": [],
+    "web/src/components/SplashCursor.css": [],
+    "web/src/components/SplashCursor.tsx": [],
+    "web/src/components/brag-plan.md": [],
+    "web/src/lib/supabase.ts": [],
+    "web/src/types/database.ts": [],
+    "web/tailwind.config.ts": []
+  },
+  "neighborMap": {}
+}

@@ -1,0 +1,556 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>Watch Later Launch Video</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+    <style>
+      :root {
+        --ground: #09090b;
+        --card-bg: #121217;
+        --card-border: rgba(255, 255, 255, 0.16);
+        --ink: #ffffff;
+        --ink-muted: #d4d4d8;
+        --ink-dim: #b0b0b8;
+        --emerald: #10b981;
+        --emerald-glow: rgba(16, 185, 129, 0.3);
+        --rose: #fb7185;
+        --sky: #38bdf8;
+        --indigo: #a5b4fc;
+        --font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        --font-mono: "JetBrains Mono", monospace;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html, body {
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: var(--ground);
+        font-family: var(--font-sans);
+        color: var(--ink);
+        -webkit-font-smoothing: antialiased;
+      }
+      #root {
+        position: relative;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background-color: #09090b;
+      }
+
+      /* Background Tech Grid */
+      .grid-layer {
+        position: absolute;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+        background-size: 60px 60px;
+        pointer-events: none;
+        z-index: 1;
+      }
+
+      /* Ambient Radial Glow */
+      .ambient-glow {
+        position: absolute;
+        top: 25%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 1100px;
+        height: 650px;
+        background: radial-gradient(circle, rgba(16, 185, 129, 0.09) 0%, rgba(99, 102, 241, 0.05) 45%, transparent 70%);
+        pointer-events: none;
+        z-index: 1;
+      }
+
+      /* Persistent Top Bar */
+      .top-bar {
+        position: absolute;
+        top: 48px;
+        left: 80px;
+        right: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        z-index: 50;
+      }
+      .brand-lockup {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .brand-logo {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        border: 1px solid var(--card-border);
+        object-fit: cover;
+      }
+      .brand-title {
+        font-size: 28px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        color: var(--ink);
+        line-height: 1;
+      }
+      .brand-tag {
+        font-family: var(--font-mono);
+        font-size: 13px;
+        letter-spacing: 0.15em;
+        color: var(--ink-dim);
+        margin-top: 4px;
+      }
+      .status-capsule {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 22px;
+        background: rgba(255, 255, 255, 0.07);
+        border: 1px solid var(--card-border);
+        border-radius: 9999px;
+        font-family: var(--font-mono);
+        font-size: 13px;
+        letter-spacing: 0.08em;
+        color: #ffffff;
+      }
+      .pulse-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background-color: var(--emerald);
+        box-shadow: 0 0 12px var(--emerald);
+      }
+
+      /* Bottom Progress Bar */
+      .bottom-bar {
+        position: absolute;
+        bottom: 40px;
+        left: 80px;
+        right: 80px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        z-index: 50;
+      }
+      .timeline-track {
+        width: 100%;
+        height: 5px;
+        background: rgba(255, 255, 255, 0.14);
+        border-radius: 3px;
+        overflow: hidden;
+      }
+      .timeline-progress {
+        width: 0%;
+        height: 100%;
+        background: var(--ink);
+        border-radius: 3px;
+      }
+      .bottom-labels {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-family: var(--font-mono);
+        font-size: 14px;
+        color: var(--ink-dim);
+      }
+
+      /* Scene Container Base */
+      .scene {
+        position: absolute;
+        top: 130px;
+        bottom: 110px;
+        left: 80px;
+        right: 80px;
+        z-index: 10;
+      }
+      .scene-inner {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+
+      .act-tag {
+        font-family: var(--font-mono);
+        font-size: 16px;
+        letter-spacing: 0.2em;
+        font-weight: 700;
+        margin-bottom: 20px;
+        text-transform: uppercase;
+      }
+      .headline {
+        font-size: 82px;
+        font-weight: 900;
+        letter-spacing: -0.04em;
+        line-height: 0.98;
+        color: var(--ink);
+        max-width: 1400px;
+        margin-bottom: 20px;
+      }
+      .subline {
+        font-size: 30px;
+        font-weight: 400;
+        line-height: 1.4;
+        color: var(--ink-muted);
+        max-width: 1100px;
+        margin-bottom: 40px;
+      }
+
+      /* Cards and Visuals */
+      .card-row {
+        display: flex;
+        gap: 24px;
+        width: 100%;
+      }
+      .stat-card {
+        flex: 1;
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 20px;
+        padding: 32px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+      }
+      .stat-card-badge {
+        font-family: var(--font-mono);
+        font-size: 13px;
+        letter-spacing: 0.1em;
+        color: var(--ink-dim);
+        margin-bottom: 12px;
+      }
+      .stat-card-title {
+        font-size: 32px;
+        font-weight: 800;
+        color: var(--ink);
+        margin-bottom: 8px;
+        letter-spacing: -0.02em;
+      }
+      .stat-card-desc {
+        font-size: 18px;
+        color: var(--ink-muted);
+        line-height: 1.45;
+      }
+
+      /* Pipeline Simulation Box (Scene 2) */
+      .pipeline-box {
+        background: var(--card-bg);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 24px;
+        padding: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+      }
+      .pipe-node {
+        flex: 1;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 16px;
+        padding: 24px;
+      }
+      .pipe-arrow {
+        padding: 0 24px;
+        font-size: 32px;
+        color: var(--emerald);
+        font-weight: bold;
+      }
+      .pill-indicator {
+        display: inline-block;
+        padding: 8px 16px;
+        border-radius: 9999px;
+        font-family: var(--font-mono);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        margin-top: 12px;
+      }
+
+      /* Final Call To Action (Scene 5) */
+      .cta-center {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        margin: auto;
+      }
+      .cta-icon-box {
+        width: 104px;
+        height: 104px;
+        border-radius: 26px;
+        border: 2px solid rgba(255, 255, 255, 0.25);
+        margin-bottom: 24px;
+        box-shadow: 0 0 60px rgba(16, 185, 129, 0.35);
+        background: #18181b;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 44px;
+      }
+      .cta-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 16px;
+        background: #ffffff;
+        color: #000000;
+        padding: 24px 56px;
+        border-radius: 9999px;
+        font-size: 28px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        box-shadow: 0 0 70px rgba(255, 255, 255, 0.4);
+        margin-top: 32px;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="18"
+      data-width="1920"
+      data-height="1080"
+    >
+      <!-- Audio tracks -->
+      <audio id="bgm" data-start="0" data-duration="18" data-track-index="10" data-volume="0.38" data-fade-out="0.5" src="assets/music/bgm.mp3"></audio>
+      <audio id="sfx-01" data-start="0.3" data-duration="0.11" data-track-index="11" data-volume="0.5" src="assets/sfx/interface/drop_001.ogg"></audio>
+      <audio id="sfx-02" data-start="3.8" data-duration="0.10" data-track-index="12" data-volume="0.5" src="assets/sfx/ui/click1.ogg"></audio>
+      <audio id="sfx-03" data-start="7.8" data-duration="0.05" data-track-index="13" data-volume="0.5" src="assets/sfx/interface/select_008.ogg"></audio>
+      <audio id="sfx-04" data-start="11.6" data-duration="0.13" data-track-index="14" data-volume="0.6" src="assets/sfx/interface/bong_001.ogg"></audio>
+      <audio id="sfx-05" data-start="14.6" data-duration="1.48" data-track-index="15" data-volume="0.65" src="assets/sfx/impact/impactBell_heavy_000.ogg"></audio>
+
+      <div class="grid-layer"></div>
+      <div class="ambient-glow"></div>
+
+      <!-- Persistent Header -->
+      <div class="top-bar">
+        <div class="brand-lockup">
+          <img src="assets/logo.jpg" alt="Logo" class="brand-logo" id="top-brand-logo" data-start="0" data-duration="18" />
+          <div>
+            <div class="brand-title" data-layout-ignore="true">Watch Later</div>
+            <div class="brand-tag" data-layout-ignore="true">SHARE, DON'T SAVE</div>
+          </div>
+        </div>
+        <div class="status-capsule" data-layout-ignore="true">
+          <div class="pulse-dot"></div>
+          <span>NATIVE ANDROID APK v1.0 • SILENT SHARE INTERCEPT</span>
+        </div>
+      </div>
+
+      <!-- SCENE 1: THE REAL PROBLEM (0.0s - 3.8s) -->
+      <div id="scene1" class="scene clip" data-start="0" data-duration="3.8" data-track-index="1">
+        <div class="scene-inner" id="scene1-inner">
+          <div class="act-tag" style="color: var(--rose);" data-layout-ignore="true">[ACT 01 // THE REAL PROBLEM]</div>
+          <h1 class="headline">Saved reels go to die.</h1>
+          <p class="subline">Scattered across DMs to yourself, screenshots, and Instagram's bottomless Saved folder.</p>
+          <div class="card-row">
+            <div class="stat-card" id="card1-1">
+              <div class="stat-card-badge" data-layout-ignore="true">INSTAGRAM JUNK DRAWER</div>
+              <div class="stat-card-title" style="color: var(--rose);">842 Saved Reels</div>
+              <div class="stat-card-desc" data-layout-ignore="true">Saved with good intentions. Never opened or watched again.</div>
+            </div>
+            <div class="stat-card" id="card1-2">
+              <div class="stat-card-badge" data-layout-ignore="true">DIRECT MESSAGES</div>
+              <div class="stat-card-title">DMs To Yourself</div>
+              <div class="stat-card-desc" data-layout-ignore="true">"Watch this later" links buried under weeks of clutter.</div>
+            </div>
+            <div class="stat-card" id="card1-3">
+              <div class="stat-card-badge" data-layout-ignore="true">ACTION RATE</div>
+              <div class="stat-card-title">0% Digested</div>
+              <div class="stat-card-desc" data-layout-ignore="true">Hoarding guilt increases while the backlog accumulates.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCENE 2: SILENT INTERCEPT (3.8s - 7.8s) -->
+      <div id="scene2" class="scene clip" data-start="3.8" data-duration="4.0" data-track-index="2">
+        <div class="scene-inner" id="scene2-inner">
+          <div class="act-tag" style="color: var(--sky);" data-layout-ignore="true">[ACT 02 // ZERO POPUPS]</div>
+          <h1 class="headline">Share, don't save.</h1>
+          <p class="subline">Tap share on Instagram. Watch Later catches it in the background with zero popups.</p>
+          <div class="pipeline-box">
+            <div class="pipe-node" id="pipe-node-1">
+              <div class="stat-card-badge" data-layout-ignore="true">01 // TRIGGER</div>
+              <div class="stat-card-title">Instagram Share Sheet</div>
+              <div class="stat-card-desc" data-layout-ignore="true">One tap to Watch Later. Exactly like sending to a friend.</div>
+              <span class="pill-indicator" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4);" data-layout-ignore="true">
+                NATIVE INTENT HOOK
+              </span>
+            </div>
+            <div class="pipe-arrow">➔</div>
+            <div class="pipe-node" id="pipe-node-2">
+              <div class="stat-card-badge" data-layout-ignore="true">02 // DAEMON</div>
+              <div class="stat-card-title">Silent Background Capture</div>
+              <div class="stat-card-desc" data-layout-ignore="true">Catches reel and dismisses immediately. You never leave your feed.</div>
+              <span class="pill-indicator" style="background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4);" data-layout-ignore="true">
+                ZERO POPUP DIALOGS
+              </span>
+            </div>
+            <div class="pipe-arrow">➔</div>
+            <div class="pipe-node" id="pipe-node-3">
+              <div class="stat-card-badge" data-layout-ignore="true">03 // CONFIRMATION</div>
+              <div class="stat-card-title">Queue Confirmed [200 OK]</div>
+              <div class="stat-card-desc" data-layout-ignore="true">Parsed and ready in ~3s. Zero tagging friction.</div>
+              <span class="pill-indicator" style="background: rgba(255, 255, 255, 0.15); color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.3);" data-layout-ignore="true">
+                ROUNDTRIP AVAILABILITY
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCENE 3: SUBSTANCE EXTRACTION (7.8s - 11.6s) -->
+      <div id="scene3" class="scene clip" data-start="7.8" data-duration="3.8" data-track-index="3">
+        <div class="scene-inner" id="scene3-inner">
+          <div class="act-tag" style="color: var(--indigo);" data-layout-ignore="true">[ACT 03 // DEEP KNOWLEDGE DIGESTION]</div>
+          <h1 class="headline">Transcripts, audio & pillars.</h1>
+          <p class="subline">Spoken speech extracted into searchable topic pillars.</p>
+          <div class="card-row">
+            <div class="stat-card" id="pillar-card-1">
+              <div class="stat-card-badge" data-layout-ignore="true">PILLAR 01</div>
+              <div class="stat-card-title">Systems & Architecture</div>
+              <div class="stat-card-desc" data-layout-ignore="true">Distributed consensus, Raft internals, DB locking, and performance benchmarks.</div>
+              <div style="margin-top: 16px; font-family: var(--font-mono); font-size: 14px; font-weight: 700; color: var(--emerald);" data-layout-ignore="true">18 REELS CURATED</div>
+            </div>
+            <div class="stat-card" id="pillar-card-2">
+              <div class="stat-card-badge" data-layout-ignore="true">PILLAR 02</div>
+              <div class="stat-card-title">Kinetic UI & Physics</div>
+              <div class="stat-card-desc" data-layout-ignore="true">Spring curves, concentric radii, micro-interactions, and subpixel font smoothing.</div>
+              <div style="margin-top: 16px; font-family: var(--font-mono); font-size: 14px; font-weight: 700; color: var(--emerald);" data-layout-ignore="true">14 REELS CURATED</div>
+            </div>
+            <div class="stat-card" id="pillar-card-3">
+              <div class="stat-card-badge" data-layout-ignore="true">PILLAR 03</div>
+              <div class="stat-card-title">Spoken Transcript Search</div>
+              <div class="stat-card-desc" data-layout-ignore="true">Search full speech text across all saved reels in milliseconds.</div>
+              <div style="margin-top: 16px; font-family: var(--font-mono); font-size: 14px; font-weight: 700; color: var(--sky);" data-layout-ignore="true">FULL TEXT INDEXED</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCENE 4: SELF-PURGING QUEUE (11.6s - 14.6s) -->
+      <div id="scene4" class="scene clip" data-start="11.6" data-duration="3.0" data-track-index="4">
+        <div class="scene-inner" id="scene4-inner">
+          <div class="act-tag" style="color: var(--emerald);" data-layout-ignore="true">[ACT 04 // ZERO HOARDING GUILT]</div>
+          <h1 class="headline">Watch it. It disappears.</h1>
+          <p class="subline">Watched reels auto-purge. Zero backlog forever.</p>
+          <div class="card-row">
+            <div class="stat-card" id="purge-card" style="flex: 2; border-color: rgba(16, 185, 129, 0.4);">
+              <div class="stat-card-badge" data-layout-ignore="true">ACTIVE REEL INGESTION</div>
+              <div class="stat-card-title">"Distributed Consensus in 60s"</div>
+              <div class="stat-card-desc" data-layout-ignore="true">Source: Instagram @systems_craft • Audio speech transcribed • Status: Complete</div>
+              <div id="purge-badge" style="margin-top: 20px; display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: rgba(16, 185, 129, 0.2); border: 1px solid var(--emerald); border-radius: 9999px; font-family: var(--font-mono); font-size: 15px; font-weight: 700; color: #10b981;" data-layout-ignore="true">
+                ✓ AUTO-PURGED FROM ACTIVE QUEUE
+              </div>
+            </div>
+            <div class="stat-card" style="flex: 1;">
+              <div class="stat-card-badge" data-layout-ignore="true">QUEUE GUARANTEE</div>
+              <div class="stat-card-title" style="color: var(--emerald);">Zero Stale Saves</div>
+              <div class="stat-card-desc" data-layout-ignore="true">Categories retire naturally. Your library stays pristine and relevant forever.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCENE 5: FINALE & CALL TO ACTION (14.6s - 18.0s) -->
+      <div id="scene5" class="scene clip" data-start="14.6" data-duration="3.4" data-track-index="5">
+        <div class="scene-inner" id="scene5-inner">
+          <div class="cta-center">
+            <div class="cta-icon-box" id="final-logo">
+              <span style="color: var(--emerald); font-weight: 900;">WL</span>
+            </div>
+            <h1 class="headline" style="font-size: 72px; margin-bottom: 12px;" id="final-headline">Never lose a reel worth revisiting.</h1>
+            <p class="subline" style="font-size: 28px; margin-bottom: 8px;" id="final-subline">
+              Silent capture. Transcribed text. Auto-purged.
+            </p>
+            <div class="cta-button" id="final-button">
+              <span>Download Android App (APK)</span>
+              <span style="font-family: var(--font-mono); font-size: 15px; background: #000; color: #fff; padding: 4px 14px; border-radius: 9999px;" data-layout-ignore="true">
+                FREE
+              </span>
+            </div>
+            <div style="margin-top: 20px; font-family: var(--font-mono); font-size: 14px; color: var(--ink-dim);" data-layout-ignore="true">
+              Direct APK v1.0 • Web Dashboard • Zero Ads
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Persistent Bottom Bar -->
+      <div class="bottom-bar">
+        <div class="timeline-track">
+          <div id="timeline-progress" class="timeline-progress"></div>
+        </div>
+        <div class="bottom-labels">
+          <span data-layout-ignore="true">00:00:00 / 00:18:00</span>
+          <span data-layout-ignore="true">WATCH LATER // OFFICIAL PRODUCT LAUNCH</span>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const tl = gsap.timeline({ paused: true });
+
+      // Overall Progress Bar (0 to 18s)
+      tl.to("#timeline-progress", { width: "100%", duration: 18, ease: "none" }, 0);
+
+      // SCENE 1 INNER ANIMATION
+      tl.fromTo("#scene1-inner .headline", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 0.2);
+      tl.fromTo("#scene1-inner .subline", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 0.4);
+      tl.fromTo(["#card1-1", "#card1-2", "#card1-3"], 
+        { y: 40, opacity: 0, scale: 0.96 }, 
+        { y: 0, opacity: 1, scale: 1, duration: 0.5, stagger: 0.15, ease: "back.out(1.2)" }, 
+        0.6
+      );
+      tl.to("#scene1-inner", { opacity: 0, y: -20, duration: 0.35, ease: "power2.in" }, 3.45);
+
+      // SCENE 2 INNER ANIMATION
+      tl.fromTo("#scene2-inner .headline", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 3.9);
+      tl.fromTo("#scene2-inner .subline", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 4.1);
+      tl.fromTo(".pipeline-box", { y: 30, opacity: 0, scale: 0.98 }, { y: 0, opacity: 1, scale: 1, duration: 0.5, ease: "power3.out" }, 4.3);
+      tl.fromTo(["#pipe-node-1", "#pipe-node-2", "#pipe-node-3"], 
+        { opacity: 0, x: -20 }, 
+        { opacity: 1, x: 0, duration: 0.4, stagger: 0.2, ease: "power2.out" }, 
+        4.6
+      );
+      tl.to("#scene2-inner", { opacity: 0, y: -20, duration: 0.35, ease: "power2.in" }, 7.45);
+
+      // SCENE 3 INNER ANIMATION
+      tl.fromTo("#scene3-inner .headline", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 7.9);
+      tl.fromTo("#scene3-inner .subline", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 8.1);
+      tl.fromTo(["#pillar-card-1", "#pillar-card-2", "#pillar-card-3"], 
+        { y: 40, opacity: 0, scale: 0.95 }, 
+        { y: 0, opacity: 1, scale: 1, duration: 0.5, stagger: 0.18, ease: "back.out(1.1)" }, 
+        8.3
+      );
+      tl.to("#scene3-inner", { opacity: 0, y: -20, duration: 0.35, ease: "power2.in" }, 11.25);
+
+      // SCENE 4 INNER ANIMATION
+      tl.fromTo("#scene4-inner .headline", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 11.7);
+      tl.fromTo("#scene4-inner .subline", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 11.9);
+      tl.fromTo("#purge-card", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "power2.out" }, 12.0);
+      tl.fromTo("#purge-badge", { scale: 0.8, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: "back.out(1.4)" }, 12.4);
+      tl.to("#scene4-inner", { opacity: 0, y: -20, duration: 0.35, ease: "power2.in" }, 14.25);
+
+      // SCENE 5 INNER ANIMATION (14.6s to 18.0s)
+      tl.fromTo("#final-logo", { scale: 0.5, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: "back.out(1.5)" }, 14.7);
+      tl.fromTo("#final-headline", { y: 25, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 14.85);
+      tl.fromTo("#final-subline", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 15.0);
+      tl.fromTo("#final-button", { scale: 0.9, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.35, ease: "back.out(1.3)" }, 15.1);
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>

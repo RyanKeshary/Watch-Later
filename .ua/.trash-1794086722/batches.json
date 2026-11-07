@@ -1,0 +1,488 @@
+{
+  "schemaVersion": 1,
+  "algorithm": "louvain",
+  "totalFiles": 48,
+  "totalBatches": 3,
+  "exportsByPath": {
+    "android/app/build.gradle.kts": [],
+    "android/app/src/main/java/com/reelvault/app/ReelVaultApp.kt": [
+      "onCreate",
+      "ReelVaultApp"
+    ],
+    "android/app/src/main/java/com/reelvault/app/data/AppDatabase.kt": [
+      "reelDao",
+      "AppDatabase"
+    ],
+    "android/app/src/main/java/com/reelvault/app/data/LocalReel.kt": [
+      "LocalReel"
+    ],
+    "android/app/src/main/java/com/reelvault/app/data/ReelDao.kt": [
+      "getReelByUrl",
+      "getPendingReels",
+      "insertReel",
+      "updateReel",
+      "markSynced",
+      "markPendingAuthAsPendingSync",
+      "ReelDao"
+    ],
+    "android/app/src/main/java/com/reelvault/app/receiver/ManualSyncReceiver.kt": [
+      "onReceive",
+      "ManualSyncReceiver"
+    ],
+    "android/app/src/main/java/com/reelvault/app/sync/ReelSyncWorker.kt": [
+      "doWork",
+      "ReelSyncWorker"
+    ],
+    "android/app/src/main/java/com/reelvault/app/ui/MainActivity.kt": [
+      "onCreate",
+      "onResume",
+      "AuthScreen",
+      "SettingsScreen",
+      "MainActivity"
+    ],
+    "android/app/src/main/java/com/reelvault/app/ui/ShareCaptureActivity.kt": [
+      "onCreate",
+      "ShareCaptureActivity"
+    ],
+    "android/app/src/main/java/com/reelvault/app/ui/theme/Color.kt": [],
+    "android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt": [
+      "isOnline",
+      "start",
+      "showConnectedClickToSyncNotification",
+      "showOfflineNotification",
+      "NetworkMonitor"
+    ],
+    "android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt": [
+      "saveSession",
+      "setDeviceRegistered",
+      "isDeviceRegistered",
+      "clearSession",
+      "isLoggedIn",
+      "getUserId",
+      "getUserEmail",
+      "getAccessToken",
+      "getRefreshToken",
+      "PreferenceManager"
+    ],
+    "android/app/src/main/java/com/reelvault/app/util/UrlHelper.kt": [
+      "extractAndNormalizeReelUrl",
+      "UrlHelper"
+    ],
+    "android/build.gradle.kts": [],
+    "android/gradle/wrapper/gradle-wrapper.jar": [],
+    "android/gradlew": [],
+    "android/settings.gradle.kts": [],
+    "backend/src/worker.js": [],
+    "extract_poster.swift": [],
+    "render_cinematic_brag.swift": [
+      "newPixelBuffer",
+      "act",
+      "headline",
+      "sub",
+      "badgeText",
+      "statLabel",
+      "statValue",
+      "accentColor",
+      "Scene",
+      "drawText"
+    ],
+    "render_video.swift": [
+      "newPixelBuffer",
+      "tag",
+      "headline",
+      "sub",
+      "primary",
+      "secondary",
+      "Scene",
+      "drawText"
+    ],
+    "web/next.config.mjs": [],
+    "web/postcss.config.js": [],
+    "web/src/app/layout.tsx": [
+      "metadata",
+      "RootLayout"
+    ],
+    "web/src/app/page.tsx": [
+      "App"
+    ],
+    "web/src/components/NumberTicker.tsx": [
+      "NumberTicker"
+    ],
+    "web/src/components/ProductionLaunchVideo.tsx": [
+      "ProductionLaunchVideo"
+    ],
+    "web/src/components/ServiceLandingPage.tsx": [
+      "ServiceLandingPage"
+    ],
+    "web/src/components/SplashCursor.tsx": [
+      "SplashCursor"
+    ],
+    "web/src/lib/supabase.ts": [
+      "supabase"
+    ],
+    "web/src/types/database.ts": [],
+    "web/tailwind.config.ts": []
+  },
+  "batches": [
+    {
+      "batchIndex": 1,
+      "files": [
+        {
+          "path": "web/README.md",
+          "language": "markdown",
+          "sizeLines": 36,
+          "fileCategory": "docs"
+        },
+        {
+          "path": "web/crazy curso.txt",
+          "language": "txt",
+          "sizeLines": 1106,
+          "fileCategory": "docs"
+        },
+        {
+          "path": "web/package.json",
+          "language": "json",
+          "sizeLines": 34,
+          "fileCategory": "config"
+        },
+        {
+          "path": "web/tsconfig.json",
+          "language": "json",
+          "sizeLines": 26,
+          "fileCategory": "config"
+        }
+      ],
+      "batchImportData": {
+        "web/README.md": [],
+        "web/crazy curso.txt": [],
+        "web/package.json": [],
+        "web/tsconfig.json": []
+      },
+      "neighborMap": {}
+    },
+    {
+      "batchIndex": 2,
+      "files": [
+        {
+          "path": "android/app/build.gradle.kts",
+          "language": "kotlin",
+          "sizeLines": 92,
+          "fileCategory": "code"
+        },
+        {
+          "path": "android/app/src/main/AndroidManifest.xml",
+          "language": "xml",
+          "sizeLines": 49,
+          "fileCategory": "config"
+        },
+        {
+          "path": "android/app/src/main/java/com/reelvault/app/ReelVaultApp.kt",
+          "language": "kotlin",
+          "sizeLines": 34,
+          "fileCategory": "code"
+        },
+        {
+          "path": "android/app/src/main/java/com/reelvault/app/data/AppDatabase.kt",
+          "language": "kotlin",
+          "sizeLines": 29,
+          "fileCategory": "code"
+        },
+        {
+          "path": "android/app/src/main/java/com/reelvault/app/data/LocalReel.kt",
+          "language": "kotlin",
+          "sizeLines": 30,
+          "fileCategory": "code"
+        },
+        {
+          "path": "android/app/src/main/java/com/reelvault/app/data/ReelDao.kt",
+          "language": "kotlin",
+          "sizeLines": 29,
+          "fileCategory": "code"
+        },
+        {
+          "path": "android/app/src/main/java/com/reelvault/app/receiver/ManualSyncReceiver.kt",
+          "language": "kotlin",
+          "sizeLines": 26,
+          "fileCategory": "code"
+        },
+        {
+          "path": "android/app/src/main/java/com/reelvault/app/sync/ReelSyncWorker.kt",
+          "language": "kotlin",
+          "sizeLines": 218,
+          "fileCategory": "code"
+        },
+        {
+          "path": "android/app/src/main/java/com/reelvault/app/ui/MainActivity.kt",
+          "language": "kotlin",
+          "sizeLines": 594,
+          "fileCategory": "code"
+        },
+        {
+          "path": "android/app/src/main/java/com/reelvault/app/ui/ShareCaptureActivity.kt",
+          "language": "kotlin",
+          "sizeLines": 241,
+          "fileCategory": "code"
+        },
+        {
+          "path": "android/app/src/main/java/com/reelvault/app/ui/theme/Color.kt",
+          "language": "kotlin",
+          "sizeLines": 32,
+          "fileCategory": "code"
+        },
+        {
+          "path": "android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt",
+          "language": "kotlin",
+          "sizeLines": 236,
+          "fileCategory": "code"
+        },
+        {
+          "path": "android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt",
+          "language": "kotlin",
+          "sizeLines": 53,
+          "fileCategory": "code"
+        },
+        {
+          "path": "android/app/src/main/java/com/reelvault/app/util/UrlHelper.kt",
+          "language": "kotlin",
+          "sizeLines": 19,
+          "fileCategory": "code"
+        },
+        {
+          "path": "android/app/src/main/res/values/strings.xml",
+          "language": "xml",
+          "sizeLines": 4,
+          "fileCategory": "config"
+        },
+        {
+          "path": "android/app/src/main/res/values/themes.xml",
+          "language": "xml",
+          "sizeLines": 19,
+          "fileCategory": "config"
+        },
+        {
+          "path": "android/build.gradle.kts",
+          "language": "kotlin",
+          "sizeLines": 7,
+          "fileCategory": "code"
+        },
+        {
+          "path": "android/gradle.properties",
+          "language": "properties",
+          "sizeLines": 5,
+          "fileCategory": "config"
+        },
+        {
+          "path": "android/gradle/wrapper/gradle-wrapper.jar",
+          "language": "jar",
+          "sizeLines": 149,
+          "fileCategory": "code"
+        },
+        {
+          "path": "android/gradle/wrapper/gradle-wrapper.properties",
+          "language": "properties",
+          "sizeLines": 6,
+          "fileCategory": "config"
+        },
+        {
+          "path": "android/gradlew",
+          "language": "unknown",
+          "sizeLines": 249,
+          "fileCategory": "code"
+        },
+        {
+          "path": "android/settings.gradle.kts",
+          "language": "kotlin",
+          "sizeLines": 18,
+          "fileCategory": "code"
+        },
+        {
+          "path": "backend/package.json",
+          "language": "json",
+          "sizeLines": 16,
+          "fileCategory": "config"
+        },
+        {
+          "path": "backend/src/worker.js",
+          "language": "javascript",
+          "sizeLines": 609,
+          "fileCategory": "code"
+        },
+        {
+          "path": "brag-output/brag-plan.md",
+          "language": "markdown",
+          "sizeLines": 52,
+          "fileCategory": "docs"
+        }
+      ],
+      "batchImportData": {
+        "android/app/build.gradle.kts": [],
+        "android/app/src/main/AndroidManifest.xml": [],
+        "android/app/src/main/java/com/reelvault/app/ReelVaultApp.kt": [],
+        "android/app/src/main/java/com/reelvault/app/data/AppDatabase.kt": [],
+        "android/app/src/main/java/com/reelvault/app/data/LocalReel.kt": [],
+        "android/app/src/main/java/com/reelvault/app/data/ReelDao.kt": [],
+        "android/app/src/main/java/com/reelvault/app/receiver/ManualSyncReceiver.kt": [],
+        "android/app/src/main/java/com/reelvault/app/sync/ReelSyncWorker.kt": [],
+        "android/app/src/main/java/com/reelvault/app/ui/MainActivity.kt": [],
+        "android/app/src/main/java/com/reelvault/app/ui/ShareCaptureActivity.kt": [],
+        "android/app/src/main/java/com/reelvault/app/ui/theme/Color.kt": [],
+        "android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt": [],
+        "android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt": [],
+        "android/app/src/main/java/com/reelvault/app/util/UrlHelper.kt": [],
+        "android/app/src/main/res/values/strings.xml": [],
+        "android/app/src/main/res/values/themes.xml": [],
+        "android/build.gradle.kts": [],
+        "android/gradle.properties": [],
+        "android/gradle/wrapper/gradle-wrapper.jar": [],
+        "android/gradle/wrapper/gradle-wrapper.properties": [],
+        "android/gradlew": [],
+        "android/settings.gradle.kts": [],
+        "backend/package.json": [],
+        "backend/src/worker.js": [],
+        "brag-output/brag-plan.md": []
+      },
+      "neighborMap": {}
+    },
+    {
+      "batchIndex": 3,
+      "files": [
+        {
+          "path": "brag-output/share-copy.txt",
+          "language": "txt",
+          "sizeLines": 12,
+          "fileCategory": "docs"
+        },
+        {
+          "path": "extract_poster.swift",
+          "language": "swift",
+          "sizeLines": 30,
+          "fileCategory": "code"
+        },
+        {
+          "path": "render_cinematic_brag.swift",
+          "language": "swift",
+          "sizeLines": 333,
+          "fileCategory": "code"
+        },
+        {
+          "path": "render_video.swift",
+          "language": "swift",
+          "sizeLines": 251,
+          "fileCategory": "code"
+        },
+        {
+          "path": "web/next.config.mjs",
+          "language": "javascript",
+          "sizeLines": 4,
+          "fileCategory": "code"
+        },
+        {
+          "path": "web/postcss.config.js",
+          "language": "javascript",
+          "sizeLines": 6,
+          "fileCategory": "code"
+        },
+        {
+          "path": "web/public/launch-video.html",
+          "language": "html",
+          "sizeLines": 234,
+          "fileCategory": "markup"
+        },
+        {
+          "path": "web/src/app/globals.css",
+          "language": "css",
+          "sizeLines": 63,
+          "fileCategory": "markup"
+        },
+        {
+          "path": "web/src/app/layout.tsx",
+          "language": "typescript",
+          "sizeLines": 29,
+          "fileCategory": "code"
+        },
+        {
+          "path": "web/src/app/page.tsx",
+          "language": "typescript",
+          "sizeLines": 2515,
+          "fileCategory": "code"
+        },
+        {
+          "path": "web/src/components/NumberTicker.tsx",
+          "language": "typescript",
+          "sizeLines": 62,
+          "fileCategory": "code"
+        },
+        {
+          "path": "web/src/components/ProductionLaunchVideo.tsx",
+          "language": "typescript",
+          "sizeLines": 408,
+          "fileCategory": "code"
+        },
+        {
+          "path": "web/src/components/ServiceLandingPage.tsx",
+          "language": "typescript",
+          "sizeLines": 787,
+          "fileCategory": "code"
+        },
+        {
+          "path": "web/src/components/SplashCursor.css",
+          "language": "css",
+          "sizeLines": 16,
+          "fileCategory": "markup"
+        },
+        {
+          "path": "web/src/components/SplashCursor.tsx",
+          "language": "typescript",
+          "sizeLines": 1022,
+          "fileCategory": "code"
+        },
+        {
+          "path": "web/src/components/brag-plan.md",
+          "language": "markdown",
+          "sizeLines": 14,
+          "fileCategory": "docs"
+        },
+        {
+          "path": "web/src/lib/supabase.ts",
+          "language": "typescript",
+          "sizeLines": 7,
+          "fileCategory": "code"
+        },
+        {
+          "path": "web/src/types/database.ts",
+          "language": "typescript",
+          "sizeLines": 55,
+          "fileCategory": "code"
+        },
+        {
+          "path": "web/tailwind.config.ts",
+          "language": "typescript",
+          "sizeLines": 30,
+          "fileCategory": "code"
+        }
+      ],
+      "batchImportData": {
+        "brag-output/share-copy.txt": [],
+        "extract_poster.swift": [],
+        "render_cinematic_brag.swift": [],
+        "render_video.swift": [],
+        "web/next.config.mjs": [],
+        "web/postcss.config.js": [],
+        "web/public/launch-video.html": [],
+        "web/src/app/globals.css": [],
+        "web/src/app/layout.tsx": [],
+        "web/src/app/page.tsx": [],
+        "web/src/components/NumberTicker.tsx": [],
+        "web/src/components/ProductionLaunchVideo.tsx": [],
+        "web/src/components/ServiceLandingPage.tsx": [],
+        "web/src/components/SplashCursor.css": [],
+        "web/src/components/SplashCursor.tsx": [],
+        "web/src/components/brag-plan.md": [],
+        "web/src/lib/supabase.ts": [],
+        "web/src/types/database.ts": [],
+        "web/tailwind.config.ts": []
+      },
+      "neighborMap": {}
+    }
+  ]
+}

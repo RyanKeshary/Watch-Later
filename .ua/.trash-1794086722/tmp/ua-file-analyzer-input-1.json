@@ -1,0 +1,36 @@
+{
+  "projectRoot": "/Users/ryankeshary/Documents/Code & Others/Projects/Watch Later",
+  "batchFiles": [
+    {
+      "path": "web/README.md",
+      "language": "markdown",
+      "sizeLines": 36,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "web/crazy curso.txt",
+      "language": "txt",
+      "sizeLines": 1106,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "web/package.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "web/tsconfig.json",
+      "language": "json",
+      "sizeLines": 26,
+      "fileCategory": "config"
+    }
+  ],
+  "batchImportData": {
+    "web/README.md": [],
+    "web/crazy curso.txt": [],
+    "web/package.json": [],
+    "web/tsconfig.json": []
+  },
+  "neighborMap": {}
+}

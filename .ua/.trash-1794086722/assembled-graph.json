@@ -1,0 +1,2558 @@
+{
+  "version": "1.0.0",
+  "project": {
+    "name": "Watch Later",
+    "languages": [
+      "kotlin",
+      "typescript",
+      "javascript",
+      "swift",
+      "html",
+      "css"
+    ],
+    "frameworks": [
+      "Android Jetpack",
+      "Next.js",
+      "Tailwind CSS",
+      "Cloudflare Workers",
+      "Supabase"
+    ],
+    "description": "Watch Later is a unified multi-platform application that automatically captures, categorizes, and organizes Instagram Reels into a personal knowledge library.",
+    "analyzedAt": "2026-11-07T21:24:43.282809Z",
+    "gitCommitHash": "1679cf83079be6446ec612861f107c5929564bb1"
+  },
+  "nodes": [
+    {
+      "id": "file:web/README.md",
+      "name": "README.md",
+      "type": "file",
+      "path": "web/README.md",
+      "summary": "Docs file for README.md (36 lines).",
+      "tags": [
+        "docs",
+        "markdown"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 36,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "file:web/package.json",
+      "name": "package.json",
+      "type": "file",
+      "path": "web/package.json",
+      "summary": "Config file for package.json (34 lines).",
+      "tags": [
+        "config",
+        "json"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 34,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "file:web/tsconfig.json",
+      "name": "tsconfig.json",
+      "type": "file",
+      "path": "web/tsconfig.json",
+      "summary": "Config file for tsconfig.json (26 lines).",
+      "tags": [
+        "config",
+        "json"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 26,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "file:web/crazy curso.txt",
+      "name": "crazy curso.txt",
+      "type": "file",
+      "path": "web/crazy curso.txt",
+      "summary": "Project file crazy curso.txt.",
+      "tags": [
+        "txt"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 10
+      }
+    },
+    {
+      "id": "file:android/app/build.gradle.kts",
+      "name": "build.gradle.kts",
+      "type": "file",
+      "path": "android/app/build.gradle.kts",
+      "summary": "Code file for build.gradle.kts (92 lines).",
+      "tags": [
+        "code",
+        "kotlin"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 92,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "file:android/app/src/main/java/com/reelvault/app/ReelVaultApp.kt",
+      "name": "ReelVaultApp.kt",
+      "type": "file",
+      "path": "android/app/src/main/java/com/reelvault/app/ReelVaultApp.kt",
+      "summary": "Code file for ReelVaultApp.kt (34 lines).",
+      "tags": [
+        "code",
+        "kotlin"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 34,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "function:android/app/src/main/java/com/reelvault/app/ReelVaultApp.kt:onCreate",
+      "name": "onCreate",
+      "type": "function",
+      "path": "android/app/src/main/java/com/reelvault/app/ReelVaultApp.kt",
+      "summary": "Function onCreate in ReelVaultApp.kt.",
+      "tags": [
+        "kotlin",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 5
+      }
+    },
+    {
+      "id": "function:android/app/src/main/java/com/reelvault/app/ReelVaultApp.kt:createNotificationChannels",
+      "name": "createNotificationChannels",
+      "type": "function",
+      "path": "android/app/src/main/java/com/reelvault/app/ReelVaultApp.kt",
+      "summary": "Function createNotificationChannels in ReelVaultApp.kt.",
+      "tags": [
+        "kotlin",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 16
+      }
+    },
+    {
+      "id": "class:android/app/src/main/java/com/reelvault/app/ReelVaultApp.kt:ReelVaultApp",
+      "name": "ReelVaultApp",
+      "type": "class",
+      "path": "android/app/src/main/java/com/reelvault/app/ReelVaultApp.kt",
+      "summary": "Class ReelVaultApp in ReelVaultApp.kt.",
+      "tags": [
+        "kotlin",
+        "class"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 24
+      }
+    },
+    {
+      "id": "file:android/app/src/main/java/com/reelvault/app/data/AppDatabase.kt",
+      "name": "AppDatabase.kt",
+      "type": "file",
+      "path": "android/app/src/main/java/com/reelvault/app/data/AppDatabase.kt",
+      "summary": "Code file for AppDatabase.kt (29 lines).",
+      "tags": [
+        "code",
+        "kotlin"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 29,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "function:android/app/src/main/java/com/reelvault/app/data/AppDatabase.kt:reelDao",
+      "name": "reelDao",
+      "type": "function",
+      "path": "android/app/src/main/java/com/reelvault/app/data/AppDatabase.kt",
+      "summary": "Function reelDao in AppDatabase.kt.",
+      "tags": [
+        "kotlin",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 1
+      }
+    },
+    {
+      "id": "class:android/app/src/main/java/com/reelvault/app/data/AppDatabase.kt:AppDatabase",
+      "name": "AppDatabase",
+      "type": "class",
+      "path": "android/app/src/main/java/com/reelvault/app/data/AppDatabase.kt",
+      "summary": "Class AppDatabase in AppDatabase.kt.",
+      "tags": [
+        "kotlin",
+        "class"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 21
+      }
+    },
+    {
+      "id": "file:android/app/src/main/java/com/reelvault/app/data/LocalReel.kt",
+      "name": "LocalReel.kt",
+      "type": "file",
+      "path": "android/app/src/main/java/com/reelvault/app/data/LocalReel.kt",
+      "summary": "Code file for LocalReel.kt (30 lines).",
+      "tags": [
+        "code",
+        "kotlin"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 30,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "class:android/app/src/main/java/com/reelvault/app/data/LocalReel.kt:LocalReel",
+      "name": "LocalReel",
+      "type": "class",
+      "path": "android/app/src/main/java/com/reelvault/app/data/LocalReel.kt",
+      "summary": "Class LocalReel in LocalReel.kt.",
+      "tags": [
+        "kotlin",
+        "class"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 23
+      }
+    },
+    {
+      "id": "file:android/app/src/main/java/com/reelvault/app/data/ReelDao.kt",
+      "name": "ReelDao.kt",
+      "type": "file",
+      "path": "android/app/src/main/java/com/reelvault/app/data/ReelDao.kt",
+      "summary": "Code file for ReelDao.kt (29 lines).",
+      "tags": [
+        "code",
+        "kotlin"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 29,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "function:android/app/src/main/java/com/reelvault/app/data/ReelDao.kt:getReelByUrl",
+      "name": "getReelByUrl",
+      "type": "function",
+      "path": "android/app/src/main/java/com/reelvault/app/data/ReelDao.kt",
+      "summary": "Function getReelByUrl in ReelDao.kt.",
+      "tags": [
+        "kotlin",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 2
+      }
+    },
+    {
+      "id": "function:android/app/src/main/java/com/reelvault/app/data/ReelDao.kt:getPendingReels",
+      "name": "getPendingReels",
+      "type": "function",
+      "path": "android/app/src/main/java/com/reelvault/app/data/ReelDao.kt",
+      "summary": "Function getPendingReels in ReelDao.kt.",
+      "tags": [
+        "kotlin",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 2
+      }
+    },
+    {
+      "id": "function:android/app/src/main/java/com/reelvault/app/data/ReelDao.kt:insertReel",
+      "name": "insertReel",
+      "type": "function",
+      "path": "android/app/src/main/java/com/reelvault/app/data/ReelDao.kt",
+      "summary": "Function insertReel in ReelDao.kt.",
+      "tags": [
+        "kotlin",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 2
+      }
+    },
+    {
+      "id": "function:android/app/src/main/java/com/reelvault/app/data/ReelDao.kt:updateReel",
+      "name": "updateReel",
+      "type": "function",
+      "path": "android/app/src/main/java/com/reelvault/app/data/ReelDao.kt",
+      "summary": "Function updateReel in ReelDao.kt.",
+      "tags": [
+        "kotlin",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 2
+      }
+    },
+    {
+      "id": "function:android/app/src/main/java/com/reelvault/app/data/ReelDao.kt:markSynced",
+      "name": "markSynced",
+      "type": "function",
+      "path": "android/app/src/main/java/com/reelvault/app/data/ReelDao.kt",
+      "summary": "Function markSynced in ReelDao.kt.",
+      "tags": [
+        "kotlin",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 2
+      }
+    },
+    {
+      "id": "function:android/app/src/main/java/com/reelvault/app/data/ReelDao.kt:markPendingAuthAsPendingSync",
+      "name": "markPendingAuthAsPendingSync",
+      "type": "function",
+      "path": "android/app/src/main/java/com/reelvault/app/data/ReelDao.kt",
+      "summary": "Function markPendingAuthAsPendingSync in ReelDao.kt.",
+      "tags": [
+        "kotlin",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 2
+      }
+    },
+    {
+      "id": "class:android/app/src/main/java/com/reelvault/app/data/ReelDao.kt:ReelDao",
+      "name": "ReelDao",
+      "type": "class",
+      "path": "android/app/src/main/java/com/reelvault/app/data/ReelDao.kt",
+      "summary": "Class ReelDao in ReelDao.kt.",
+      "tags": [
+        "kotlin",
+        "class"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 20
+      }
+    },
+    {
+      "id": "file:android/app/src/main/java/com/reelvault/app/receiver/ManualSyncReceiver.kt",
+      "name": "ManualSyncReceiver.kt",
+      "type": "file",
+      "path": "android/app/src/main/java/com/reelvault/app/receiver/ManualSyncReceiver.kt",
+      "summary": "Code file for ManualSyncReceiver.kt (26 lines).",
+      "tags": [
+        "code",
+        "kotlin"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 26,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "function:android/app/src/main/java/com/reelvault/app/receiver/ManualSyncReceiver.kt:onReceive",
+      "name": "onReceive",
+      "type": "function",
+      "path": "android/app/src/main/java/com/reelvault/app/receiver/ManualSyncReceiver.kt",
+      "summary": "Function onReceive in ManualSyncReceiver.kt.",
+      "tags": [
+        "kotlin",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 12
+      }
+    },
+    {
+      "id": "class:android/app/src/main/java/com/reelvault/app/receiver/ManualSyncReceiver.kt:ManualSyncReceiver",
+      "name": "ManualSyncReceiver",
+      "type": "class",
+      "path": "android/app/src/main/java/com/reelvault/app/receiver/ManualSyncReceiver.kt",
+      "summary": "Class ManualSyncReceiver in ManualSyncReceiver.kt.",
+      "tags": [
+        "kotlin",
+        "class"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 14
+      }
+    },
+    {
+      "id": "file:android/app/src/main/java/com/reelvault/app/sync/ReelSyncWorker.kt",
+      "name": "ReelSyncWorker.kt",
+      "type": "file",
+      "path": "android/app/src/main/java/com/reelvault/app/sync/ReelSyncWorker.kt",
+      "summary": "WorkManager worker handling offline queue sync, token refresh, and Reel upload to backend.",
+      "tags": [
+        "workmanager",
+        "kotlin",
+        "sync",
+        "code",
+        "android"
+      ],
+      "complexity": "moderate",
+      "metrics": {
+        "lines": 218,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "function:android/app/src/main/java/com/reelvault/app/sync/ReelSyncWorker.kt:doWork",
+      "name": "doWork",
+      "type": "function",
+      "path": "android/app/src/main/java/com/reelvault/app/sync/ReelSyncWorker.kt",
+      "summary": "Function doWork in ReelSyncWorker.kt.",
+      "tags": [
+        "kotlin",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 8
+      }
+    },
+    {
+      "id": "class:android/app/src/main/java/com/reelvault/app/sync/ReelSyncWorker.kt:ReelSyncWorker",
+      "name": "ReelSyncWorker",
+      "type": "class",
+      "path": "android/app/src/main/java/com/reelvault/app/sync/ReelSyncWorker.kt",
+      "summary": "Class ReelSyncWorker in ReelSyncWorker.kt.",
+      "tags": [
+        "kotlin",
+        "class"
+      ],
+      "complexity": "complex",
+      "metrics": {
+        "lines": 182
+      }
+    },
+    {
+      "id": "file:android/app/src/main/java/com/reelvault/app/ui/MainActivity.kt",
+      "name": "MainActivity.kt",
+      "type": "file",
+      "path": "android/app/src/main/java/com/reelvault/app/ui/MainActivity.kt",
+      "summary": "Main Android activity providing UI for authentication and settings with Jetpack Compose.",
+      "tags": [
+        "kotlin",
+        "compose",
+        "ui",
+        "code",
+        "android"
+      ],
+      "complexity": "moderate",
+      "metrics": {
+        "lines": 594,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "function:android/app/src/main/java/com/reelvault/app/ui/MainActivity.kt:onCreate",
+      "name": "onCreate",
+      "type": "function",
+      "path": "android/app/src/main/java/com/reelvault/app/ui/MainActivity.kt",
+      "summary": "Function onCreate in MainActivity.kt.",
+      "tags": [
+        "kotlin",
+        "function"
+      ],
+      "complexity": "moderate",
+      "metrics": {
+        "lines": 78
+      }
+    },
+    {
+      "id": "function:android/app/src/main/java/com/reelvault/app/ui/MainActivity.kt:onResume",
+      "name": "onResume",
+      "type": "function",
+      "path": "android/app/src/main/java/com/reelvault/app/ui/MainActivity.kt",
+      "summary": "Function onResume in MainActivity.kt.",
+      "tags": [
+        "kotlin",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 19
+      }
+    },
+    {
+      "id": "function:android/app/src/main/java/com/reelvault/app/ui/MainActivity.kt:checkDeviceRegistration",
+      "name": "checkDeviceRegistration",
+      "type": "function",
+      "path": "android/app/src/main/java/com/reelvault/app/ui/MainActivity.kt",
+      "summary": "Function checkDeviceRegistration in MainActivity.kt.",
+      "tags": [
+        "kotlin",
+        "function"
+      ],
+      "complexity": "moderate",
+      "metrics": {
+        "lines": 35
+      }
+    },
+    {
+      "id": "function:android/app/src/main/java/com/reelvault/app/ui/MainActivity.kt:AuthScreen",
+      "name": "AuthScreen",
+      "type": "function",
+      "path": "android/app/src/main/java/com/reelvault/app/ui/MainActivity.kt",
+      "summary": "Function AuthScreen in MainActivity.kt.",
+      "tags": [
+        "kotlin",
+        "function"
+      ],
+      "complexity": "moderate",
+      "metrics": {
+        "lines": 258
+      }
+    },
+    {
+      "id": "function:android/app/src/main/java/com/reelvault/app/ui/MainActivity.kt:SettingsScreen",
+      "name": "SettingsScreen",
+      "type": "function",
+      "path": "android/app/src/main/java/com/reelvault/app/ui/MainActivity.kt",
+      "summary": "Function SettingsScreen in MainActivity.kt.",
+      "tags": [
+        "kotlin",
+        "function"
+      ],
+      "complexity": "moderate",
+      "metrics": {
+        "lines": 89
+      }
+    },
+    {
+      "id": "function:android/app/src/main/java/com/reelvault/app/ui/MainActivity.kt:registerDevice",
+      "name": "registerDevice",
+      "type": "function",
+      "path": "android/app/src/main/java/com/reelvault/app/ui/MainActivity.kt",
+      "summary": "Function registerDevice in MainActivity.kt.",
+      "tags": [
+        "kotlin",
+        "function"
+      ],
+      "complexity": "moderate",
+      "metrics": {
+        "lines": 44
+      }
+    },
+    {
+      "id": "class:android/app/src/main/java/com/reelvault/app/ui/MainActivity.kt:MainActivity",
+      "name": "MainActivity",
+      "type": "class",
+      "path": "android/app/src/main/java/com/reelvault/app/ui/MainActivity.kt",
+      "summary": "Class MainActivity in MainActivity.kt.",
+      "tags": [
+        "kotlin",
+        "class"
+      ],
+      "complexity": "complex",
+      "metrics": {
+        "lines": 535
+      }
+    },
+    {
+      "id": "file:android/app/src/main/java/com/reelvault/app/ui/ShareCaptureActivity.kt",
+      "name": "ShareCaptureActivity.kt",
+      "type": "file",
+      "path": "android/app/src/main/java/com/reelvault/app/ui/ShareCaptureActivity.kt",
+      "summary": "Android activity handling ACTION_SEND share intents from Instagram/other apps silently.",
+      "tags": [
+        "share",
+        "kotlin",
+        "code",
+        "android",
+        "intent"
+      ],
+      "complexity": "moderate",
+      "metrics": {
+        "lines": 241,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "function:android/app/src/main/java/com/reelvault/app/ui/ShareCaptureActivity.kt:getNotificationManager",
+      "name": "getNotificationManager",
+      "type": "function",
+      "path": "android/app/src/main/java/com/reelvault/app/ui/ShareCaptureActivity.kt",
+      "summary": "Function getNotificationManager in ShareCaptureActivity.kt.",
+      "tags": [
+        "kotlin",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 20
+      }
+    },
+    {
+      "id": "function:android/app/src/main/java/com/reelvault/app/ui/ShareCaptureActivity.kt:showProgressNotification",
+      "name": "showProgressNotification",
+      "type": "function",
+      "path": "android/app/src/main/java/com/reelvault/app/ui/ShareCaptureActivity.kt",
+      "summary": "Function showProgressNotification in ShareCaptureActivity.kt.",
+      "tags": [
+        "kotlin",
+        "function"
+      ],
+      "complexity": "moderate",
+      "metrics": {
+        "lines": 45
+      }
+    },
+    {
+      "id": "function:android/app/src/main/java/com/reelvault/app/ui/ShareCaptureActivity.kt:onCreate",
+      "name": "onCreate",
+      "type": "function",
+      "path": "android/app/src/main/java/com/reelvault/app/ui/ShareCaptureActivity.kt",
+      "summary": "Function onCreate in ShareCaptureActivity.kt.",
+      "tags": [
+        "kotlin",
+        "function"
+      ],
+      "complexity": "moderate",
+      "metrics": {
+        "lines": 143
+      }
+    },
+    {
+      "id": "class:android/app/src/main/java/com/reelvault/app/ui/ShareCaptureActivity.kt:ShareCaptureActivity",
+      "name": "ShareCaptureActivity",
+      "type": "class",
+      "path": "android/app/src/main/java/com/reelvault/app/ui/ShareCaptureActivity.kt",
+      "summary": "Class ShareCaptureActivity in ShareCaptureActivity.kt.",
+      "tags": [
+        "kotlin",
+        "class"
+      ],
+      "complexity": "complex",
+      "metrics": {
+        "lines": 216
+      }
+    },
+    {
+      "id": "file:android/app/src/main/java/com/reelvault/app/ui/theme/Color.kt",
+      "name": "Color.kt",
+      "type": "file",
+      "path": "android/app/src/main/java/com/reelvault/app/ui/theme/Color.kt",
+      "summary": "Code file for Color.kt (32 lines).",
+      "tags": [
+        "code",
+        "kotlin"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 32,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "file:android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt",
+      "name": "NetworkMonitor.kt",
+      "type": "file",
+      "path": "android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt",
+      "summary": "Code file for NetworkMonitor.kt (236 lines).",
+      "tags": [
+        "code",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "metrics": {
+        "lines": 236,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "function:android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt:isOnline",
+      "name": "isOnline",
+      "type": "function",
+      "path": "android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt",
+      "summary": "Function isOnline in NetworkMonitor.kt.",
+      "tags": [
+        "kotlin",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 8
+      }
+    },
+    {
+      "id": "function:android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt:start",
+      "name": "start",
+      "type": "function",
+      "path": "android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt",
+      "summary": "Function start in NetworkMonitor.kt.",
+      "tags": [
+        "kotlin",
+        "function"
+      ],
+      "complexity": "moderate",
+      "metrics": {
+        "lines": 87
+      }
+    },
+    {
+      "id": "function:android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt:handleNetworkChange",
+      "name": "handleNetworkChange",
+      "type": "function",
+      "path": "android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt",
+      "summary": "Function handleNetworkChange in NetworkMonitor.kt.",
+      "tags": [
+        "kotlin",
+        "function"
+      ],
+      "complexity": "moderate",
+      "metrics": {
+        "lines": 35
+      }
+    },
+    {
+      "id": "function:android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt:createNotificationChannel",
+      "name": "createNotificationChannel",
+      "type": "function",
+      "path": "android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt",
+      "summary": "Function createNotificationChannel in NetworkMonitor.kt.",
+      "tags": [
+        "kotlin",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 13
+      }
+    },
+    {
+      "id": "function:android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt:showConnectedClickToSyncNotification",
+      "name": "showConnectedClickToSyncNotification",
+      "type": "function",
+      "path": "android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt",
+      "summary": "Function showConnectedClickToSyncNotification in NetworkMonitor.kt.",
+      "tags": [
+        "kotlin",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 23
+      }
+    },
+    {
+      "id": "function:android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt:showOfflineNotification",
+      "name": "showOfflineNotification",
+      "type": "function",
+      "path": "android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt",
+      "summary": "Function showOfflineNotification in NetworkMonitor.kt.",
+      "tags": [
+        "kotlin",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 20
+      }
+    },
+    {
+      "id": "function:android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt:dismissNotification",
+      "name": "dismissNotification",
+      "type": "function",
+      "path": "android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt",
+      "summary": "Function dismissNotification in NetworkMonitor.kt.",
+      "tags": [
+        "kotlin",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 4
+      }
+    },
+    {
+      "id": "class:android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt:NetworkMonitor",
+      "name": "NetworkMonitor",
+      "type": "class",
+      "path": "android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt",
+      "summary": "Class NetworkMonitor in NetworkMonitor.kt.",
+      "tags": [
+        "kotlin",
+        "class"
+      ],
+      "complexity": "complex",
+      "metrics": {
+        "lines": 213
+      }
+    },
+    {
+      "id": "file:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt",
+      "name": "PreferenceManager.kt",
+      "type": "file",
+      "path": "android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt",
+      "summary": "Code file for PreferenceManager.kt (53 lines).",
+      "tags": [
+        "code",
+        "kotlin"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 53,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "function:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt:getPrefs",
+      "name": "getPrefs",
+      "type": "function",
+      "path": "android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt",
+      "summary": "Function getPrefs in PreferenceManager.kt.",
+      "tags": [
+        "kotlin",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 7
+      }
+    },
+    {
+      "id": "function:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt:saveSession",
+      "name": "saveSession",
+      "type": "function",
+      "path": "android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt",
+      "summary": "Function saveSession in PreferenceManager.kt.",
+      "tags": [
+        "kotlin",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 8
+      }
+    },
+    {
+      "id": "function:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt:setDeviceRegistered",
+      "name": "setDeviceRegistered",
+      "type": "function",
+      "path": "android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt",
+      "summary": "Function setDeviceRegistered in PreferenceManager.kt.",
+      "tags": [
+        "kotlin",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 3
+      }
+    },
+    {
+      "id": "function:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt:isDeviceRegistered",
+      "name": "isDeviceRegistered",
+      "type": "function",
+      "path": "android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt",
+      "summary": "Function isDeviceRegistered in PreferenceManager.kt.",
+      "tags": [
+        "kotlin",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 3
+      }
+    },
+    {
+      "id": "function:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt:clearSession",
+      "name": "clearSession",
+      "type": "function",
+      "path": "android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt",
+      "summary": "Function clearSession in PreferenceManager.kt.",
+      "tags": [
+        "kotlin",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 3
+      }
+    },
+    {
+      "id": "function:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt:isLoggedIn",
+      "name": "isLoggedIn",
+      "type": "function",
+      "path": "android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt",
+      "summary": "Function isLoggedIn in PreferenceManager.kt.",
+      "tags": [
+        "kotlin",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 3
+      }
+    },
+    {
+      "id": "function:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt:getUserId",
+      "name": "getUserId",
+      "type": "function",
+      "path": "android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt",
+      "summary": "Function getUserId in PreferenceManager.kt.",
+      "tags": [
+        "kotlin",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 1
+      }
+    },
+    {
+      "id": "function:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt:getUserEmail",
+      "name": "getUserEmail",
+      "type": "function",
+      "path": "android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt",
+      "summary": "Function getUserEmail in PreferenceManager.kt.",
+      "tags": [
+        "kotlin",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 1
+      }
+    },
+    {
+      "id": "function:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt:getAccessToken",
+      "name": "getAccessToken",
+      "type": "function",
+      "path": "android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt",
+      "summary": "Function getAccessToken in PreferenceManager.kt.",
+      "tags": [
+        "kotlin",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 1
+      }
+    },
+    {
+      "id": "function:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt:getRefreshToken",
+      "name": "getRefreshToken",
+      "type": "function",
+      "path": "android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt",
+      "summary": "Function getRefreshToken in PreferenceManager.kt.",
+      "tags": [
+        "kotlin",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 1
+      }
+    },
+    {
+      "id": "class:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt:PreferenceManager",
+      "name": "PreferenceManager",
+      "type": "class",
+      "path": "android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt",
+      "summary": "Class PreferenceManager in PreferenceManager.kt.",
+      "tags": [
+        "kotlin",
+        "class"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 46
+      }
+    },
+    {
+      "id": "file:android/app/src/main/java/com/reelvault/app/util/UrlHelper.kt",
+      "name": "UrlHelper.kt",
+      "type": "file",
+      "path": "android/app/src/main/java/com/reelvault/app/util/UrlHelper.kt",
+      "summary": "Code file for UrlHelper.kt (19 lines).",
+      "tags": [
+        "code",
+        "kotlin"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 19,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "function:android/app/src/main/java/com/reelvault/app/util/UrlHelper.kt:extractAndNormalizeReelUrl",
+      "name": "extractAndNormalizeReelUrl",
+      "type": "function",
+      "path": "android/app/src/main/java/com/reelvault/app/util/UrlHelper.kt",
+      "summary": "Function extractAndNormalizeReelUrl in UrlHelper.kt.",
+      "tags": [
+        "kotlin",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 7
+      }
+    },
+    {
+      "id": "class:android/app/src/main/java/com/reelvault/app/util/UrlHelper.kt:UrlHelper",
+      "name": "UrlHelper",
+      "type": "class",
+      "path": "android/app/src/main/java/com/reelvault/app/util/UrlHelper.kt",
+      "summary": "Class UrlHelper in UrlHelper.kt.",
+      "tags": [
+        "kotlin",
+        "class"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 14
+      }
+    },
+    {
+      "id": "file:android/build.gradle.kts",
+      "name": "build.gradle.kts",
+      "type": "file",
+      "path": "android/build.gradle.kts",
+      "summary": "Code file for build.gradle.kts (7 lines).",
+      "tags": [
+        "code",
+        "kotlin"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 7,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "file:android/settings.gradle.kts",
+      "name": "settings.gradle.kts",
+      "type": "file",
+      "path": "android/settings.gradle.kts",
+      "summary": "Code file for settings.gradle.kts (18 lines).",
+      "tags": [
+        "code",
+        "kotlin"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 18,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "file:backend/package.json",
+      "name": "package.json",
+      "type": "file",
+      "path": "backend/package.json",
+      "summary": "Config file for package.json (16 lines).",
+      "tags": [
+        "config",
+        "json"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 16,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "file:backend/src/worker.js",
+      "name": "worker.js",
+      "type": "file",
+      "path": "backend/src/worker.js",
+      "summary": "Cloudflare Worker handling Reel submission, AI metadata extraction, Supabase sync, and Telegram alerts.",
+      "tags": [
+        "api",
+        "backend",
+        "code",
+        "javascript",
+        "cloudflare-worker"
+      ],
+      "complexity": "complex",
+      "metrics": {
+        "lines": 609,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "function:backend/src/worker.js:decodeHtmlEntities",
+      "name": "decodeHtmlEntities",
+      "type": "function",
+      "path": "backend/src/worker.js",
+      "summary": "Function decodeHtmlEntities in worker.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 10
+      }
+    },
+    {
+      "id": "function:backend/src/worker.js:extractShortcode",
+      "name": "extractShortcode",
+      "type": "function",
+      "path": "backend/src/worker.js",
+      "summary": "Function extractShortcode in worker.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 4
+      }
+    },
+    {
+      "id": "function:backend/src/worker.js:extractViaOpenGraph",
+      "name": "extractViaOpenGraph",
+      "type": "function",
+      "path": "backend/src/worker.js",
+      "summary": "Function extractViaOpenGraph in worker.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "moderate",
+      "metrics": {
+        "lines": 88
+      }
+    },
+    {
+      "id": "function:backend/src/worker.js:extractInstagramData",
+      "name": "extractInstagramData",
+      "type": "function",
+      "path": "backend/src/worker.js",
+      "summary": "Function extractInstagramData in worker.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "moderate",
+      "metrics": {
+        "lines": 39
+      }
+    },
+    {
+      "id": "function:backend/src/worker.js:categorizeWithGroq",
+      "name": "categorizeWithGroq",
+      "type": "function",
+      "path": "backend/src/worker.js",
+      "summary": "Function categorizeWithGroq in worker.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "moderate",
+      "metrics": {
+        "lines": 66
+      }
+    },
+    {
+      "id": "function:backend/src/worker.js:processReel",
+      "name": "processReel",
+      "type": "function",
+      "path": "backend/src/worker.js",
+      "summary": "Function processReel in worker.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "moderate",
+      "metrics": {
+        "lines": 219
+      }
+    },
+    {
+      "id": "function:backend/src/worker.js:cleanupEmptyCategories",
+      "name": "cleanupEmptyCategories",
+      "type": "function",
+      "path": "backend/src/worker.js",
+      "summary": "Function cleanupEmptyCategories in worker.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "moderate",
+      "metrics": {
+        "lines": 128
+      }
+    },
+    {
+      "id": "function:backend/src/worker.js:runLoop",
+      "name": "runLoop",
+      "type": "function",
+      "path": "backend/src/worker.js",
+      "summary": "Function runLoop in worker.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 26
+      }
+    },
+    {
+      "id": "file:brag-output/brag-plan.md",
+      "name": "brag-plan.md",
+      "type": "file",
+      "path": "brag-output/brag-plan.md",
+      "summary": "Docs file for brag-plan.md (53 lines).",
+      "tags": [
+        "docs",
+        "markdown"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 53,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "file:android/app/src/main/AndroidManifest.xml",
+      "name": "AndroidManifest.xml",
+      "type": "file",
+      "path": "android/app/src/main/AndroidManifest.xml",
+      "summary": "Project file AndroidManifest.xml.",
+      "tags": [
+        "xml"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 10
+      }
+    },
+    {
+      "id": "file:android/app/src/main/res/values/strings.xml",
+      "name": "strings.xml",
+      "type": "file",
+      "path": "android/app/src/main/res/values/strings.xml",
+      "summary": "Project file strings.xml.",
+      "tags": [
+        "xml"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 10
+      }
+    },
+    {
+      "id": "file:android/app/src/main/res/values/themes.xml",
+      "name": "themes.xml",
+      "type": "file",
+      "path": "android/app/src/main/res/values/themes.xml",
+      "summary": "Project file themes.xml.",
+      "tags": [
+        "xml"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 10
+      }
+    },
+    {
+      "id": "file:android/gradle.properties",
+      "name": "gradle.properties",
+      "type": "file",
+      "path": "android/gradle.properties",
+      "summary": "Project file gradle.properties.",
+      "tags": [
+        "properties"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 10
+      }
+    },
+    {
+      "id": "file:android/gradle/wrapper/gradle-wrapper.jar",
+      "name": "gradle-wrapper.jar",
+      "type": "file",
+      "path": "android/gradle/wrapper/gradle-wrapper.jar",
+      "summary": "Project file gradle-wrapper.jar.",
+      "tags": [
+        "jar"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 10
+      }
+    },
+    {
+      "id": "file:android/gradle/wrapper/gradle-wrapper.properties",
+      "name": "gradle-wrapper.properties",
+      "type": "file",
+      "path": "android/gradle/wrapper/gradle-wrapper.properties",
+      "summary": "Project file gradle-wrapper.properties.",
+      "tags": [
+        "properties"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 10
+      }
+    },
+    {
+      "id": "file:android/gradlew",
+      "name": "gradlew",
+      "type": "file",
+      "path": "android/gradlew",
+      "summary": "Project file gradlew.",
+      "tags": [
+        "file"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 10
+      }
+    },
+    {
+      "id": "file:extract_poster.swift",
+      "name": "extract_poster.swift",
+      "type": "file",
+      "path": "extract_poster.swift",
+      "summary": "Code file for extract_poster.swift (31 lines).",
+      "tags": [
+        "code",
+        "swift"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 31,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "file:render_cinematic_brag.swift",
+      "name": "render_cinematic_brag.swift",
+      "type": "file",
+      "path": "render_cinematic_brag.swift",
+      "summary": "Code file for render_cinematic_brag.swift (333 lines).",
+      "tags": [
+        "code",
+        "swift"
+      ],
+      "complexity": "moderate",
+      "metrics": {
+        "lines": 333,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "function:render_cinematic_brag.swift:newPixelBuffer",
+      "name": "newPixelBuffer",
+      "type": "function",
+      "path": "render_cinematic_brag.swift",
+      "summary": "Function newPixelBuffer in render_cinematic_brag.swift.",
+      "tags": [
+        "swift",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 13
+      }
+    },
+    {
+      "id": "function:render_cinematic_brag.swift:drawText",
+      "name": "drawText",
+      "type": "function",
+      "path": "render_cinematic_brag.swift",
+      "summary": "Function drawText in render_cinematic_brag.swift.",
+      "tags": [
+        "swift",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 13
+      }
+    },
+    {
+      "id": "class:render_cinematic_brag.swift:Scene",
+      "name": "Scene",
+      "type": "class",
+      "path": "render_cinematic_brag.swift",
+      "summary": "Class Scene in render_cinematic_brag.swift.",
+      "tags": [
+        "swift",
+        "class"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 9
+      }
+    },
+    {
+      "id": "file:render_video.swift",
+      "name": "render_video.swift",
+      "type": "file",
+      "path": "render_video.swift",
+      "summary": "Code file for render_video.swift (251 lines).",
+      "tags": [
+        "code",
+        "swift"
+      ],
+      "complexity": "moderate",
+      "metrics": {
+        "lines": 251,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "function:render_video.swift:newPixelBuffer",
+      "name": "newPixelBuffer",
+      "type": "function",
+      "path": "render_video.swift",
+      "summary": "Function newPixelBuffer in render_video.swift.",
+      "tags": [
+        "swift",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 13
+      }
+    },
+    {
+      "id": "function:render_video.swift:drawText",
+      "name": "drawText",
+      "type": "function",
+      "path": "render_video.swift",
+      "summary": "Function drawText in render_video.swift.",
+      "tags": [
+        "swift",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 12
+      }
+    },
+    {
+      "id": "class:render_video.swift:Scene",
+      "name": "Scene",
+      "type": "class",
+      "path": "render_video.swift",
+      "summary": "Class Scene in render_video.swift.",
+      "tags": [
+        "swift",
+        "class"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 7
+      }
+    },
+    {
+      "id": "file:web/next.config.mjs",
+      "name": "next.config.mjs",
+      "type": "file",
+      "path": "web/next.config.mjs",
+      "summary": "Code file for next.config.mjs (4 lines).",
+      "tags": [
+        "code",
+        "javascript"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 4,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "file:web/postcss.config.js",
+      "name": "postcss.config.js",
+      "type": "file",
+      "path": "web/postcss.config.js",
+      "summary": "Code file for postcss.config.js (6 lines).",
+      "tags": [
+        "code",
+        "javascript"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 6,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "file:web/src/app/layout.tsx",
+      "name": "layout.tsx",
+      "type": "file",
+      "path": "web/src/app/layout.tsx",
+      "summary": "Code file for layout.tsx (29 lines).",
+      "tags": [
+        "code",
+        "typescript"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 29,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "function:web/src/app/layout.tsx:RootLayout",
+      "name": "RootLayout",
+      "type": "function",
+      "path": "web/src/app/layout.tsx",
+      "summary": "Function RootLayout in layout.tsx.",
+      "tags": [
+        "typescript",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 13
+      }
+    },
+    {
+      "id": "file:web/src/app/page.tsx",
+      "name": "page.tsx",
+      "type": "file",
+      "path": "web/src/app/page.tsx",
+      "summary": "Next.js root page rendering ServiceLandingPage and managing saved reels state.",
+      "tags": [
+        "code",
+        "page",
+        "nextjs",
+        "typescript"
+      ],
+      "complexity": "complex",
+      "metrics": {
+        "lines": 2515,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "function:web/src/app/page.tsx:App",
+      "name": "App",
+      "type": "function",
+      "path": "web/src/app/page.tsx",
+      "summary": "Function App in page.tsx.",
+      "tags": [
+        "typescript",
+        "function"
+      ],
+      "complexity": "moderate",
+      "metrics": {
+        "lines": 2443
+      }
+    },
+    {
+      "id": "file:web/src/components/NumberTicker.tsx",
+      "name": "NumberTicker.tsx",
+      "type": "file",
+      "path": "web/src/components/NumberTicker.tsx",
+      "summary": "Code file for NumberTicker.tsx (62 lines).",
+      "tags": [
+        "code",
+        "typescript"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 62,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "function:web/src/components/NumberTicker.tsx:NumberTicker",
+      "name": "NumberTicker",
+      "type": "function",
+      "path": "web/src/components/NumberTicker.tsx",
+      "summary": "Function NumberTicker in NumberTicker.tsx.",
+      "tags": [
+        "typescript",
+        "function"
+      ],
+      "complexity": "moderate",
+      "metrics": {
+        "lines": 49
+      }
+    },
+    {
+      "id": "file:web/src/components/ProductionLaunchVideo.tsx",
+      "name": "ProductionLaunchVideo.tsx",
+      "type": "file",
+      "path": "web/src/components/ProductionLaunchVideo.tsx",
+      "summary": "Interactive video showcase component featuring native H.264 video player and interactive playback.",
+      "tags": [
+        "showcase",
+        "video",
+        "player",
+        "typescript",
+        "code"
+      ],
+      "complexity": "moderate",
+      "metrics": {
+        "lines": 408,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "function:web/src/components/ProductionLaunchVideo.tsx:ProductionLaunchVideo",
+      "name": "ProductionLaunchVideo",
+      "type": "function",
+      "path": "web/src/components/ProductionLaunchVideo.tsx",
+      "summary": "Function ProductionLaunchVideo in ProductionLaunchVideo.tsx.",
+      "tags": [
+        "typescript",
+        "function"
+      ],
+      "complexity": "moderate",
+      "metrics": {
+        "lines": 385
+      }
+    },
+    {
+      "id": "file:web/src/components/ServiceLandingPage.tsx",
+      "name": "ServiceLandingPage.tsx",
+      "type": "file",
+      "path": "web/src/components/ServiceLandingPage.tsx",
+      "summary": "High-craft marketing landing page with interactive reel dashboard demo, kinetic typography, and feature showcases.",
+      "tags": [
+        "react",
+        "typescript",
+        "tailwind",
+        "landing-page",
+        "code"
+      ],
+      "complexity": "complex",
+      "metrics": {
+        "lines": 788,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "function:web/src/components/ServiceLandingPage.tsx:ServiceLandingPage",
+      "name": "ServiceLandingPage",
+      "type": "function",
+      "path": "web/src/components/ServiceLandingPage.tsx",
+      "summary": "Function ServiceLandingPage in ServiceLandingPage.tsx.",
+      "tags": [
+        "typescript",
+        "function"
+      ],
+      "complexity": "moderate",
+      "metrics": {
+        "lines": 755
+      }
+    },
+    {
+      "id": "file:web/src/components/SplashCursor.tsx",
+      "name": "SplashCursor.tsx",
+      "type": "file",
+      "path": "web/src/components/SplashCursor.tsx",
+      "summary": "WebGL interactive fluid cursor simulation component with physics shaders.",
+      "tags": [
+        "cursor",
+        "shaders",
+        "typescript",
+        "webgl",
+        "code"
+      ],
+      "complexity": "complex",
+      "metrics": {
+        "lines": 1022,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "function:web/src/components/SplashCursor.tsx:clamp",
+      "name": "clamp",
+      "type": "function",
+      "path": "web/src/components/SplashCursor.tsx",
+      "summary": "Function clamp in SplashCursor.tsx.",
+      "tags": [
+        "typescript",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 1
+      }
+    },
+    {
+      "id": "function:web/src/components/SplashCursor.tsx:parseColor",
+      "name": "parseColor",
+      "type": "function",
+      "path": "web/src/components/SplashCursor.tsx",
+      "summary": "Function parseColor in SplashCursor.tsx.",
+      "tags": [
+        "typescript",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 7
+      }
+    },
+    {
+      "id": "function:web/src/components/SplashCursor.tsx:hsv",
+      "name": "hsv",
+      "type": "function",
+      "path": "web/src/components/SplashCursor.tsx",
+      "summary": "Function hsv in SplashCursor.tsx.",
+      "tags": [
+        "typescript",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 14
+      }
+    },
+    {
+      "id": "function:web/src/components/SplashCursor.tsx:SplashCursor",
+      "name": "SplashCursor",
+      "type": "function",
+      "path": "web/src/components/SplashCursor.tsx",
+      "summary": "Function SplashCursor in SplashCursor.tsx.",
+      "tags": [
+        "typescript",
+        "function"
+      ],
+      "complexity": "moderate",
+      "metrics": {
+        "lines": 745
+      }
+    },
+    {
+      "id": "file:web/src/components/brag-plan.md",
+      "name": "brag-plan.md",
+      "type": "file",
+      "path": "web/src/components/brag-plan.md",
+      "summary": "Docs file for brag-plan.md (14 lines).",
+      "tags": [
+        "docs",
+        "markdown"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 14,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "file:web/src/lib/supabase.ts",
+      "name": "supabase.ts",
+      "type": "file",
+      "path": "web/src/lib/supabase.ts",
+      "summary": "Code file for supabase.ts (7 lines).",
+      "tags": [
+        "code",
+        "typescript"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 7,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "file:web/src/types/database.ts",
+      "name": "database.ts",
+      "type": "file",
+      "path": "web/src/types/database.ts",
+      "summary": "Code file for database.ts (55 lines).",
+      "tags": [
+        "code",
+        "typescript"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 55,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "file:web/tailwind.config.ts",
+      "name": "tailwind.config.ts",
+      "type": "file",
+      "path": "web/tailwind.config.ts",
+      "summary": "Code file for tailwind.config.ts (30 lines).",
+      "tags": [
+        "code",
+        "typescript"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 30,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "file:brag-output/share-copy.txt",
+      "name": "share-copy.txt",
+      "type": "file",
+      "path": "brag-output/share-copy.txt",
+      "summary": "Project file share-copy.txt.",
+      "tags": [
+        "txt"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 10
+      }
+    },
+    {
+      "id": "file:web/public/launch-video.html",
+      "name": "launch-video.html",
+      "type": "file",
+      "path": "web/public/launch-video.html",
+      "summary": "Project file launch-video.html.",
+      "tags": [
+        "html"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 10
+      }
+    },
+    {
+      "id": "file:web/src/app/globals.css",
+      "name": "globals.css",
+      "type": "file",
+      "path": "web/src/app/globals.css",
+      "summary": "Project file globals.css.",
+      "tags": [
+        "css"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 10
+      }
+    },
+    {
+      "id": "file:web/src/components/SplashCursor.css",
+      "name": "SplashCursor.css",
+      "type": "file",
+      "path": "web/src/components/SplashCursor.css",
+      "summary": "Project file SplashCursor.css.",
+      "tags": [
+        "css"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 10
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/ReelVaultApp.kt",
+      "target": "function:android/app/src/main/java/com/reelvault/app/ReelVaultApp.kt:onCreate",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/ReelVaultApp.kt",
+      "target": "function:android/app/src/main/java/com/reelvault/app/ReelVaultApp.kt:createNotificationChannels",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/ReelVaultApp.kt",
+      "target": "class:android/app/src/main/java/com/reelvault/app/ReelVaultApp.kt:ReelVaultApp",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/data/AppDatabase.kt",
+      "target": "function:android/app/src/main/java/com/reelvault/app/data/AppDatabase.kt:reelDao",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/data/AppDatabase.kt",
+      "target": "class:android/app/src/main/java/com/reelvault/app/data/AppDatabase.kt:AppDatabase",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/data/LocalReel.kt",
+      "target": "class:android/app/src/main/java/com/reelvault/app/data/LocalReel.kt:LocalReel",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/data/ReelDao.kt",
+      "target": "function:android/app/src/main/java/com/reelvault/app/data/ReelDao.kt:getReelByUrl",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/data/ReelDao.kt",
+      "target": "function:android/app/src/main/java/com/reelvault/app/data/ReelDao.kt:getPendingReels",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/data/ReelDao.kt",
+      "target": "function:android/app/src/main/java/com/reelvault/app/data/ReelDao.kt:insertReel",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/data/ReelDao.kt",
+      "target": "function:android/app/src/main/java/com/reelvault/app/data/ReelDao.kt:updateReel",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/data/ReelDao.kt",
+      "target": "function:android/app/src/main/java/com/reelvault/app/data/ReelDao.kt:markSynced",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/data/ReelDao.kt",
+      "target": "function:android/app/src/main/java/com/reelvault/app/data/ReelDao.kt:markPendingAuthAsPendingSync",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/data/ReelDao.kt",
+      "target": "class:android/app/src/main/java/com/reelvault/app/data/ReelDao.kt:ReelDao",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/receiver/ManualSyncReceiver.kt",
+      "target": "function:android/app/src/main/java/com/reelvault/app/receiver/ManualSyncReceiver.kt:onReceive",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/receiver/ManualSyncReceiver.kt",
+      "target": "class:android/app/src/main/java/com/reelvault/app/receiver/ManualSyncReceiver.kt:ManualSyncReceiver",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/sync/ReelSyncWorker.kt",
+      "target": "function:android/app/src/main/java/com/reelvault/app/sync/ReelSyncWorker.kt:doWork",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/sync/ReelSyncWorker.kt",
+      "target": "class:android/app/src/main/java/com/reelvault/app/sync/ReelSyncWorker.kt:ReelSyncWorker",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/ui/MainActivity.kt",
+      "target": "function:android/app/src/main/java/com/reelvault/app/ui/MainActivity.kt:onCreate",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/ui/MainActivity.kt",
+      "target": "function:android/app/src/main/java/com/reelvault/app/ui/MainActivity.kt:onResume",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/ui/MainActivity.kt",
+      "target": "function:android/app/src/main/java/com/reelvault/app/ui/MainActivity.kt:checkDeviceRegistration",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/ui/MainActivity.kt",
+      "target": "function:android/app/src/main/java/com/reelvault/app/ui/MainActivity.kt:AuthScreen",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/ui/MainActivity.kt",
+      "target": "function:android/app/src/main/java/com/reelvault/app/ui/MainActivity.kt:SettingsScreen",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/ui/MainActivity.kt",
+      "target": "function:android/app/src/main/java/com/reelvault/app/ui/MainActivity.kt:registerDevice",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/ui/MainActivity.kt",
+      "target": "class:android/app/src/main/java/com/reelvault/app/ui/MainActivity.kt:MainActivity",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/ui/ShareCaptureActivity.kt",
+      "target": "function:android/app/src/main/java/com/reelvault/app/ui/ShareCaptureActivity.kt:getNotificationManager",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/ui/ShareCaptureActivity.kt",
+      "target": "function:android/app/src/main/java/com/reelvault/app/ui/ShareCaptureActivity.kt:showProgressNotification",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/ui/ShareCaptureActivity.kt",
+      "target": "function:android/app/src/main/java/com/reelvault/app/ui/ShareCaptureActivity.kt:onCreate",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/ui/ShareCaptureActivity.kt",
+      "target": "class:android/app/src/main/java/com/reelvault/app/ui/ShareCaptureActivity.kt:ShareCaptureActivity",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt",
+      "target": "function:android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt:isOnline",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt",
+      "target": "function:android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt:start",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt",
+      "target": "function:android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt:handleNetworkChange",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt",
+      "target": "function:android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt:createNotificationChannel",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt",
+      "target": "function:android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt:showConnectedClickToSyncNotification",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt",
+      "target": "function:android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt:showOfflineNotification",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt",
+      "target": "function:android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt:dismissNotification",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt",
+      "target": "class:android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt:NetworkMonitor",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt",
+      "target": "function:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt:getPrefs",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt",
+      "target": "function:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt:saveSession",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt",
+      "target": "function:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt:setDeviceRegistered",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt",
+      "target": "function:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt:isDeviceRegistered",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt",
+      "target": "function:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt:clearSession",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt",
+      "target": "function:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt:isLoggedIn",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt",
+      "target": "function:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt:getUserId",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt",
+      "target": "function:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt:getUserEmail",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt",
+      "target": "function:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt:getAccessToken",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt",
+      "target": "function:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt:getRefreshToken",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt",
+      "target": "class:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt:PreferenceManager",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/util/UrlHelper.kt",
+      "target": "function:android/app/src/main/java/com/reelvault/app/util/UrlHelper.kt:extractAndNormalizeReelUrl",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:android/app/src/main/java/com/reelvault/app/util/UrlHelper.kt",
+      "target": "class:android/app/src/main/java/com/reelvault/app/util/UrlHelper.kt:UrlHelper",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:backend/src/worker.js",
+      "target": "function:backend/src/worker.js:decodeHtmlEntities",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:backend/src/worker.js",
+      "target": "function:backend/src/worker.js:extractShortcode",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:backend/src/worker.js",
+      "target": "function:backend/src/worker.js:extractViaOpenGraph",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:backend/src/worker.js",
+      "target": "function:backend/src/worker.js:extractInstagramData",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:backend/src/worker.js",
+      "target": "function:backend/src/worker.js:categorizeWithGroq",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:backend/src/worker.js",
+      "target": "function:backend/src/worker.js:processReel",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:backend/src/worker.js",
+      "target": "function:backend/src/worker.js:cleanupEmptyCategories",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:backend/src/worker.js",
+      "target": "function:backend/src/worker.js:runLoop",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:render_cinematic_brag.swift",
+      "target": "function:render_cinematic_brag.swift:newPixelBuffer",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:render_cinematic_brag.swift",
+      "target": "function:render_cinematic_brag.swift:drawText",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:render_cinematic_brag.swift",
+      "target": "class:render_cinematic_brag.swift:Scene",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:render_video.swift",
+      "target": "function:render_video.swift:newPixelBuffer",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:render_video.swift",
+      "target": "function:render_video.swift:drawText",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:render_video.swift",
+      "target": "class:render_video.swift:Scene",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:web/src/app/layout.tsx",
+      "target": "function:web/src/app/layout.tsx:RootLayout",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:web/src/app/page.tsx",
+      "target": "function:web/src/app/page.tsx:App",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:web/src/components/NumberTicker.tsx",
+      "target": "function:web/src/components/NumberTicker.tsx:NumberTicker",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:web/src/components/ProductionLaunchVideo.tsx",
+      "target": "function:web/src/components/ProductionLaunchVideo.tsx:ProductionLaunchVideo",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:web/src/components/ServiceLandingPage.tsx",
+      "target": "function:web/src/components/ServiceLandingPage.tsx:ServiceLandingPage",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:web/src/components/SplashCursor.tsx",
+      "target": "function:web/src/components/SplashCursor.tsx:clamp",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:web/src/components/SplashCursor.tsx",
+      "target": "function:web/src/components/SplashCursor.tsx:parseColor",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:web/src/components/SplashCursor.tsx",
+      "target": "function:web/src/components/SplashCursor.tsx:hsv",
+      "type": "defines",
+      "direction": "forward"
+    },
+    {
+      "source": "file:web/src/components/SplashCursor.tsx",
+      "target": "function:web/src/components/SplashCursor.tsx:SplashCursor",
+      "type": "defines",
+      "direction": "forward"
+    }
+  ],
+  "layers": [
+    {
+      "id": "layer:android-client",
+      "name": "Android Application",
+      "description": "Android mobile client for silent Reel share capture, offline queueing with Room, and WorkManager background sync.",
+      "nodeIds": [
+        "file:android/app/src/main/java/com/reelvault/app/ReelVaultApp.kt",
+        "function:android/app/src/main/java/com/reelvault/app/ReelVaultApp.kt:onCreate",
+        "function:android/app/src/main/java/com/reelvault/app/ReelVaultApp.kt:createNotificationChannels",
+        "class:android/app/src/main/java/com/reelvault/app/ReelVaultApp.kt:ReelVaultApp",
+        "file:android/app/src/main/java/com/reelvault/app/data/AppDatabase.kt",
+        "function:android/app/src/main/java/com/reelvault/app/data/AppDatabase.kt:reelDao",
+        "class:android/app/src/main/java/com/reelvault/app/data/AppDatabase.kt:AppDatabase",
+        "file:android/app/src/main/java/com/reelvault/app/data/LocalReel.kt",
+        "class:android/app/src/main/java/com/reelvault/app/data/LocalReel.kt:LocalReel",
+        "file:android/app/src/main/java/com/reelvault/app/data/ReelDao.kt",
+        "function:android/app/src/main/java/com/reelvault/app/data/ReelDao.kt:getReelByUrl",
+        "function:android/app/src/main/java/com/reelvault/app/data/ReelDao.kt:getPendingReels",
+        "function:android/app/src/main/java/com/reelvault/app/data/ReelDao.kt:insertReel",
+        "function:android/app/src/main/java/com/reelvault/app/data/ReelDao.kt:updateReel",
+        "function:android/app/src/main/java/com/reelvault/app/data/ReelDao.kt:markSynced",
+        "function:android/app/src/main/java/com/reelvault/app/data/ReelDao.kt:markPendingAuthAsPendingSync",
+        "class:android/app/src/main/java/com/reelvault/app/data/ReelDao.kt:ReelDao",
+        "file:android/app/src/main/java/com/reelvault/app/receiver/ManualSyncReceiver.kt",
+        "function:android/app/src/main/java/com/reelvault/app/receiver/ManualSyncReceiver.kt:onReceive",
+        "class:android/app/src/main/java/com/reelvault/app/receiver/ManualSyncReceiver.kt:ManualSyncReceiver",
+        "file:android/app/src/main/java/com/reelvault/app/sync/ReelSyncWorker.kt",
+        "function:android/app/src/main/java/com/reelvault/app/sync/ReelSyncWorker.kt:doWork",
+        "class:android/app/src/main/java/com/reelvault/app/sync/ReelSyncWorker.kt:ReelSyncWorker",
+        "file:android/app/src/main/java/com/reelvault/app/ui/MainActivity.kt",
+        "function:android/app/src/main/java/com/reelvault/app/ui/MainActivity.kt:onCreate",
+        "function:android/app/src/main/java/com/reelvault/app/ui/MainActivity.kt:onResume",
+        "function:android/app/src/main/java/com/reelvault/app/ui/MainActivity.kt:checkDeviceRegistration",
+        "function:android/app/src/main/java/com/reelvault/app/ui/MainActivity.kt:AuthScreen",
+        "function:android/app/src/main/java/com/reelvault/app/ui/MainActivity.kt:SettingsScreen",
+        "function:android/app/src/main/java/com/reelvault/app/ui/MainActivity.kt:registerDevice",
+        "class:android/app/src/main/java/com/reelvault/app/ui/MainActivity.kt:MainActivity",
+        "file:android/app/src/main/java/com/reelvault/app/ui/ShareCaptureActivity.kt",
+        "function:android/app/src/main/java/com/reelvault/app/ui/ShareCaptureActivity.kt:getNotificationManager",
+        "function:android/app/src/main/java/com/reelvault/app/ui/ShareCaptureActivity.kt:showProgressNotification",
+        "function:android/app/src/main/java/com/reelvault/app/ui/ShareCaptureActivity.kt:onCreate",
+        "class:android/app/src/main/java/com/reelvault/app/ui/ShareCaptureActivity.kt:ShareCaptureActivity",
+        "file:android/app/src/main/java/com/reelvault/app/ui/theme/Color.kt",
+        "file:android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt",
+        "function:android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt:isOnline",
+        "function:android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt:start",
+        "function:android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt:handleNetworkChange",
+        "function:android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt:createNotificationChannel",
+        "function:android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt:showConnectedClickToSyncNotification",
+        "function:android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt:showOfflineNotification",
+        "function:android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt:dismissNotification",
+        "class:android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt:NetworkMonitor",
+        "file:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt",
+        "function:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt:getPrefs",
+        "function:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt:saveSession",
+        "function:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt:setDeviceRegistered",
+        "function:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt:isDeviceRegistered",
+        "function:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt:clearSession",
+        "function:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt:isLoggedIn",
+        "function:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt:getUserId",
+        "function:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt:getUserEmail",
+        "function:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt:getAccessToken",
+        "function:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt:getRefreshToken",
+        "class:android/app/src/main/java/com/reelvault/app/util/PreferenceManager.kt:PreferenceManager",
+        "file:android/app/src/main/java/com/reelvault/app/util/UrlHelper.kt",
+        "function:android/app/src/main/java/com/reelvault/app/util/UrlHelper.kt:extractAndNormalizeReelUrl",
+        "class:android/app/src/main/java/com/reelvault/app/util/UrlHelper.kt:UrlHelper",
+        "file:android/app/src/main/AndroidManifest.xml",
+        "file:android/app/src/main/res/values/strings.xml",
+        "file:android/app/src/main/res/values/themes.xml"
+      ]
+    },
+    {
+      "id": "layer:backend-api",
+      "name": "Cloudflare Backend & Worker",
+      "description": "Serverless edge worker handling Reel capture API, metadata extraction, Supabase sync, and Telegram notifications.",
+      "nodeIds": [
+        "file:backend/package.json",
+        "file:backend/src/worker.js",
+        "function:backend/src/worker.js:decodeHtmlEntities",
+        "function:backend/src/worker.js:extractShortcode",
+        "function:backend/src/worker.js:extractViaOpenGraph",
+        "function:backend/src/worker.js:extractInstagramData",
+        "function:backend/src/worker.js:categorizeWithGroq",
+        "function:backend/src/worker.js:processReel",
+        "function:backend/src/worker.js:cleanupEmptyCategories",
+        "function:backend/src/worker.js:runLoop"
+      ]
+    },
+    {
+      "id": "layer:web-frontend",
+      "name": "Web Dashboard & Landing Page",
+      "description": "Next.js frontend application featuring high-craft landing page, WebGL fluid cursor, interactive video showcase, and Reel library dashboard.",
+      "nodeIds": [
+        "file:web/src/app/layout.tsx",
+        "function:web/src/app/layout.tsx:RootLayout",
+        "file:web/src/app/page.tsx",
+        "function:web/src/app/page.tsx:App",
+        "file:web/src/components/NumberTicker.tsx",
+        "function:web/src/components/NumberTicker.tsx:NumberTicker",
+        "file:web/src/components/ProductionLaunchVideo.tsx",
+        "function:web/src/components/ProductionLaunchVideo.tsx:ProductionLaunchVideo",
+        "file:web/src/components/ServiceLandingPage.tsx",
+        "function:web/src/components/ServiceLandingPage.tsx:ServiceLandingPage",
+        "file:web/src/components/SplashCursor.tsx",
+        "function:web/src/components/SplashCursor.tsx:clamp",
+        "function:web/src/components/SplashCursor.tsx:parseColor",
+        "function:web/src/components/SplashCursor.tsx:hsv",
+        "function:web/src/components/SplashCursor.tsx:SplashCursor",
+        "file:web/src/components/brag-plan.md",
+        "file:web/src/lib/supabase.ts",
+        "file:web/src/types/database.ts",
+        "file:web/public/launch-video.html",
+        "file:web/src/app/globals.css",
+        "file:web/src/components/SplashCursor.css"
+      ]
+    },
+    {
+      "id": "layer:media-production",
+      "name": "Media & Creative Pipelines",
+      "description": "Native macOS Swift automation scripts for high-res video rendering, frame animation, and launch asset synthesis.",
+      "nodeIds": [
+        "file:brag-output/brag-plan.md",
+        "file:extract_poster.swift",
+        "file:render_cinematic_brag.swift",
+        "function:render_cinematic_brag.swift:newPixelBuffer",
+        "function:render_cinematic_brag.swift:drawText",
+        "class:render_cinematic_brag.swift:Scene",
+        "file:render_video.swift",
+        "function:render_video.swift:newPixelBuffer",
+        "function:render_video.swift:drawText",
+        "class:render_video.swift:Scene",
+        "file:brag-output/share-copy.txt"
+      ]
+    },
+    {
+      "id": "layer:configuration",
+      "name": "Configuration & Infrastructure",
+      "description": "Build configs, Gradle wrappers, Tailwind styling, and TypeScript setup.",
+      "nodeIds": [
+        "file:web/README.md",
+        "file:web/package.json",
+        "file:web/tsconfig.json",
+        "file:web/crazy curso.txt",
+        "file:android/app/build.gradle.kts",
+        "file:android/build.gradle.kts",
+        "file:android/settings.gradle.kts",
+        "file:android/gradle.properties",
+        "file:android/gradle/wrapper/gradle-wrapper.jar",
+        "file:android/gradle/wrapper/gradle-wrapper.properties",
+        "file:android/gradlew",
+        "file:web/next.config.mjs",
+        "file:web/postcss.config.js",
+        "file:web/tailwind.config.ts"
+      ]
+    }
+  ],
+  "tour": [
+    {
+      "order": 1,
+      "title": "Welcome to Watch Later",
+      "description": "Watch Later transforms scattered Instagram Reel saves into a unified, AI-categorized personal knowledge library. Let's tour the architecture across Android, Backend, and Web.",
+      "nodeIds": [
+        "file:backend/src/worker.js",
+        "file:web/src/app/page.tsx",
+        "file:android/app/src/main/java/com/reelvault/app/ui/MainActivity.kt"
+      ]
+    },
+    {
+      "order": 2,
+      "title": "Android Silent Share Capture",
+      "description": "ShareCaptureActivity intercepts incoming ACTION_SEND intents from Instagram with zero UI interruption, normalizing URLs via UrlHelper and enqueueing locally.",
+      "nodeIds": [
+        "file:android/app/src/main/java/com/reelvault/app/ui/ShareCaptureActivity.kt",
+        "file:android/app/src/main/java/com/reelvault/app/util/UrlHelper.kt"
+      ]
+    },
+    {
+      "order": 3,
+      "title": "Room Persistence & WorkManager Sync",
+      "description": "Saved reels are stored in Room database (LocalReel & ReelDao) and synced via ReelSyncWorker with exponential backoff and network monitoring.",
+      "nodeIds": [
+        "file:android/app/src/main/java/com/reelvault/app/data/AppDatabase.kt",
+        "file:android/app/src/main/java/com/reelvault/app/sync/ReelSyncWorker.kt",
+        "file:android/app/src/main/java/com/reelvault/app/util/NetworkMonitor.kt"
+      ]
+    },
+    {
+      "order": 4,
+      "title": "Cloudflare Serverless Edge Worker",
+      "description": "Backend worker ingests reel URLs, coordinates authentication with Supabase, triggers metadata extraction, and publishes real-time alerts.",
+      "nodeIds": [
+        "file:backend/src/worker.js"
+      ]
+    },
+    {
+      "order": 5,
+      "title": "Kinetic Landing Page & Interactive Showcase",
+      "description": "ServiceLandingPage delivers a bespoke showcase with WebGL fluid cursor interaction (SplashCursor), interactive Reel dashboard preview, and native launch video playback.",
+      "nodeIds": [
+        "file:web/src/components/ServiceLandingPage.tsx",
+        "file:web/src/components/SplashCursor.tsx",
+        "file:web/src/components/ProductionLaunchVideo.tsx"
+      ]
+    },
+    {
+      "order": 6,
+      "title": "Swift Video Rendering Pipelines",
+      "description": "Native AVFoundation Swift scripts render 60fps cinematic launch videos with typography and scene motion directly from project assets.",
+      "nodeIds": [
+        "file:render_video.swift",
+        "file:render_cinematic_brag.swift"
+      ]
+    }
+  ]
+}

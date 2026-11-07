@@ -1,0 +1,47 @@
+{
+  "issues": [],
+  "warnings": [
+    "Node \"file:web/README.md\" has no edges (orphan)",
+    "Node \"file:web/package.json\" has no edges (orphan)",
+    "Node \"file:web/tsconfig.json\" has no edges (orphan)",
+    "Node \"file:web/crazy curso.txt\" has no edges (orphan)",
+    "Node \"file:android/app/build.gradle.kts\" has no edges (orphan)",
+    "Node \"file:android/app/src/main/java/com/reelvault/app/ui/theme/Color.kt\" has no edges (orphan)",
+    "Node \"file:android/build.gradle.kts\" has no edges (orphan)",
+    "Node \"file:android/settings.gradle.kts\" has no edges (orphan)",
+    "Node \"file:backend/package.json\" has no edges (orphan)",
+    "Node \"file:brag-output/brag-plan.md\" has no edges (orphan)",
+    "Node \"file:android/app/src/main/AndroidManifest.xml\" has no edges (orphan)",
+    "Node \"file:android/app/src/main/res/values/strings.xml\" has no edges (orphan)",
+    "Node \"file:android/app/src/main/res/values/themes.xml\" has no edges (orphan)",
+    "Node \"file:android/gradle.properties\" has no edges (orphan)",
+    "Node \"file:android/gradle/wrapper/gradle-wrapper.jar\" has no edges (orphan)",
+    "Node \"file:android/gradle/wrapper/gradle-wrapper.properties\" has no edges (orphan)",
+    "Node \"file:android/gradlew\" has no edges (orphan)",
+    "Node \"file:extract_poster.swift\" has no edges (orphan)",
+    "Node \"file:web/next.config.mjs\" has no edges (orphan)",
+    "Node \"file:web/postcss.config.js\" has no edges (orphan)",
+    "Node \"file:web/src/components/brag-plan.md\" has no edges (orphan)",
+    "Node \"file:web/src/lib/supabase.ts\" has no edges (orphan)",
+    "Node \"file:web/src/types/database.ts\" has no edges (orphan)",
+    "Node \"file:web/tailwind.config.ts\" has no edges (orphan)",
+    "Node \"file:brag-output/share-copy.txt\" has no edges (orphan)",
+    "Node \"file:web/public/launch-video.html\" has no edges (orphan)",
+    "Node \"file:web/src/app/globals.css\" has no edges (orphan)",
+    "Node \"file:web/src/components/SplashCursor.css\" has no edges (orphan)"
+  ],
+  "stats": {
+    "totalNodes": 120,
+    "totalEdges": 72,
+    "totalLayers": 5,
+    "tourSteps": 6,
+    "nodeTypes": {
+      "file": 48,
+      "function": 59,
+      "class": 13
+    },
+    "edgeTypes": {
+      "defines": 72
+    }
+  }
+}

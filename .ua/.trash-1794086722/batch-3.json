@@ -1,0 +1,631 @@
+{
+  "schemaVersion": 1,
+  "batchIndex": 3,
+  "totalBatches": 3,
+  "nodes": [
+    {
+      "id": "file:extract_poster.swift",
+      "name": "extract_poster.swift",
+      "type": "file",
+      "path": "extract_poster.swift",
+      "summary": "Code file for extract_poster.swift (31 lines).",
+      "tags": [
+        "code",
+        "swift"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 31,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "file:render_cinematic_brag.swift",
+      "name": "render_cinematic_brag.swift",
+      "type": "file",
+      "path": "render_cinematic_brag.swift",
+      "summary": "Code file for render_cinematic_brag.swift (333 lines).",
+      "tags": [
+        "code",
+        "swift"
+      ],
+      "complexity": "moderate",
+      "metrics": {
+        "lines": 333,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "function:render_cinematic_brag.swift:newPixelBuffer",
+      "name": "newPixelBuffer",
+      "type": "function",
+      "path": "render_cinematic_brag.swift",
+      "summary": "Function newPixelBuffer in render_cinematic_brag.swift.",
+      "tags": [
+        "swift",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 13
+      }
+    },
+    {
+      "id": "function:render_cinematic_brag.swift:drawText",
+      "name": "drawText",
+      "type": "function",
+      "path": "render_cinematic_brag.swift",
+      "summary": "Function drawText in render_cinematic_brag.swift.",
+      "tags": [
+        "swift",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 13
+      }
+    },
+    {
+      "id": "class:render_cinematic_brag.swift:Scene",
+      "name": "Scene",
+      "type": "class",
+      "path": "render_cinematic_brag.swift",
+      "summary": "Class Scene in render_cinematic_brag.swift.",
+      "tags": [
+        "swift",
+        "class"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 9
+      }
+    },
+    {
+      "id": "file:render_video.swift",
+      "name": "render_video.swift",
+      "type": "file",
+      "path": "render_video.swift",
+      "summary": "Code file for render_video.swift (251 lines).",
+      "tags": [
+        "code",
+        "swift"
+      ],
+      "complexity": "moderate",
+      "metrics": {
+        "lines": 251,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "function:render_video.swift:newPixelBuffer",
+      "name": "newPixelBuffer",
+      "type": "function",
+      "path": "render_video.swift",
+      "summary": "Function newPixelBuffer in render_video.swift.",
+      "tags": [
+        "swift",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 13
+      }
+    },
+    {
+      "id": "function:render_video.swift:drawText",
+      "name": "drawText",
+      "type": "function",
+      "path": "render_video.swift",
+      "summary": "Function drawText in render_video.swift.",
+      "tags": [
+        "swift",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 12
+      }
+    },
+    {
+      "id": "class:render_video.swift:Scene",
+      "name": "Scene",
+      "type": "class",
+      "path": "render_video.swift",
+      "summary": "Class Scene in render_video.swift.",
+      "tags": [
+        "swift",
+        "class"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 7
+      }
+    },
+    {
+      "id": "file:web/next.config.mjs",
+      "name": "next.config.mjs",
+      "type": "file",
+      "path": "web/next.config.mjs",
+      "summary": "Code file for next.config.mjs (4 lines).",
+      "tags": [
+        "code",
+        "javascript"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 4,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "file:web/postcss.config.js",
+      "name": "postcss.config.js",
+      "type": "file",
+      "path": "web/postcss.config.js",
+      "summary": "Code file for postcss.config.js (6 lines).",
+      "tags": [
+        "code",
+        "javascript"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 6,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "file:web/src/app/layout.tsx",
+      "name": "layout.tsx",
+      "type": "file",
+      "path": "web/src/app/layout.tsx",
+      "summary": "Code file for layout.tsx (29 lines).",
+      "tags": [
+        "code",
+        "typescript"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 29,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "function:web/src/app/layout.tsx:RootLayout",
+      "name": "RootLayout",
+      "type": "function",
+      "path": "web/src/app/layout.tsx",
+      "summary": "Function RootLayout in layout.tsx.",
+      "tags": [
+        "typescript",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 13
+      }
+    },
+    {
+      "id": "file:web/src/app/page.tsx",
+      "name": "page.tsx",
+      "type": "file",
+      "path": "web/src/app/page.tsx",
+      "summary": "Next.js root page rendering ServiceLandingPage and managing saved reels state.",
+      "tags": [
+        "code",
+        "page",
+        "nextjs",
+        "typescript"
+      ],
+      "complexity": "complex",
+      "metrics": {
+        "lines": 2515,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "function:web/src/app/page.tsx:App",
+      "name": "App",
+      "type": "function",
+      "path": "web/src/app/page.tsx",
+      "summary": "Function App in page.tsx.",
+      "tags": [
+        "typescript",
+        "function"
+      ],
+      "complexity": "moderate",
+      "metrics": {
+        "lines": 2443
+      }
+    },
+    {
+      "id": "file:web/src/components/NumberTicker.tsx",
+      "name": "NumberTicker.tsx",
+      "type": "file",
+      "path": "web/src/components/NumberTicker.tsx",
+      "summary": "Code file for NumberTicker.tsx (62 lines).",
+      "tags": [
+        "code",
+        "typescript"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 62,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "function:web/src/components/NumberTicker.tsx:NumberTicker",
+      "name": "NumberTicker",
+      "type": "function",
+      "path": "web/src/components/NumberTicker.tsx",
+      "summary": "Function NumberTicker in NumberTicker.tsx.",
+      "tags": [
+        "typescript",
+        "function"
+      ],
+      "complexity": "moderate",
+      "metrics": {
+        "lines": 49
+      }
+    },
+    {
+      "id": "file:web/src/components/ProductionLaunchVideo.tsx",
+      "name": "ProductionLaunchVideo.tsx",
+      "type": "file",
+      "path": "web/src/components/ProductionLaunchVideo.tsx",
+      "summary": "Interactive video showcase component featuring native H.264 video player and interactive playback.",
+      "tags": [
+        "showcase",
+        "video",
+        "player",
+        "typescript",
+        "code"
+      ],
+      "complexity": "moderate",
+      "metrics": {
+        "lines": 408,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "function:web/src/components/ProductionLaunchVideo.tsx:ProductionLaunchVideo",
+      "name": "ProductionLaunchVideo",
+      "type": "function",
+      "path": "web/src/components/ProductionLaunchVideo.tsx",
+      "summary": "Function ProductionLaunchVideo in ProductionLaunchVideo.tsx.",
+      "tags": [
+        "typescript",
+        "function"
+      ],
+      "complexity": "moderate",
+      "metrics": {
+        "lines": 385
+      }
+    },
+    {
+      "id": "file:web/src/components/ServiceLandingPage.tsx",
+      "name": "ServiceLandingPage.tsx",
+      "type": "file",
+      "path": "web/src/components/ServiceLandingPage.tsx",
+      "summary": "High-craft marketing landing page with interactive reel dashboard demo, kinetic typography, and feature showcases.",
+      "tags": [
+        "react",
+        "typescript",
+        "tailwind",
+        "landing-page",
+        "code"
+      ],
+      "complexity": "complex",
+      "metrics": {
+        "lines": 788,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "function:web/src/components/ServiceLandingPage.tsx:ServiceLandingPage",
+      "name": "ServiceLandingPage",
+      "type": "function",
+      "path": "web/src/components/ServiceLandingPage.tsx",
+      "summary": "Function ServiceLandingPage in ServiceLandingPage.tsx.",
+      "tags": [
+        "typescript",
+        "function"
+      ],
+      "complexity": "moderate",
+      "metrics": {
+        "lines": 755
+      }
+    },
+    {
+      "id": "file:web/src/components/SplashCursor.tsx",
+      "name": "SplashCursor.tsx",
+      "type": "file",
+      "path": "web/src/components/SplashCursor.tsx",
+      "summary": "WebGL interactive fluid cursor simulation component with physics shaders.",
+      "tags": [
+        "cursor",
+        "shaders",
+        "typescript",
+        "webgl",
+        "code"
+      ],
+      "complexity": "complex",
+      "metrics": {
+        "lines": 1022,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "function:web/src/components/SplashCursor.tsx:clamp",
+      "name": "clamp",
+      "type": "function",
+      "path": "web/src/components/SplashCursor.tsx",
+      "summary": "Function clamp in SplashCursor.tsx.",
+      "tags": [
+        "typescript",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 1
+      }
+    },
+    {
+      "id": "function:web/src/components/SplashCursor.tsx:parseColor",
+      "name": "parseColor",
+      "type": "function",
+      "path": "web/src/components/SplashCursor.tsx",
+      "summary": "Function parseColor in SplashCursor.tsx.",
+      "tags": [
+        "typescript",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 7
+      }
+    },
+    {
+      "id": "function:web/src/components/SplashCursor.tsx:hsv",
+      "name": "hsv",
+      "type": "function",
+      "path": "web/src/components/SplashCursor.tsx",
+      "summary": "Function hsv in SplashCursor.tsx.",
+      "tags": [
+        "typescript",
+        "function"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 14
+      }
+    },
+    {
+      "id": "function:web/src/components/SplashCursor.tsx:SplashCursor",
+      "name": "SplashCursor",
+      "type": "function",
+      "path": "web/src/components/SplashCursor.tsx",
+      "summary": "Function SplashCursor in SplashCursor.tsx.",
+      "tags": [
+        "typescript",
+        "function"
+      ],
+      "complexity": "moderate",
+      "metrics": {
+        "lines": 745
+      }
+    },
+    {
+      "id": "file:web/src/components/brag-plan.md",
+      "name": "brag-plan.md",
+      "type": "file",
+      "path": "web/src/components/brag-plan.md",
+      "summary": "Docs file for brag-plan.md (14 lines).",
+      "tags": [
+        "docs",
+        "markdown"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 14,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "file:web/src/lib/supabase.ts",
+      "name": "supabase.ts",
+      "type": "file",
+      "path": "web/src/lib/supabase.ts",
+      "summary": "Code file for supabase.ts (7 lines).",
+      "tags": [
+        "code",
+        "typescript"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 7,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "file:web/src/types/database.ts",
+      "name": "database.ts",
+      "type": "file",
+      "path": "web/src/types/database.ts",
+      "summary": "Code file for database.ts (55 lines).",
+      "tags": [
+        "code",
+        "typescript"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 55,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "file:web/tailwind.config.ts",
+      "name": "tailwind.config.ts",
+      "type": "file",
+      "path": "web/tailwind.config.ts",
+      "summary": "Code file for tailwind.config.ts (30 lines).",
+      "tags": [
+        "code",
+        "typescript"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 30,
+        "fanIn": 0,
+        "fanOut": 0
+      }
+    },
+    {
+      "id": "file:brag-output/share-copy.txt",
+      "name": "share-copy.txt",
+      "type": "file",
+      "path": "brag-output/share-copy.txt",
+      "summary": "Project file share-copy.txt.",
+      "tags": [
+        "txt"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 10
+      }
+    },
+    {
+      "id": "file:web/public/launch-video.html",
+      "name": "launch-video.html",
+      "type": "file",
+      "path": "web/public/launch-video.html",
+      "summary": "Project file launch-video.html.",
+      "tags": [
+        "html"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 10
+      }
+    },
+    {
+      "id": "file:web/src/app/globals.css",
+      "name": "globals.css",
+      "type": "file",
+      "path": "web/src/app/globals.css",
+      "summary": "Project file globals.css.",
+      "tags": [
+        "css"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 10
+      }
+    },
+    {
+      "id": "file:web/src/components/SplashCursor.css",
+      "name": "SplashCursor.css",
+      "type": "file",
+      "path": "web/src/components/SplashCursor.css",
+      "summary": "Project file SplashCursor.css.",
+      "tags": [
+        "css"
+      ],
+      "complexity": "simple",
+      "metrics": {
+        "lines": 10
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:render_cinematic_brag.swift",
+      "target": "function:render_cinematic_brag.swift:newPixelBuffer",
+      "type": "defines"
+    },
+    {
+      "source": "file:render_cinematic_brag.swift",
+      "target": "function:render_cinematic_brag.swift:drawText",
+      "type": "defines"
+    },
+    {
+      "source": "file:render_cinematic_brag.swift",
+      "target": "class:render_cinematic_brag.swift:Scene",
+      "type": "defines"
+    },
+    {
+      "source": "file:render_video.swift",
+      "target": "function:render_video.swift:newPixelBuffer",
+      "type": "defines"
+    },
+    {
+      "source": "file:render_video.swift",
+      "target": "function:render_video.swift:drawText",
+      "type": "defines"
+    },
+    {
+      "source": "file:render_video.swift",
+      "target": "class:render_video.swift:Scene",
+      "type": "defines"
+    },
+    {
+      "source": "file:web/src/app/layout.tsx",
+      "target": "function:web/src/app/layout.tsx:RootLayout",
+      "type": "defines"
+    },
+    {
+      "source": "file:web/src/app/page.tsx",
+      "target": "function:web/src/app/page.tsx:App",
+      "type": "defines"
+    },
+    {
+      "source": "file:web/src/components/NumberTicker.tsx",
+      "target": "function:web/src/components/NumberTicker.tsx:NumberTicker",
+      "type": "defines"
+    },
+    {
+      "source": "file:web/src/components/ProductionLaunchVideo.tsx",
+      "target": "function:web/src/components/ProductionLaunchVideo.tsx:ProductionLaunchVideo",
+      "type": "defines"
+    },
+    {
+      "source": "file:web/src/components/ServiceLandingPage.tsx",
+      "target": "function:web/src/components/ServiceLandingPage.tsx:ServiceLandingPage",
+      "type": "defines"
+    },
+    {
+      "source": "file:web/src/components/SplashCursor.tsx",
+      "target": "function:web/src/components/SplashCursor.tsx:clamp",
+      "type": "defines"
+    },
+    {
+      "source": "file:web/src/components/SplashCursor.tsx",
+      "target": "function:web/src/components/SplashCursor.tsx:parseColor",
+      "type": "defines"
+    },
+    {
+      "source": "file:web/src/components/SplashCursor.tsx",
+      "target": "function:web/src/components/SplashCursor.tsx:hsv",
+      "type": "defines"
+    },
+    {
+      "source": "file:web/src/components/SplashCursor.tsx",
+      "target": "function:web/src/components/SplashCursor.tsx:SplashCursor",
+      "type": "defines"
+    }
+  ]
+}
