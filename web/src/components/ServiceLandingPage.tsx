@@ -300,7 +300,7 @@ export default function ServiceLandingPage({
         trail={2.8}
         clickSplash
         colorSpeed={0.45}
-        intensity={0.45}
+        intensity={0.38}
         momentum={0.7}
         glow={0.25}
         shading={0.8}
