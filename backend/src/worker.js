@@ -31,12 +31,20 @@ function extractShortcode(url) {
   return match ? match[1] : null;
 }
 
+function detectPostType(url) {
+  if (/\/reels?\/[A-Za-z0-9_-]+/i.test(url)) return 'reel';
+  return 'post'; // image or carousel
+}
+
 /**
  * Fallback metadata resolver using public OpenGraph headers
  */
 async function extractViaOpenGraph(url) {
   const shortcode = extractShortcode(url);
-  const targetUrl = shortcode ? `https://www.instagram.com/reel/${shortcode}/` : url;
+  const isPost = /\/p\/[A-Za-z0-9_-]+/i.test(url);
+  const targetUrl = shortcode 
+    ? (isPost ? `https://www.instagram.com/p/${shortcode}/` : `https://www.instagram.com/reel/${shortcode}/`)
+    : url;
 
   const res = await fetch(targetUrl, {
     headers: {
@@ -46,7 +54,7 @@ async function extractViaOpenGraph(url) {
   });
 
   if (!res.ok) {
-    throw new Error(`OpenGraph fetch returned status ${res.status}`);
+    throw new Error('Unable to access Instagram post (network or privacy restricted)');
   }
 
   const html = await res.text();
@@ -56,7 +64,7 @@ async function extractViaOpenGraph(url) {
     let match;
     while ((match = metaTagRegex.exec(htmlContent)) !== null) {
       const tag = match[0];
-      const propMatch = tag.match(new RegExp(`property=(["'])${propertyName}\\1`, 'i'));
+      const propMatch = tag.match(new RegExp(`(?:property|name)=(["'])${propertyName}\\1`, 'i'));
       if (propMatch) {
         const contentMatch = tag.match(/content=(["'])([\s\S]*?)\1/i);
         if (contentMatch) return contentMatch[2];
@@ -66,7 +74,7 @@ async function extractViaOpenGraph(url) {
   }
 
   const rawTitle = decodeHtmlEntities(extractMetaProperty(html, 'og:title') || '');
-  const rawDesc = decodeHtmlEntities(extractMetaProperty(html, 'og:description') || '');
+  const rawDesc = decodeHtmlEntities(extractMetaProperty(html, 'og:description') || extractMetaProperty(html, 'description') || '');
   const rawImage = extractMetaProperty(html, 'og:image');
   const image = rawImage ? decodeHtmlEntities(rawImage) : null;
 
@@ -91,12 +99,12 @@ async function extractViaOpenGraph(url) {
   const hashtags = Array.from(new Set(allText.match(/#[a-zA-Z0-9_]+/g) || []));
   const mentions = Array.from(new Set(allText.match(/@[a-zA-Z0-9._]+/g) || []));
 
-  if (!caption && !rawDesc) {
-    throw new Error('OpenGraph fallback could not find caption or description text');
+  if (!caption && !rawDesc && !rawTitle) {
+    throw new Error('Instagram post details could not be retrieved');
   }
 
   return {
-    caption: caption || rawDesc || null,
+    caption: caption || rawDesc || rawTitle || null,
     creator_username: creator || null,
     thumbnail_url: image || null,
     hashtags: hashtags,
@@ -114,10 +122,11 @@ async function extractViaOpenGraph(url) {
 async function extractInstagramData(url) {
   const shortcode = extractShortcode(url);
   if (!shortcode) {
-    throw new Error(`Could not parse shortcode from URL: ${url}`);
+    throw new Error(`Invalid Instagram link format`);
   }
 
-  const postUrl = `https://www.instagram.com/reel/${shortcode}/`;
+  const isPost = /\/p\/[A-Za-z0-9_-]+/i.test(url);
+  const postUrl = isPost ? `https://www.instagram.com/p/${shortcode}/` : `https://www.instagram.com/reel/${shortcode}/`;
 
   try {
     const options = {
@@ -144,7 +153,7 @@ async function extractInstagramData(url) {
       };
     }
   } catch (err) {
-    console.warn(`[Worker] instatouch direct fetch error: ${err.message}. Using metadata fallback.`);
+    // Instatouch failed (scraper rate limit or session missing) - silent fallback to OpenGraph
   }
 
   return await extractViaOpenGraph(url);
@@ -483,31 +492,94 @@ async function processReel(reel) {
 
 async function cleanupEmptyCategories() {
   try {
-    const { data: allCats } = await supabase
-      .from('categories')
-      .select('id, parent_id');
+    // Paginate categories deterministically
+    let allCats = [];
+    let catFrom = 0;
+    const catPageSize = 1000;
+    let hasMoreCats = true;
+    while (hasMoreCats) {
+      const { data: page, error: catErr } = await supabase
+        .from('categories')
+        .select('id, parent_id, created_at')
+        .order('id', { ascending: true })
+        .range(catFrom, catFrom + catPageSize - 1);
 
-    const { data: allReels } = await supabase
-      .from('reels')
-      .select('category_id, subcategory_id');
+      if (catErr) {
+        console.error('[Worker] Startup cleanup failed fetching categories:', catErr.message);
+        return;
+      }
+      if (page && page.length > 0) {
+        allCats.push(...page);
+        catFrom += catPageSize;
+        if (page.length < catPageSize) hasMoreCats = false;
+      } else {
+        hasMoreCats = false;
+      }
+    }
 
-    if (allCats && allReels) {
+    // Paginate reels deterministically
+    let allReels = [];
+    let reelFrom = 0;
+    const reelPageSize = 1000;
+    let hasMoreReels = true;
+    while (hasMoreReels) {
+      const { data: page, error: reelErr } = await supabase
+        .from('reels')
+        .select('id, category_id, subcategory_id')
+        .order('id', { ascending: true })
+        .range(reelFrom, reelFrom + reelPageSize - 1);
+
+      if (reelErr) {
+        console.error('[Worker] Startup cleanup failed fetching reels:', reelErr.message);
+        return;
+      }
+      if (page && page.length > 0) {
+        allReels.push(...page);
+        reelFrom += reelPageSize;
+        if (page.length < reelPageSize) hasMoreReels = false;
+      } else {
+        hasMoreReels = false;
+      }
+    }
+
+    if (allCats.length > 0) {
       const usedIds = new Set();
       for (const r of allReels) {
         if (r.category_id) usedIds.add(r.category_id);
         if (r.subcategory_id) usedIds.add(r.subcategory_id);
       }
 
+      // Preserve 15-minute grace period for recently created categories
+      const now = Date.now();
+      const recentGracePeriodMs = 15 * 60 * 1000;
+
+      const protectedRecentParentIds = new Set();
+      for (const cat of allCats) {
+        if (cat.created_at && (now - new Date(cat.created_at).getTime()) < recentGracePeriodMs) {
+          if (cat.parent_id) {
+            protectedRecentParentIds.add(cat.parent_id);
+          }
+        }
+      }
+
       const emptyIds = allCats.filter(cat => {
         if (usedIds.has(cat.id)) return false;
+        if (cat.created_at && (now - new Date(cat.created_at).getTime()) < recentGracePeriodMs) {
+          return false;
+        }
+        if (protectedRecentParentIds.has(cat.id)) {
+          return false;
+        }
         const hasChildWithReel = allCats.some(sub => sub.parent_id === cat.id && usedIds.has(sub.id));
         return !hasChildWithReel;
       }).map(c => c.id);
 
       if (emptyIds.length > 0) {
-        const { error } = await supabase.from('categories').delete().in('id', emptyIds);
-        if (!error) {
+        const { error: delErr } = await supabase.from('categories').delete().in('id', emptyIds);
+        if (!delErr) {
           console.log(`[Worker] Startup cleanup removed ${emptyIds.length} empty categories.`);
+        } else {
+          console.error(`[Worker] Error deleting empty categories during startup cleanup:`, delErr.message);
         }
       }
     }

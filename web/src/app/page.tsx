@@ -42,7 +42,13 @@ import {
   Layers,
   Filter,
   LayoutGrid,
-  List as ListIcon
+  List as ListIcon,
+  Edit2,
+  BookmarkCheck,
+  Compass,
+  Star,
+  Sparkles,
+  BookOpen
 } from 'lucide-react';
 
 type NavPage = 'home' | 'all' | 'categories' | 'watched' | 'inbox' | 'failed' | 'archived' | 'settings';
@@ -100,11 +106,16 @@ export default function App() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [passwordMsg, setPasswordMsg] = useState<string | null>(null);
 
-  // Category creation
+  // Category creation & customization
   const [newCategoryName, setNewCategoryName] = useState('');
   const [categoryParentId, setCategoryParentId] = useState<string | null>(null);
   const [isCreatingCategory, setIsCreatingCategory] = useState(false);
   const [categoryInsertPending, setCategoryInsertPending] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [editCategoryName, setEditCategoryName] = useState('');
+  const [editCategoryIcon, setEditCategoryIcon] = useState('Folder');
+  const [editCategoryDesc, setEditCategoryDesc] = useState('');
+  const [categoryMetaMap, setCategoryMetaMap] = useState<Record<string, { icon?: string; description?: string }>>({});
 
   // Clear history lightbox
   const [showClearHistoryLightbox, setShowClearHistoryLightbox] = useState(false);
@@ -137,6 +148,9 @@ export default function App() {
 
       const savedRetention = localStorage.getItem('watchlater_archive_retention') as any;
       if (savedRetention) setRetentionPeriod(savedRetention);
+
+      const savedCatMeta = localStorage.getItem('watchlater_category_meta');
+      if (savedCatMeta) setCategoryMetaMap(JSON.parse(savedCatMeta));
     } catch (e) {}
   }, []);
 
@@ -474,6 +488,16 @@ export default function App() {
           if (prev.some(c => c.id === data.id)) return prev;
           return [...prev, data as Category];
         });
+        // Auto-assign default description & icon identity
+        const meta = {
+          icon: categoryParentId ? 'Tag' : 'Folder',
+          description: categoryParentId ? `Sub-niche under parent category` : `Curated collection for ${trimmed}`
+        };
+        setCategoryMetaMap(prev => {
+          const updated = { ...prev, [data.id]: meta };
+          localStorage.setItem('watchlater_category_meta', JSON.stringify(updated));
+          return updated;
+        });
         setNewCategoryName('');
         setIsCreatingCategory(false);
         setCategoryParentId(null);
@@ -482,6 +506,40 @@ export default function App() {
       alert(`Error creating category: ${err.message || err}`);
     } finally {
       setCategoryInsertPending(false);
+    }
+  };
+
+  const handleUpdateCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCategory || !editCategoryName.trim()) return;
+    const newName = editCategoryName.trim();
+
+    try {
+      const { error } = await supabase
+        .from('categories')
+        .update({ name: newName })
+        .eq('id', editingCategory.id);
+
+      if (error) throw error;
+
+      setCategories(prev => prev.map(c => c.id === editingCategory.id ? { ...c, name: newName } : c));
+
+      // Save icon and description metadata
+      setCategoryMetaMap(prev => {
+        const updated = {
+          ...prev,
+          [editingCategory.id]: {
+            icon: editCategoryIcon,
+            description: editCategoryDesc.trim() || prev[editingCategory.id]?.description || `Curated collection for ${newName}`
+          }
+        };
+        localStorage.setItem('watchlater_category_meta', JSON.stringify(updated));
+        return updated;
+      });
+
+      setEditingCategory(null);
+    } catch (err: any) {
+      alert(`Error updating category: ${err.message || err}`);
     }
   };
 
@@ -613,14 +671,19 @@ export default function App() {
     });
   }, [reels, currentPage, selectedCategoryId, searchQuery, postTypeFilter]);
 
-  // Persona insights (requires at least 20 items to unlock)
+  // Persona insights (requires at least 20 items to unlock, updates every 100 saves)
   const userPersonaInsight = useMemo(() => {
     if (reels.length < 20) {
       return `You have saved ${reels.length}/20 items. Save at least 20 items to unlock persona insights.`;
     }
+
+    // Bucket into milestones of 100 reels (20-99: initial sample, 100+: analyzed per 100 saves)
+    const milestoneCount = reels.length >= 100 ? Math.floor(reels.length / 100) * 100 : reels.length;
+    const sampledReels = reels.slice(0, milestoneCount);
+
     const counts: Record<string, number> = {};
     let categorizedCount = 0;
-    for (const r of reels) {
+    for (const r of sampledReels) {
       if (!r.category_id) continue;
       const cat = categories.find(c => c.id === r.category_id)?.name;
       if (cat) {
@@ -634,14 +697,28 @@ export default function App() {
     const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
     const top = sorted[0];
     const top2 = sorted[1];
+    const milestoneLabel = reels.length >= 100 ? ` (Evaluated across your first ${milestoneCount} saves, refreshed every 100 items)` : '';
     if (top) {
-      return `You are intensely drawn to ${top[0]}${top2 ? ` and ${top2[0]}` : ''}. You curate high-value knowledge and trending media with laser focus.`;
+      return `You are intensely drawn to ${top[0]}${top2 ? ` and ${top2[0]}` : ''}. You curate high-value knowledge and trending media with laser focus.${milestoneLabel}`;
     }
     return 'Your vault captures a diverse set of topics with active curiosity.';
   }, [reels, categories]);
 
   const rootCategories = useMemo(() => categories.filter(c => !c.parent_id), [categories]);
   const getSubcategories = (parentId: string) => categories.filter(c => c.parent_id === parentId);
+
+  const renderCategoryIcon = (iconName?: string, className: string = 'h-10 w-10 text-indigo-400') => {
+    switch (iconName) {
+      case 'Star': return <Star className={className} />;
+      case 'Sparkles': return <Sparkles className={className} />;
+      case 'Bookmark': return <Bookmark className={className} />;
+      case 'BookmarkCheck': return <BookmarkCheck className={className} />;
+      case 'Compass': return <Compass className={className} />;
+      case 'BookOpen': return <BookOpen className={className} />;
+      case 'Tag': return <Tag className={className} />;
+      default: return <Folder className={className} />;
+    }
+  };
 
   const pinnedCategories = useMemo(() => {
     return categories.filter(c => pinnedFolderIds.includes(c.id));
@@ -1173,8 +1250,21 @@ export default function App() {
                       onClick={() => setCategoryLightbox(cat)}
                       className="group relative flex flex-col items-center justify-center p-4 rounded-2xl border border-zinc-800 bg-zinc-900/40 hover:bg-zinc-850 hover:border-indigo-500/50 cursor-pointer transition text-center"
                     >
-                      {/* Top Action Buttons (Pin & Delete) */}
+                      {/* Top Action Buttons (Pin, Edit & Delete) */}
                       <div className="absolute top-2 right-2 flex items-center gap-1 opacity-100 [@media(hover:hover)]:opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition z-10">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingCategory(cat);
+                            setEditCategoryName(cat.name);
+                            setEditCategoryIcon(categoryMetaMap[cat.id]?.icon || 'Folder');
+                            setEditCategoryDesc(categoryMetaMap[cat.id]?.description || '');
+                          }}
+                          title="Edit name, icon & description"
+                          className="p-1 rounded-md text-zinc-400 hover:text-indigo-300 hover:bg-zinc-800 text-xs transition"
+                        >
+                          <Edit2 className="h-3.5 w-3.5" />
+                        </button>
                         <button
                           onClick={(e) => togglePin(cat.id, e)}
                           title={isPinned ? 'Unpin category' : 'Pin category'}
@@ -1192,7 +1282,7 @@ export default function App() {
                       </div>
 
                       <div className="relative mb-2">
-                        <Folder className="h-12 w-12 text-indigo-400 group-hover:scale-105 transition" />
+                        {renderCategoryIcon(categoryMetaMap[cat.id]?.icon, "h-12 w-12 text-indigo-400 group-hover:scale-105 transition")}
                         {subcats.length > 0 && (
                           <span className="absolute -bottom-1 -right-1 bg-zinc-800 text-[9px] font-mono text-zinc-300 rounded px-1 border border-zinc-700">
                             +{subcats.length}
@@ -1202,6 +1292,11 @@ export default function App() {
                       <span className="text-xs font-semibold text-white group-hover:text-indigo-300 truncate w-full mb-0.5">
                         {cat.name}
                       </span>
+                      {categoryMetaMap[cat.id]?.description && (
+                        <span className="text-[10px] text-zinc-400 line-clamp-1 w-full mb-1">
+                          {categoryMetaMap[cat.id]?.description}
+                        </span>
+                      )}
                       <span className="text-[10px] text-zinc-500 font-mono">
                         {count} items
                       </span>
@@ -1870,7 +1965,7 @@ export default function App() {
 
               {detailReel.ai_summary && (
                 <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-800">
-                  <span className="text-[10px] uppercase font-semibold text-indigo-400 block mb-1">AI Summary</span>
+                  <span className="text-[10px] uppercase font-semibold text-indigo-400 block mb-1">Summary</span>
                   <p className="text-xs text-zinc-300 leading-relaxed whitespace-pre-wrap">
                     {detailReel.ai_summary}
                   </p>
@@ -1879,7 +1974,7 @@ export default function App() {
 
               {detailReel.ai_description && (
                 <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-800">
-                  <span className="text-[10px] uppercase font-semibold text-zinc-400 block mb-1">AI Description</span>
+                  <span className="text-[10px] uppercase font-semibold text-zinc-400 block mb-1">Description</span>
                   <p className="text-xs text-zinc-300 leading-relaxed">
                     {detailReel.ai_description}
                   </p>
@@ -1973,9 +2068,22 @@ export default function App() {
 
               {/* Subcategory Folders */}
               <div>
-                <span className="text-xs font-semibold text-zinc-400 block mb-3 uppercase tracking-wider">
-                  Sub-Folders &amp; Niches
-                </span>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+                    Sub-Folders &amp; Niches
+                  </span>
+                  <button
+                    onClick={() => {
+                      setCategoryParentId(categoryLightbox.id);
+                      setIsCreatingCategory(true);
+                      setCategoryLightbox(null);
+                    }}
+                    className="flex items-center gap-1 text-[11px] font-medium text-indigo-400 hover:text-indigo-300 transition"
+                  >
+                    <Plus className="h-3 w-3" />
+                    <span>Add Sub-Folder</span>
+                  </button>
+                </div>
                 {getSubcategories(categoryLightbox.id).length === 0 ? (
                   <p className="text-xs text-zinc-600 italic">No nested sub-folders.</p>
                 ) : (
@@ -1989,9 +2097,23 @@ export default function App() {
                             setSelectedCategoryId(sub.id);
                             setCategoryLightbox(null);
                           }}
-                          className="flex flex-col items-center justify-center p-3 rounded-xl border border-zinc-800 bg-zinc-950/60 hover:border-indigo-500/50 hover:bg-zinc-850 cursor-pointer transition text-center"
+                          className="group/sub relative flex flex-col items-center justify-center p-3 rounded-xl border border-zinc-800 bg-zinc-950/60 hover:border-indigo-500/50 hover:bg-zinc-850 cursor-pointer transition text-center"
                         >
-                          <Folder className="h-8 w-8 text-indigo-400 mb-1" />
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCategoryLightbox(null);
+                              setEditingCategory(sub);
+                              setEditCategoryName(sub.name);
+                              setEditCategoryIcon(categoryMetaMap[sub.id]?.icon || 'Tag');
+                              setEditCategoryDesc(categoryMetaMap[sub.id]?.description || '');
+                            }}
+                            className="absolute top-1.5 right-1.5 p-1 text-zinc-500 hover:text-indigo-300 opacity-0 group-hover/sub:opacity-100 transition rounded"
+                            title="Edit Subcategory"
+                          >
+                            <Edit2 className="h-3 w-3" />
+                          </button>
+                          {renderCategoryIcon(categoryMetaMap[sub.id]?.icon || 'Tag', "h-8 w-8 text-indigo-400 mb-1")}
                           <span className="text-xs font-medium text-white truncate w-full">{sub.name}</span>
                           <span className="text-[10px] text-zinc-500 font-mono">{count} posts</span>
                         </div>
@@ -2094,6 +2216,105 @@ export default function App() {
                 {isClearingHistory ? 'Deleting...' : 'Delete All Saved Items'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* Edit Category Lightbox */}
+      {editingCategory && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+          onClick={() => setEditingCategory(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl space-y-4"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Edit2 className="h-4 w-4 text-indigo-400" />
+                <h3 className="text-sm font-semibold text-white">Customize Category</h3>
+              </div>
+              <button
+                onClick={() => setEditingCategory(null)}
+                className="text-zinc-500 hover:text-white"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateCategory} className="space-y-4">
+              <div>
+                <label className="text-xs text-zinc-400 block mb-1">Category Name</label>
+                <input
+                  type="text"
+                  required
+                  value={editCategoryName}
+                  onChange={e => setEditCategoryName(e.target.value)}
+                  className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-xs text-white"
+                  placeholder="e.g. Cooking, Tech, Workouts"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-zinc-400 block mb-1">Icon Style</label>
+                <div className="grid grid-cols-4 gap-2">
+                  {[
+                    { label: 'Folder', icon: 'Folder' },
+                    { label: 'Star', icon: 'Star' },
+                    { label: 'Sparkles', icon: 'Sparkles' },
+                    { label: 'Bookmark', icon: 'Bookmark' },
+                    { label: 'Check', icon: 'BookmarkCheck' },
+                    { label: 'Compass', icon: 'Compass' },
+                    { label: 'Book', icon: 'BookOpen' },
+                    { label: 'Tag', icon: 'Tag' }
+                  ].map(item => (
+                    <button
+                      key={item.icon}
+                      type="button"
+                      onClick={() => setEditCategoryIcon(item.icon)}
+                      className={`flex flex-col items-center justify-center p-2 rounded-xl border text-xs transition ${
+                        editCategoryIcon === item.icon
+                          ? 'border-indigo-500 bg-indigo-950/40 text-indigo-300'
+                          : 'border-zinc-800 bg-zinc-950/40 text-zinc-400 hover:bg-zinc-800'
+                      }`}
+                    >
+                      {renderCategoryIcon(item.icon, "h-5 w-5 mb-1")}
+                      <span className="text-[10px]">{item.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs text-zinc-400 block mb-1">Description / Topic Identity</label>
+                <textarea
+                  rows={2}
+                  value={editCategoryDesc}
+                  onChange={e => setEditCategoryDesc(e.target.value)}
+                  className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-xs text-white resize-none"
+                  placeholder="What is saved in this folder (e.g. Italian pasta recipes, quick dinners)?"
+                />
+                <span className="text-[10px] text-zinc-500">
+                  This description preserves the category&apos;s purpose so content continues organizing here cleanly.
+                </span>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-zinc-800">
+                <button
+                  type="button"
+                  onClick={() => setEditingCategory(null)}
+                  className="rounded-lg border border-zinc-700 bg-zinc-800 hover:bg-zinc-700 px-3.5 py-1.5 text-xs font-medium text-zinc-300 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-lg bg-indigo-600 hover:bg-indigo-500 px-4 py-1.5 text-xs font-semibold text-white transition"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
