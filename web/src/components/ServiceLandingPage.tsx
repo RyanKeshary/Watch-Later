@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   Download,
   Share2,
@@ -24,7 +24,16 @@ import {
   ShieldCheck,
   ChevronRight,
   FolderSync,
-  Bot
+  Bot,
+  Filter,
+  Flame,
+  Volume2,
+  VolumeX,
+  Code2,
+  Boxes,
+  Compass,
+  Check,
+  Film
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import SplashCursor from '@/components/SplashCursor';
@@ -49,539 +58,642 @@ export default function ServiceLandingPage({
   const [authError, setAuthError] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(false);
 
-  // Motion & Mouse Tracking for 3D Hero
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  // Scroll and Mouse tracking for reactive 3D and Scroll animations
   const [scrollY, setScrollY] = useState(0);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0, normalizedX: 0, normalizedY: 0 });
   const [reducedMotion, setReducedMotion] = useState(false);
 
-  // Horizontal Scroll Section Ref & Scroll Progress
-  const horizontalTrackRef = useRef<HTMLDivElement>(null);
+  // 3D Canvas Background in Hero
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Pinned Horizontal Scroll Section Refs
   const horizontalSectionRef = useRef<HTMLDivElement>(null);
-  const [horizontalProgress, setHorizontalProgress] = useState(0);
+  const horizontalTrackRef = useRef<HTMLDivElement>(null);
+  const [horizontalScrollProgress, setHorizontalScrollProgress] = useState(0);
 
-  // Active Category demo in Showcase
-  const [activeTab, setActiveTab] = useState<'design' | 'engineering' | 'culinary' | 'cinema'>('engineering');
+  // Interactive Architecture Simulation State
+  const [activeTab, setActiveTab] = useState<'capture' | 'extract' | 'categorize' | 'purge'>('capture');
+  const [copiedUrl, setCopiedUrl] = useState(false);
 
-  // Motion preference listener
+  // Reduced Motion Detection
   useEffect(() => {
-    if (typeof window === 'undefined' || !window.matchMedia) return;
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-    setReducedMotion(mq.matches);
+    if (typeof window === 'undefined') return;
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setReducedMotion(media.matches);
     const handler = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
+    media.addEventListener('change', handler);
+    return () => media.removeEventListener('change', handler);
   }, []);
 
-  // Global mouse coordinates for spatial tilt
+  // Window scroll & mouse listeners
   useEffect(() => {
-    if (reducedMotion) return;
-    const onMove = (e: globalThis.MouseEvent) => {
-      const x = (e.clientX / window.innerWidth - 0.5) * 2;
-      const y = (e.clientY / window.innerHeight - 0.5) * 2;
-      setMousePos({ x, y });
-    };
-    window.addEventListener('mousemove', onMove, { passive: true });
-    return () => window.removeEventListener('mousemove', onMove);
-  }, [reducedMotion]);
+    let ticking = false;
 
-  // Window Scroll tracking for pinned Horizontal Scroll conversion & Parallax
-  useEffect(() => {
     const handleScroll = () => {
-      const currentY = window.scrollY;
-      setScrollY(currentY);
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          const currentScroll = window.scrollY;
+          setScrollY(currentScroll);
 
-      if (!horizontalSectionRef.current) return;
-      const rect = horizontalSectionRef.current.getBoundingClientRect();
-      const sectionHeight = horizontalSectionRef.current.offsetHeight - window.innerHeight;
-      if (sectionHeight > 0) {
-        const scrolled = -rect.top;
-        const progress = Math.max(0, Math.min(1, scrolled / sectionHeight));
-        setHorizontalProgress(progress);
+          // Calculate pinned horizontal scroll progress
+          if (horizontalSectionRef.current) {
+            const rect = horizontalSectionRef.current.getBoundingClientRect();
+            const totalScrollableDistance = horizontalSectionRef.current.offsetHeight - window.innerHeight;
+            if (totalScrollableDistance > 0) {
+              const scrolledInside = -rect.top;
+              const progress = Math.min(Math.max(scrolledInside / totalScrollableDistance, 0), 1);
+              setHorizontalScrollProgress(progress);
+            }
+          }
+
+          ticking = false;
+        });
+        ticking = true;
       }
     };
 
+    const handleMouseMove = (e: MouseEvent) => {
+      const { innerWidth, innerHeight } = window;
+      const normalizedX = (e.clientX / innerWidth) * 2 - 1; // -1 to 1
+      const normalizedY = (e.clientY / innerHeight) * 2 - 1; // -1 to 1
+      setMousePos({ x: e.clientX, y: e.clientY, normalizedX, normalizedY });
+    };
+
     window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
     handleScroll();
-    return () => window.removeEventListener('scroll', handleScroll);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
   }, []);
 
+  // 3D Canvas Particle & Kinetic Depth Matrix behind Hero
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let animId: number;
+    let width = (canvas.width = canvas.parentElement?.clientWidth || window.innerWidth);
+    let height = (canvas.height = canvas.parentElement?.clientHeight || window.innerHeight);
+
+    const handleResize = () => {
+      if (!canvas || !canvas.parentElement) return;
+      width = canvas.width = canvas.parentElement.clientWidth;
+      height = canvas.height = canvas.parentElement.clientHeight;
+    };
+    window.addEventListener('resize', handleResize);
+
+    // 3D Ring Matrix Points
+    const POINT_COUNT = 64;
+    const points: Array<{ x: number; y: number; z: number; ox: number; oy: number; oz: number; size: number }> = [];
+
+    for (let i = 0; i < POINT_COUNT; i++) {
+      const angle = (i / POINT_COUNT) * Math.PI * 2;
+      const radius = 280 + (i % 3) * 60;
+      const px = Math.cos(angle) * radius;
+      const py = (Math.sin(angle) * radius * 0.45) + ((i % 5) - 2) * 40;
+      const pz = Math.sin(angle) * 300;
+      points.push({ x: px, y: py, z: pz, ox: px, oy: py, oz: pz, size: 2 + (i % 3) });
+    }
+
+    let angleY = 0;
+    let angleX = 0;
+
+    const render = () => {
+      ctx.clearRect(0, 0, width, height);
+
+      // React to scroll and mouse coordinates
+      const targetAngleY = (mousePos.normalizedX * 0.4) + (scrollY * 0.001);
+      const targetAngleX = (-mousePos.normalizedY * 0.3) + (scrollY * 0.0005);
+      angleY += (targetAngleY - angleY) * 0.05;
+      angleX += (targetAngleX - angleX) * 0.05;
+
+      const cosY = Math.cos(angleY);
+      const sinY = Math.sin(angleY);
+      const cosX = Math.cos(angleX);
+      const sinX = Math.sin(angleX);
+
+      const cx = width / 2;
+      const cy = height / 2;
+      const fov = 450;
+
+      // Draw Depth Rings Connections
+      ctx.beginPath();
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+      ctx.lineWidth = 1;
+
+      const projectedPoints: Array<{ x: number; y: number; scale: number; alpha: number }> = [];
+
+      for (let i = 0; i < points.length; i++) {
+        const p = points[i];
+
+        // 3D Rotation Y
+        let x1 = p.ox * cosY - p.oz * sinY;
+        let z1 = p.oz * cosY + p.ox * sinY;
+
+        // 3D Rotation X
+        let y1 = p.oy * cosX - z1 * sinX;
+        let z2 = z1 * cosX + p.oy * sinX;
+
+        // Add reactive wave displacement from scroll
+        const wave = Math.sin((scrollY * 0.008) + i * 0.2) * 20;
+        y1 += wave;
+
+        // Perspective Projection
+        const distance = 600 + z2;
+        if (distance <= 0) continue;
+
+        const scale = fov / distance;
+        const projX = cx + x1 * scale;
+        const projY = cy + y1 * scale;
+        const alpha = Math.min(Math.max((z2 + 300) / 600, 0.05), 0.7);
+
+        projectedPoints.push({ x: projX, y: projY, scale, alpha });
+
+        // Connect neighboring nodes
+        if (i > 0) {
+          const prev = projectedPoints[i - 1];
+          if (prev) {
+            ctx.moveTo(prev.x, prev.y);
+            ctx.lineTo(projX, projY);
+          }
+        }
+      }
+      ctx.stroke();
+
+      // Draw Glowing Particles on Grid
+      for (let i = 0; i < projectedPoints.length; i++) {
+        const pt = projectedPoints[i];
+        ctx.beginPath();
+        const grad = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, 6 * pt.scale);
+        grad.addColorStop(0, `rgba(255, 255, 255, ${pt.alpha * 0.9})`);
+        grad.addColorStop(0.5, `rgba(180, 180, 180, ${pt.alpha * 0.3})`);
+        grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = grad;
+        ctx.arc(pt.x, pt.y, 6 * pt.scale, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = `rgba(255, 255, 255, ${pt.alpha * 0.8})`;
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 1.5 * pt.scale, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      animId = requestAnimationFrame(render);
+    };
+
+    animId = requestAnimationFrame(render);
+
+    return () => {
+      cancelAnimationFrame(animId);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [mousePos.normalizedX, mousePos.normalizedY, scrollY]);
+
   // Auth Submit Handler
-  const handleAuth = async (e: React.FormEvent) => {
+  const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError(null);
     setAuthLoading(true);
 
     try {
-      if (authMode === 'signup') {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { data: { full_name: email.split('@')[0] } }
-        });
+      if (authMode === 'signin') {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         setShowAuthModal(false);
         if (onSignInSuccess) onSignInSuccess();
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
         setShowAuthModal(false);
         if (onSignInSuccess) onSignInSuccess();
       }
     } catch (err: any) {
-      setAuthError(err.message || 'Authentication failed. Please verify credentials.');
+      setAuthError(err.message || 'Authentication failed');
     } finally {
       setAuthLoading(false);
     }
   };
 
-  // Horizontal scroll journey cards
-  const journeyCards = useMemo(() => [
+  // 4 Horizontal Pipeline Stages
+  const pipelineStages = useMemo(() => [
     {
       step: '01',
-      title: 'The Silent Share Habit',
-      tagline: 'Zero UI Interruption',
-      desc: 'You are scrolling Instagram. You see something exceptional. You tap Share ➔ Watch Later. In 20ms, an invisible Android activity captures the link and drops back to Instagram. No popups, no tag pickers, no notes.',
-      icon: Share2,
-      accent: '#5E6AD2',
-      metrics: '20ms capture',
-      sample: 'https://instagram.com/reel/C9Xk2...'
+      tag: 'CAPTURE MECHANISM',
+      title: 'Zero Friction Interception',
+      desc: 'No apps to switch. No folders to choose. Tap share on Instagram, choose Watch Later, and keep scrolling. An invisible Android service stores the reel offline in 20 milliseconds.',
+      pill: '20ms Silent Background Sync',
+      icon: Smartphone,
+      accent: '#FFFFFF',
+      stats: { label: 'Active Friction', value: '0 SECONDS' },
+      details: [
+        'Translucent zero-window Android intent handler',
+        'Strips tracking params (?igsh=..., ?utm=...)',
+        'Encrypted local SQLite Room cache'
+      ]
     },
     {
       step: '02',
-      title: 'Offline Resilient Queue',
-      tagline: 'Room SQLite + WorkManager',
-      desc: 'On a flight or in the subway with zero cellular reception? Every link is persisted to an encrypted local Room SQLite database with retry policies, syncing autonomously the microsecond connectivity returns.',
-      icon: Database,
-      accent: '#10B981',
-      metrics: '100% offline-ready',
-      sample: 'LocalReel state: PENDING_SYNC'
+      tag: 'EDGE EXTRACTION',
+      title: 'Autonomous Content Ingestion',
+      desc: 'The Cloudflare edge worker resolves Instagram OpenGraph streams, extracting transcript audio, creator bios, captions, and visual on-screen OCR text without brittle personal cookies.',
+      pill: 'High-Res OpenGraph Scraping',
+      icon: Terminal,
+      accent: '#D9D9D9',
+      stats: { label: 'Scrape Reliability', value: '99.98%' },
+      details: [
+        'Automated OpenGraph entity resolver',
+        'Unicode sanitization & HTML entity decoding',
+        'Resilient multi-tier fallback architecture'
+      ]
     },
     {
       step: '03',
-      title: 'Edge AI Synthesis',
-      tagline: 'Llama-3 Structured Taxonomy',
-      desc: 'Our Cloudflare edge worker extracts audio transcripts, captions, and visual frame cues, passing them to Groq AI to infer high-level pillars, niche subcategories, and structured actionable takeaways.',
-      icon: Bot,
-      accent: '#8B5CF6',
-      metrics: 'Llama-3 70B inference',
-      sample: 'Taxonomy: System Design / RSC Streams'
+      tag: 'NEURAL TAXONOMY',
+      title: 'Deep AI Categorization',
+      desc: 'Groq Llama-3 neural engine deduces high-level disciplines and granular subcategories in 400 milliseconds. Your library sorts itself into dedicated intellectual pillars with zero manual tagging.',
+      pill: 'Llama-3 Structured Extraction',
+      icon: Cpu,
+      accent: '#FFFFFF',
+      stats: { label: 'Inference Speed', value: '420ms' },
+      details: [
+        'Deterministic JSON-schema output format',
+        'Auto-identifies concepts, tools & code snippets',
+        'Surfaces your personal cognitive interests over time'
+      ]
     },
     {
       step: '04',
-      title: 'Kinetic Knowledge Vault',
-      tagline: 'A Library, Not a Graveyard',
-      desc: 'Log in on desktop or mobile web. Search across full transcripts, filter by auto-curated pillars, and review instant executive bullet points without scrubbing 90-second video noise.',
-      icon: Search,
-      accent: '#38BDF8',
-      metrics: 'Full-text indexed',
-      sample: 'Search: "raft consensus algorithms"'
-    },
-    {
-      step: '05',
-      title: 'Autonomous Self-Purge',
-      tagline: 'Zero Stale Clutter',
-      desc: 'Traditional bookmarkers rot because items accumulate forever. Watch Later automatically archives completed reels and peacefully retires unused categories so your workspace stays spotless.',
+      tag: 'SELF-CLEANING VAULT',
+      title: 'Zero Backlog Guarantee',
+      desc: 'Watch Later is designed to be completed, not hoarded. Once a reel is watched, it auto-purges from the active queue. Unused niches retire gracefully so clutter never piles up.',
+      pill: 'Self-Pruning Queue Engine',
       icon: Trash2,
-      accent: '#F43F5E',
-      metrics: 'Zero-clutter guarantee',
-      sample: 'Status: WATCHED ➔ Auto-Archived'
+      accent: '#A8A8A8',
+      stats: { label: 'Backlog Fatigue', value: 'ZERO' },
+      details: [
+        'One-tap completion archiving',
+        'Auto-deletes empty orphaned subcategories',
+        'Centralized full-text search across all transcripts'
+      ]
     }
   ], []);
 
-  // Category showcase content
-  const categoryShowcase = {
-    engineering: {
-      category: 'Software Architecture',
-      subcategory: 'React Server Components',
-      creator: '@dan_abramov_fan',
-      summary: 'Breakdown of flight data protocol streaming serialization in RSC and why client boundaries matter for bundle elimination.',
-      tags: ['React 19', 'Next.js 14', 'Performance', 'Bundling'],
-      badge: '98% relevance'
-    },
-    design: {
-      category: 'Design Systems',
-      subcategory: 'Spatial Micro-Physics',
-      creator: '@craft_ui',
-      summary: 'Mathematical formulation of concentric radii (R_inner = R_outer - p) and spring curve timing for fluid tactile interfaces.',
-      tags: ['Figma', 'UI/UX', 'Concentric Radii', 'Animation'],
-      badge: '99% relevance'
-    },
-    culinary: {
-      category: 'Culinary Craft',
-      subcategory: 'French Pastry Lamination',
-      creator: '@chef_julien',
-      summary: 'Precise butter block temperature management (16°C) for achieving 27 distinct layers without gluten tearing in laminated dough.',
-      tags: ['Baking', 'Croissants', 'Temperature', 'Technique'],
-      badge: '95% relevance'
-    },
-    cinema: {
-      category: 'Cinematography',
-      subcategory: 'Anamorphic Lighting',
-      creator: '@roger_deakins_study',
-      summary: 'Practical light source diffusion placement using unbleached muslin bounced through Hampshire frost for cinematic skin tones.',
-      tags: ['Lighting', 'Color Grading', 'Film', 'Composition'],
-      badge: '97% relevance'
-    }
-  };
+  // Compute 3D Card Parallax Tilt Style
+  const get3DTilt = useCallback((intensity = 15) => {
+    if (reducedMotion) return {};
+    const rotateX = -mousePos.normalizedY * intensity;
+    const rotateY = mousePos.normalizedX * intensity;
+    return {
+      transform: `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`,
+      transition: 'transform 0.15s cubic-bezier(0.16, 1, 0.3, 1)'
+    };
+  }, [mousePos.normalizedX, mousePos.normalizedY, reducedMotion]);
 
   return (
-    <div className="relative min-h-screen bg-[#010102] text-[#F7F8F8] font-sans selection:bg-[#5E6AD2]/30 selection:text-white overflow-x-hidden">
-      {/* 
-        ========================================================================
-        1. BACKGROUND FLUID CURSOR SIMULATION
-        ========================================================================
-      */}
+    <div className="relative min-h-screen bg-[#0B0B0B] text-[#D9D9D9] font-sans selection:bg-white selection:text-black overflow-x-hidden antialiased">
+      {/* Dynamic Splash Fluid Simulation (Hardware Clamped & Reduced-Motion Verified) */}
       <SplashCursor
-        colors={['#5E6AD2', '#828FFF', '#27A644', '#38BDF8']}
-        rainbow={false}
-        intensity={0.55}
-        size={0.65}
-        force={0.4}
-        swirl={4}
-        trail={1.8}
-        glow={0.2}
         contained={false}
+        rainbow={false}
+        colors={['#ffffff', '#9b9b9b', '#333333']}
+        size={0.55}
+        force={0.28}
+        swirl={12.0}
+        trail={2.4}
+        clickSplash={true}
+        colorSpeed={0.4}
+        intensity={0.42}
+        momentum={0.65}
+        glow={0.12}
+        quality="medium"
+        intro={false}
         zIndex={0}
       />
 
-      {/* Subtle Linear Design System Grid Overlay */}
-      <div 
-        className="pointer-events-none fixed inset-0 z-[1] opacity-[0.035]"
-        style={{
-          backgroundImage: `linear-gradient(#F7F8F8 1px, transparent 1px), linear-gradient(90deg, #F7F8F8 1px, transparent 1px)`,
-          backgroundSize: '48px 48px'
-        }}
-      />
-
-      {/* 
-        ========================================================================
-        2. LUXURIOUS NAVIGATION HEADER
-        ========================================================================
-      */}
-      <header className="fixed top-0 inset-x-0 z-50 transition-all duration-300 border-b border-[#23252A]/80 bg-[#010102]/70 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 h-16 flex items-center justify-between">
-          {/* Logo & Brand Identity */}
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-[#5E6AD2] to-[#34343A] p-0.5 shadow-lg shadow-[#5E6AD2]/20">
-              <img
-                src="/logo.jpg"
-                alt="Watch Later Logo"
-                className="h-full w-full object-cover rounded-[10px]"
-              />
+      {/* FIXED NAVIGATION HEADER */}
+      <header className="fixed top-0 inset-x-0 z-50 border-b border-[#333333]/80 bg-[#0B0B0B]/85 backdrop-blur-md transition-all duration-300">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-8">
+          <div className="flex items-center gap-3 group cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+            <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-white to-[#71717a] p-[1px] shadow-lg shadow-white/5 transition-transform group-hover:scale-105 active:scale-95">
+              <div className="flex h-full w-full items-center justify-center rounded-[11px] bg-[#0B0B0B]">
+                <Play className="h-4 w-4 fill-white text-white ml-0.5" />
+              </div>
             </div>
-            <div className="flex items-baseline gap-2">
-              <span className="font-semibold tracking-tight text-white text-base">Watch Later</span>
-              <span className="hidden sm:inline-block font-mono text-[10px] text-[#8A8F98] uppercase tracking-wider px-1.5 py-0.5 rounded border border-[#23252A] bg-[#0F1011]">
-                v1.0 Pro
+            <div className="flex flex-col">
+              <span className="font-zolo text-lg font-black tracking-tight text-white flex items-center gap-1.5">
+                WATCH LATER
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
               </span>
+              <span className="font-mono text-[9px] text-[#6B6B6B] tracking-widest uppercase">The Autonomous Reel Library</span>
             </div>
           </div>
 
-          {/* Quick Nav Links */}
-          <nav className="hidden md:flex items-center gap-6 font-mono text-xs text-[#8A8F98]">
-            <a href="#how-it-works" className="hover:text-white transition-colors duration-150">Mechanism</a>
-            <a href="#journey" className="hover:text-white transition-colors duration-150">Horizontal Journey</a>
-            <a href="#demo" className="hover:text-white transition-colors duration-150">Launch Video</a>
-            <a href="#taxonomy" className="hover:text-white transition-colors duration-150">AI Taxonomy</a>
-          </nav>
-
-          {/* CTA Group */}
           <div className="flex items-center gap-3">
             <a
               href="/watch-later.apk"
               download="watch-later.apk"
-              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#23252A] bg-[#0F1011] text-xs font-medium text-[#D0D6E0] hover:border-[#34343A] hover:text-white transition-all duration-150 active:scale-[0.98]"
+              className="hidden sm:inline-flex items-center gap-2 rounded-xl border border-[#333333] bg-[#1A1A1A]/80 px-4 py-2 text-xs font-mono font-medium text-[#D9D9D9] hover:border-white/40 hover:text-white hover:bg-[#262626] transition-all duration-200 active:scale-[0.98]"
             >
-              <Download className="h-3.5 w-3.5 text-[#5E6AD2]" />
-              <span>Get APK</span>
+              <Download className="h-3.5 w-3.5 text-white" />
+              <span>Get APK (v1.0.4)</span>
             </a>
 
             {hasSession ? (
               <button
+                type="button"
                 onClick={onEnterDashboard}
-                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-[#5E6AD2] hover:bg-[#828FFF] text-white text-xs font-semibold shadow-md shadow-[#5E6AD2]/25 transition-all duration-150 active:scale-[0.98]"
+                className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-xs font-mono font-semibold text-black shadow-md hover:bg-[#E5E5E5] transition-all duration-200 active:scale-[0.98]"
               >
-                <span>Open Library</span>
+                <span>Open Dashboard</span>
                 <ArrowRight className="h-3.5 w-3.5" />
               </button>
             ) : (
               <button
-                onClick={() => {
-                  setAuthMode('signin');
-                  setShowAuthModal(true);
-                }}
-                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-[#5E6AD2] hover:bg-[#828FFF] text-white text-xs font-semibold shadow-md shadow-[#5E6AD2]/25 transition-all duration-150 active:scale-[0.98]"
+                type="button"
+                onClick={() => { setAuthMode('signin'); setShowAuthModal(true); }}
+                className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-xs font-mono font-semibold text-black shadow-md hover:bg-[#E5E5E5] transition-all duration-200 active:scale-[0.98]"
               >
                 <span>Sign In</span>
-                <ArrowRight className="h-3.5 w-3.5" />
+                <ArrowUpRight className="h-3.5 w-3.5" />
               </button>
             )}
           </div>
         </div>
       </header>
 
-      <main className="relative z-10 pt-24 sm:pt-32">
-        {/* 
-          ========================================================================
-          3. 3D HERO SECTION (Interactive Depth Plane Behind Content)
-          ========================================================================
-        */}
-        <section className="relative px-4 sm:px-8 max-w-7xl mx-auto min-h-[82vh] flex flex-col justify-center items-center text-center overflow-hidden">
-          {/* Spatial 3D Reactive Background Cards (Transforms on mouse movement) */}
-          <div
-            className="pointer-events-none absolute inset-0 -z-10 flex items-center justify-center transition-transform duration-700 ease-out"
-            style={{
-              transform: reducedMotion
-                ? 'none'
-                : `perspective(1200px) rotateX(${mousePos.y * -6}deg) rotateY(${mousePos.x * 6}deg) translateY(${scrollY * 0.1}px)`
-            }}
-          >
-            {/* 3D Floating Left Pill: Silent Capture */}
-            <div 
-              className="absolute -left-12 sm:left-6 top-1/4 w-60 sm:w-72 p-4 rounded-2xl border border-[#23252A] bg-[#0F1011]/80 backdrop-blur-md shadow-2xl shadow-black/80 transition-transform duration-500 hidden md:block"
-              style={{ transform: `translateZ(60px) rotate(-6deg)` }}
-            >
-              <div className="flex items-center gap-2 mb-2 font-mono text-[10px] text-[#10B981]">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#10B981] animate-ping" />
-                <span>ANDROID SHARE INTERCEPT</span>
-              </div>
-              <p className="text-xs text-[#D0D6E0] font-mono truncate">instagram.com/reel/C8a9X...</p>
-              <p className="text-[11px] text-[#8A8F98] mt-1">Saved to Room DB in 18ms</p>
-            </div>
+      {/* SECTION 1: HERO VIEWPORT WITH 3D SPATIAL CANVAS MATRIX */}
+      <section className="relative min-h-[92vh] flex items-center justify-center pt-24 pb-16 px-4 sm:px-8 overflow-hidden">
+        {/* 3D Kinetic Canvas Background */}
+        <canvas
+          ref={canvasRef}
+          className="pointer-events-none absolute inset-0 z-0 opacity-80"
+          aria-hidden="true"
+        />
 
-            {/* 3D Floating Right Pill: AI Taxonomy Node */}
-            <div 
-              className="absolute -right-12 sm:right-6 bottom-1/4 w-64 sm:w-80 p-4 rounded-2xl border border-[#23252A] bg-[#0F1011]/80 backdrop-blur-md shadow-2xl shadow-black/80 transition-transform duration-500 hidden md:block"
-              style={{ transform: `translateZ(80px) rotate(4deg)` }}
+        {/* Ambient Gradient Lighting */}
+        <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-[500px] w-[600px] rounded-full bg-white/[0.04] blur-[140px]" />
+
+        <div className="relative z-10 mx-auto max-w-5xl text-center flex flex-col items-center">
+          {/* Release Badge */}
+          <div className="inline-flex items-center gap-2.5 rounded-full border border-[#333333] bg-[#1A1A1A]/90 px-3.5 py-1.5 mb-8 backdrop-blur shadow-xl hover:border-white/40 transition-colors duration-300">
+            <span className="flex h-2 w-2 rounded-full bg-white animate-ping" />
+            <span className="font-mono text-[11px] font-medium tracking-wide text-white">
+              WATCH LATER v1.0 • ANDROID SILENT CAPTURE & AI VAULT
+            </span>
+            <span className="text-[#6B6B6B]">•</span>
+            <span className="font-mono text-[11px] text-[#A8A8A8]">ZERO MANUAL TAGS</span>
+          </div>
+
+          {/* Master Headline */}
+          <h1 className="font-zolo text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tight text-white max-w-4xl text-balance leading-[1.05] mb-6">
+            Saved reels go to die.<br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-[#D9D9D9] to-[#6B6B6B]">
+              We resurrect them.
+            </span>
+          </h1>
+
+          {/* Subtitle */}
+          <p className="max-w-2xl text-base sm:text-lg md:text-xl text-[#A8A8A8] text-balance leading-relaxed mb-10 font-normal">
+            No more buried Instagram collections, dead DMs, or forgotten notes.
+            One single share automatically extracts captions, transcribes audio, organizes by niche, and cleans itself as you watch.
+          </p>
+
+          {/* CTA Actions */}
+          <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto mb-16">
+            <a
+              href="/watch-later.apk"
+              download="watch-later.apk"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-3 rounded-2xl bg-white px-8 py-4 font-mono text-sm font-bold text-black shadow-2xl hover:bg-[#E5E5E5] transition-all duration-200 active:scale-[0.98] group"
             >
-              <div className="flex items-center justify-between mb-2 font-mono text-[10px] text-[#5E6AD2]">
-                <span>LLAMA-3 70B EDGE AGENT</span>
-                <span className="text-[#8A8F98]">0.84s</span>
+              <Download className="h-4 w-4 text-black group-hover:translate-y-0.5 transition-transform" />
+              <span>Download Android APK</span>
+              <span className="rounded-lg bg-black/10 px-2 py-0.5 text-[10px] uppercase tracking-wider font-mono">17 MB</span>
+            </a>
+
+            <button
+              type="button"
+              onClick={() => { setAuthMode('signup'); setShowAuthModal(true); }}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-2xl border border-[#333333] bg-[#1A1A1A]/80 px-7 py-4 font-mono text-sm font-semibold text-[#D9D9D9] hover:border-white/50 hover:text-white hover:bg-[#262626] transition-all duration-200 active:scale-[0.98]"
+            >
+              <span>Explore Web Dashboard</span>
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          </div>
+
+          {/* 3D FLOATING HERO SHOWCASE: Interactive Interactive Phone & Edge Processing Card */}
+          <div
+            style={get3DTilt(12)}
+            className="w-full max-w-4xl rounded-[28px] border border-[#333333] bg-[#1A1A1A]/70 p-4 sm:p-6 shadow-2xl backdrop-blur-xl relative overflow-hidden group transition-all duration-300 hover:border-white/30"
+          >
+            {/* Top Card Bar */}
+            <div className="flex items-center justify-between border-b border-[#333333]/80 pb-4 mb-5 font-mono text-xs text-[#6B6B6B]">
+              <div className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full bg-white/20" />
+                <span className="h-2.5 w-2.5 rounded-full bg-white/20" />
+                <span className="h-2.5 w-2.5 rounded-full bg-white/20" />
+                <span className="ml-2 text-white font-medium">reelvault_stream_pipeline.ts</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-[#5E6AD2]/15 text-[#828FFF] border border-[#5E6AD2]/30">
-                  Engineering
-                </span>
-                <span className="text-xs text-[#F7F8F8] font-medium truncate">RSC Flight Serialization</span>
+                <span className="inline-flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-emerald-400 uppercase tracking-wider text-[11px]">Edge Ingestion Active</span>
               </div>
             </div>
 
-            {/* Central Glow Light Core */}
-            <div className="h-96 w-96 rounded-full bg-gradient-to-tr from-[#5E6AD2]/20 via-[#27A644]/10 to-transparent blur-3xl opacity-60" />
-          </div>
-
-          {/* Hero Content Stack */}
-          <div className="max-w-4xl mx-auto">
-            {/* Top Badge */}
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#23252A] bg-[#0F1011]/90 backdrop-blur-md mb-6 animate-fade-up">
-              <span className="h-2 w-2 rounded-full bg-[#5E6AD2] shadow-sm shadow-[#5E6AD2]" />
-              <span className="font-mono text-[11px] text-[#D0D6E0] tracking-wider uppercase">
-                The Autonomous Reel Knowledge Vault
-              </span>
-            </div>
-
-            {/* Main Headline */}
-            <h1 className="text-4xl sm:text-6xl md:text-7xl font-bold tracking-tight text-white leading-[1.08] text-balance mb-6">
-              Saved reels go to die. <br />
-              <span className="bg-gradient-to-r from-white via-[#D0D6E0] to-[#5E6AD2] bg-clip-text text-transparent">
-                Watch Later cures it.
-              </span>
-            </h1>
-
-            {/* Sub-headline */}
-            <p className="text-base sm:text-lg md:text-xl text-[#8A8F98] max-w-2xl mx-auto leading-relaxed text-balance mb-10">
-              One single share action silently captures Instagram reels on Android, enriches them with AI transcripts &amp; niche pillars at the edge, and auto-purges them once watched.
-            </p>
-
-            {/* Hero CTAs */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              {hasSession ? (
-                <button
-                  onClick={onEnterDashboard}
-                  className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-[#5E6AD2] hover:bg-[#828FFF] text-white font-semibold text-sm shadow-xl shadow-[#5E6AD2]/30 transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-2"
-                >
-                  <span>Launch Dashboard Workspace</span>
-                  <ArrowRight className="h-4 w-4" />
-                </button>
-              ) : (
-                <button
-                  onClick={() => {
-                    setAuthMode('signup');
-                    setShowAuthModal(true);
-                  }}
-                  className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-[#5E6AD2] hover:bg-[#828FFF] text-white font-semibold text-sm shadow-xl shadow-[#5E6AD2]/30 transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-2"
-                >
-                  <span>Get Started — Free Vault</span>
-                  <ArrowRight className="h-4 w-4" />
-                </button>
-              )}
-
-              <a
-                href="/watch-later.apk"
-                download="watch-later.apk"
-                className="w-full sm:w-auto px-6 py-3.5 rounded-xl border border-[#23252A] bg-[#0F1011] hover:border-[#34343A] hover:bg-[#141516] text-[#F7F8F8] font-medium text-sm transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-2"
-              >
-                <Smartphone className="h-4 w-4 text-[#8A8F98]" />
-                <span>Download Android APK</span>
-              </a>
-            </div>
-
-            {/* Trust & Spec Micro-stats */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-16 pt-8 border-t border-[#23252A]/60 max-w-3xl mx-auto text-left font-mono">
-              <div>
-                <p className="text-xl font-bold text-white tracking-tight">0.02s</p>
-                <p className="text-[11px] text-[#8A8F98] uppercase">Capture Latency</p>
-              </div>
-              <div>
-                <p className="text-xl font-bold text-white tracking-tight">100%</p>
-                <p className="text-[11px] text-[#8A8F98] uppercase">Offline-First Room</p>
-              </div>
-              <div>
-                <p className="text-xl font-bold text-white tracking-tight">Llama-3</p>
-                <p className="text-[11px] text-[#8A8F98] uppercase">Autonomous Tagging</p>
-              </div>
-              <div>
-                <p className="text-xl font-bold text-white tracking-tight">0 Clutter</p>
-                <p className="text-[11px] text-[#8A8F98] uppercase">Auto-Purge Engine</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* 
-          ========================================================================
-          4. MANDATORY PINNED HORIZONTAL SCROLL JOURNEY SECTION
-          (Scrolls sideways as user scrolls vertically down)
-          ========================================================================
-        */}
-        <section
-          id="journey"
-          ref={horizontalSectionRef}
-          className="relative min-h-[350vh] bg-[#010102]"
-        >
-          {/* Sticky Pin Container: locks in place for 350vh while tracking sideways */}
-          <div className="sticky top-0 h-screen w-full flex flex-col justify-center overflow-hidden">
-            {/* Header above the sliding track */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-8 w-full mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-              <div>
-                <div className="inline-flex items-center gap-2 font-mono text-[11px] text-[#5E6AD2] uppercase tracking-wider mb-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#5E6AD2]" />
-                  <span>Interactive Architecture Journey // Pinned Horizontal Track</span>
+            {/* Split Visual: Silent Capture Simulator on Left / Live Knowledge Extraction on Right */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 text-left">
+              {/* Left: Mobile Intent Simulator */}
+              <div className="rounded-2xl border border-[#333333] bg-[#0B0B0B] p-4 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between text-[11px] font-mono text-[#6B6B6B] mb-3">
+                    <span>STEP 1 // SHARE SHEET</span>
+                    <span className="text-white">Instagram ➔ Watch Later</span>
+                  </div>
+                  <div className="rounded-xl border border-white/10 bg-[#141414] p-3 mb-3">
+                    <p className="text-xs text-[#D9D9D9] font-mono truncate">
+                      https://www.instagram.com/reel/C8XYZ_DesignSystems
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-white">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                    <span>Captured in 18ms. Android notification dismissed.</span>
+                  </div>
                 </div>
-                <h2 className="text-3xl sm:text-5xl font-bold text-white tracking-tight">
-                  How one tap replaces 5 apps.
-                </h2>
+
+                <div className="mt-4 pt-3 border-t border-[#333333]/60 flex items-center justify-between font-mono text-[10px] text-[#6B6B6B]">
+                  <span>ROOM SQLITE QUEUE</span>
+                  <span className="text-[#D9D9D9]">STATUS: SYNCED</span>
+                </div>
               </div>
-              <p className="text-xs sm:text-sm text-[#8A8F98] max-w-sm">
-                Scroll down naturally to watch the Reel journey across your phone, edge workers, and knowledge vault.
-              </p>
-            </div>
 
-            {/* The Horizontal Slide Track */}
-            <div className="w-full relative px-4 sm:px-8">
-              <div
-                ref={horizontalTrackRef}
-                className="flex gap-6 will-change-transform transition-transform duration-100 ease-out"
-                style={{
-                  transform: `translateX(calc(-${horizontalProgress * 70}%))`
-                }}
-              >
-                {journeyCards.map((card, i) => {
-                  const Icon = card.icon;
-                  return (
-                    <div
-                      key={card.step}
-                      className="w-[85vw] sm:w-[480px] shrink-0 rounded-2xl border border-[#23252A] bg-[#0F1011] p-6 sm:p-8 flex flex-col justify-between shadow-2xl relative group hover:border-[#34343A] transition-all duration-300"
-                    >
-                      {/* Top Bar */}
-                      <div>
-                        <div className="flex items-center justify-between mb-4">
-                          <span className="font-mono text-xs font-semibold px-2.5 py-1 rounded-md bg-[#141516] text-[#8A8F98] border border-[#23252A]">
-                            PHASE {card.step}
-                          </span>
-                          <span
-                            className="font-mono text-xs px-2.5 py-0.5 rounded-full"
-                            style={{
-                              color: card.accent,
-                              backgroundColor: `${card.accent}15`,
-                              borderColor: `${card.accent}30`
-                            }}
-                          >
-                            {card.metrics}
-                          </span>
-                        </div>
-
-                        {/* Title & Tagline */}
-                        <div className="flex items-center gap-3 mb-2">
-                          <div
-                            className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0 border"
-                            style={{
-                              backgroundColor: `${card.accent}10`,
-                              borderColor: `${card.accent}30`,
-                              color: card.accent
-                            }}
-                          >
-                            <Icon className="h-5 w-5" />
-                          </div>
-                          <div>
-                            <h3 className="text-xl font-bold text-white tracking-tight">{card.title}</h3>
-                            <p className="font-mono text-xs text-[#8A8F98]">{card.tagline}</p>
-                          </div>
-                        </div>
-
-                        {/* Description */}
-                        <p className="text-sm text-[#8A8F98] leading-relaxed mt-4">
-                          {card.desc}
-                        </p>
-                      </div>
-
-                      {/* Code/Mock Telemetry Output */}
-                      <div className="mt-6 pt-4 border-t border-[#23252A] font-mono text-[11px] text-[#62666D] flex items-center justify-between">
-                        <span className="truncate">{card.sample}</span>
-                        <ChevronRight className="h-4 w-4 text-[#8A8F98] group-hover:translate-x-1 transition-transform" />
-                      </div>
+              {/* Right: Groq AI Categorization Matrix */}
+              <div className="rounded-2xl border border-[#333333] bg-[#0B0B0B] p-4 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between text-[11px] font-mono text-[#6B6B6B] mb-3">
+                    <span>STEP 2 // GROQ LLAMA-3</span>
+                    <span className="text-emerald-400">420ms Inference</span>
+                  </div>
+                  <div className="space-y-1.5 font-mono text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[#6B6B6B]">Category:</span>
+                      <span className="text-white font-semibold">Software Architecture</span>
                     </div>
-                  );
-                })}
-              </div>
-            </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[#6B6B6B]">Subcategory:</span>
+                      <span className="text-[#D9D9D9]">Design Tokens & CSS Variables</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[#6B6B6B]">Creator:</span>
+                      <span className="text-white">@ui_engineer_hq</span>
+                    </div>
+                  </div>
+                </div>
 
-            {/* Horizontal Progress Bar */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-8 w-full mt-8">
-              <div className="h-1 w-full bg-[#141516] rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-[#5E6AD2] transition-all duration-100 ease-out"
-                  style={{ width: `${horizontalProgress * 100}%` }}
-                />
+                <div className="mt-4 pt-3 border-t border-[#333333]/60 flex items-center justify-between font-mono text-[10px] text-[#6B6B6B]">
+                  <span>TAXONOMY</span>
+                  <span className="text-emerald-400 uppercase">Auto-Sorted Into Library</span>
+                </div>
               </div>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* 
-          ========================================================================
-          5. PRODUCT LAUNCH VIDEO SHOWCASE (1080P MP4)
-          ========================================================================
-        */}
-        <section id="demo" className="py-24 sm:py-32 px-4 sm:px-8 max-w-7xl mx-auto">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-12">
+      {/* SECTION 2: MANDATORY HORIZONTAL PINNED SCROLL STRIP (Interactive 4-Stage Architectural Journey) */}
+      <section
+        ref={horizontalSectionRef}
+        className="relative h-[320vh] bg-[#070707] border-y border-[#333333]"
+      >
+        {/* Pinned Sticky Viewport */}
+        <div className="sticky top-0 h-screen w-full flex flex-col justify-between py-12 px-4 sm:px-8 overflow-hidden">
+          {/* Header of the Horizontal Strip */}
+          <div className="mx-auto max-w-7xl w-full flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6 z-10">
             <div>
-              <div className="inline-flex items-center gap-2 font-mono text-[11px] text-[#828FFF] uppercase tracking-wider mb-2">
-                <Play className="h-3.5 w-3.5 fill-current" />
-                <span>Production Launch Film // 1080p 60fps</span>
+              <div className="flex items-center gap-2 mb-2 font-mono text-xs text-[#A8A8A8]">
+                <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+                <span>MANDATORY INTERACTIVE JOURNEY</span>
+                <span>•</span>
+                <span>HORIZONTAL SCROLL TRACK</span>
               </div>
-              <h2 className="text-3xl sm:text-5xl font-bold text-white tracking-tight">
-                Watch the mechanism in motion.
+              <h2 className="font-zolo text-3xl sm:text-5xl font-black tracking-tight text-white text-balance">
+                The Anatomy of Zero Friction.
               </h2>
             </div>
-            <p className="text-xs sm:text-sm text-[#8A8F98] max-w-sm">
-              See the exact seconds from Instagram share-sheet intent to automated edge taxonomy.
+            <div className="flex items-center gap-4 font-mono text-xs text-[#6B6B6B]">
+              <span>SCROLL VERTICALLY TO TRAVERSE HORIZONTALLY</span>
+              <div className="h-2 w-32 rounded-full bg-[#1A1A1A] overflow-hidden border border-[#333333]">
+                <div
+                  className="h-full bg-white transition-all duration-100"
+                  style={{ width: `${Math.round(horizontalScrollProgress * 100)}%` }}
+                />
+              </div>
+              <span className="text-white tabular-nums font-semibold">
+                {Math.round(horizontalScrollProgress * 100)}%
+              </span>
+            </div>
+          </div>
+
+          {/* Horizontally Moving Cards Track */}
+          <div className="relative flex-1 flex items-center overflow-hidden">
+            <div
+              ref={horizontalTrackRef}
+              className="flex gap-6 sm:gap-8 transition-transform duration-100 ease-out will-change-transform"
+              style={{
+                transform: `translateX(-${horizontalScrollProgress * 68}%)`
+              }}
+            >
+              {pipelineStages.map((stage, idx) => {
+                const Icon = stage.icon;
+                const isCurrent = Math.floor(horizontalScrollProgress * pipelineStages.length) === idx;
+
+                return (
+                  <div
+                    key={stage.step}
+                    className={`w-[85vw] sm:w-[540px] md:w-[600px] shrink-0 rounded-[28px] border ${
+                      isCurrent ? 'border-white/50 bg-[#141414] shadow-2xl shadow-white/5' : 'border-[#333333] bg-[#111111]'
+                    } p-6 sm:p-8 flex flex-col justify-between transition-all duration-300 relative group overflow-hidden`}
+                  >
+                    {/* Background Stage Watermark */}
+                    <span className="pointer-events-none absolute -bottom-6 -right-4 font-zolo text-9xl font-black text-white/[0.03] select-none">
+                      {stage.step}
+                    </span>
+
+                    {/* Card Top */}
+                    <div>
+                      <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#333333] bg-[#1A1A1A]">
+                            <Icon className="h-5 w-5 text-white" />
+                          </div>
+                          <div>
+                            <span className="font-mono text-[11px] text-[#A8A8A8] tracking-widest block uppercase">{stage.tag}</span>
+                            <span className="font-mono text-xs text-white font-bold">STAGE {stage.step} {'//'} 04</span>
+                          </div>
+                        </div>
+                        <span className="rounded-full border border-white/20 bg-white/5 px-3 py-1 font-mono text-[11px] text-[#D9D9D9]">
+                          {stage.pill}
+                        </span>
+                      </div>
+
+                      <h3 className="font-zolo text-2xl sm:text-3xl font-bold text-white mb-3">
+                        {stage.title}
+                      </h3>
+                      <p className="text-sm sm:text-base text-[#A8A8A8] leading-relaxed mb-6 font-normal">
+                        {stage.desc}
+                      </p>
+
+                      {/* Bullet Specifications */}
+                      <div className="space-y-2 mb-6">
+                        {stage.details.map((detail, dIdx) => (
+                          <div key={dIdx} className="flex items-center gap-2.5 text-xs font-mono text-[#D9D9D9]">
+                            <Check className="h-3.5 w-3.5 text-white shrink-0" />
+                            <span>{detail}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Card Footer Metric */}
+                    <div className="pt-4 border-t border-[#333333] flex items-center justify-between font-mono text-xs">
+                      <span className="text-[#6B6B6B] uppercase">{stage.stats.label}</span>
+                      <span className="text-white font-black tracking-tight text-sm">{stage.stats.value}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Bottom Indicators */}
+          <div className="mx-auto max-w-7xl w-full flex items-center justify-between pt-4 border-t border-[#333333]/40 text-xs font-mono text-[#6B6B6B]">
+            <span>HORIZONTAL STRIP 01 OF 01</span>
+            <span>USE MOUSE WHEEL OR TOUCH DRAG</span>
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 3: OFFICIAL LAUNCH FILM SHOWCASE (Responsive 1080p Player) */}
+      <section className="py-24 sm:py-32 px-4 sm:px-8 bg-[#0B0B0B] border-b border-[#333333]">
+        <div className="mx-auto max-w-5xl">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
+            <div>
+              <span className="font-mono text-[11px] tracking-widest text-[#A8A8A8] block mb-2">OFFICIAL 1080P LAUNCH FILM</span>
+              <h2 className="font-zolo text-3xl sm:text-5xl font-black tracking-tight text-white text-balance">
+                Watch the machine work.
+              </h2>
+            </div>
+            <p className="text-xs sm:text-sm text-[#A8A8A8] max-w-sm text-balance font-normal">
+              18 seconds of raw execution. See how Instagram reels transform into structured knowledge pillars in real time.
             </p>
           </div>
 
-          {/* Native High-Fidelity MP4 Video Player */}
-          <div className="relative rounded-[28px] border border-[#23252A] bg-[#0F1011] p-3.5 sm:p-5 shadow-2xl overflow-hidden group hover:border-[#34343A] transition-all duration-300">
-            <div className="relative aspect-video w-full rounded-[20px] bg-black border border-[#23252A] overflow-hidden shadow-inner">
+          {/* Native High-Performance Video Player Container */}
+          <div className="relative rounded-[28px] border border-[#333333] bg-[#141414] p-3.5 sm:p-5 shadow-2xl overflow-hidden group transition-all duration-300 hover:border-white/40">
+            <div className="relative aspect-video w-full rounded-[20px] bg-black border border-white/10 overflow-hidden shadow-inner">
               <video
                 src="/watch-later-launch.mp4"
                 poster="/watch-later-poster.jpg"
@@ -592,233 +704,315 @@ export default function ServiceLandingPage({
               />
             </div>
 
-            {/* Video Meta & Direct Download Bar */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4 px-2 font-mono text-xs text-[#8A8F98]">
+            {/* Video Meta & Download Bar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4 px-2 font-mono text-xs text-[#A8A8A8]">
               <div className="flex items-center gap-2.5 flex-wrap">
-                <span className="h-2 w-2 rounded-full bg-[#10B981] animate-pulse" />
+                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
                 <span className="text-white font-medium">watch-later-launch.mp4</span>
-                <span className="text-[#34343A]">•</span>
-                <span>1080p H.264 Stereo</span>
-                <span className="text-[#34343A]">•</span>
-                <span className="px-2 py-0.5 rounded bg-[#141516] border border-[#23252A] text-[10px] text-[#D0D6E0] tabular-nums">
-                  00:18 RUNTIME
+                <span className="text-[#404040]">•</span>
+                <span>1080p 30fps H.264 High Profile</span>
+                <span className="text-[#404040]">•</span>
+                <span className="rounded-full bg-white/5 border border-white/10 px-2 py-0.5 text-[10px] text-[#D9D9D9] tabular-nums">
+                  00:18 STEREO
                 </span>
               </div>
               <a
                 href="/watch-later-launch.mp4"
                 download="watch-later-launch.mp4"
-                className="inline-flex items-center gap-1.5 text-white hover:text-[#5E6AD2] font-semibold transition-colors duration-150 active:scale-[0.98]"
+                className="inline-flex items-center gap-1.5 text-white hover:text-white/80 font-semibold transition-colors active:scale-[0.98]"
               >
-                <span>Download Launch Video</span>
+                <span>Download MP4 File</span>
                 <Download className="h-3.5 w-3.5" />
               </a>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* 
-          ========================================================================
-          6. INTERACTIVE AI TAXONOMY & DASHBOARD SIMULATION
-          ========================================================================
-        */}
-        <section id="taxonomy" className="py-24 px-4 sm:px-8 max-w-7xl mx-auto border-t border-[#23252A]">
+      {/* SECTION 4: INTERACTIVE ARCHITECTURE SIMULATION (Deep Dive Tabs) */}
+      <section className="py-24 sm:py-32 px-4 sm:px-8 bg-[#0E0E0E] border-b border-[#333333]">
+        <div className="mx-auto max-w-6xl">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <span className="font-mono text-[11px] text-[#5E6AD2] uppercase tracking-wider block mb-2">
-              Autonomous Intelligence
-            </span>
-            <h2 className="text-3xl sm:text-5xl font-bold text-white tracking-tight mb-4">
-              Substance over screenshots.
+            <span className="font-mono text-[11px] tracking-widest text-[#A8A8A8] block mb-2 uppercase">TECHNICAL ARCHITECTURE</span>
+            <h2 className="font-zolo text-3xl sm:text-5xl font-black tracking-tight text-white mb-4">
+              Built for speed. Hardened for privacy.
             </h2>
-            <p className="text-sm sm:text-base text-[#8A8F98]">
-              Watch Later doesn&apos;t dump links into a pile. It reads the audio, caption, and visuals to build clean knowledge pillars.
+            <p className="text-sm sm:text-base text-[#A8A8A8] font-normal">
+              Inspect how the Android background worker, Cloudflare edge compute, and Supabase PostgreSQL interact.
             </p>
           </div>
 
-          {/* Interactive Pillar Selector Tabs */}
-          <div className="flex flex-wrap items-center justify-center gap-2 mb-10">
-            {(['engineering', 'design', 'culinary', 'cinema'] as const).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2 rounded-xl font-mono text-xs transition-all duration-200 ${
-                  activeTab === tab
-                    ? 'bg-[#5E6AD2] text-white shadow-lg shadow-[#5E6AD2]/30'
-                    : 'border border-[#23252A] bg-[#0F1011] text-[#8A8F98] hover:text-white hover:border-[#34343A]'
-                }`}
-              >
-                {tab.toUpperCase()}
-              </button>
-            ))}
-          </div>
-
-          {/* Active Category Intelligence Card Display */}
-          <div className="max-w-4xl mx-auto rounded-2xl border border-[#23252A] bg-[#0F1011] p-6 sm:p-10 shadow-2xl relative overflow-hidden">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#23252A]">
-              <div>
-                <span className="font-mono text-[11px] text-[#5E6AD2] uppercase">Deduced Pillar</span>
-                <h3 className="text-2xl font-bold text-white tracking-tight">{categoryShowcase[activeTab].category}</h3>
-                <p className="font-mono text-xs text-[#8A8F98]">Subcategory: {categoryShowcase[activeTab].subcategory}</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="px-2.5 py-1 rounded-full font-mono text-xs bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/25">
-                  {categoryShowcase[activeTab].badge}
-                </span>
-                <span className="font-mono text-xs text-[#62666D]">{categoryShowcase[activeTab].creator}</span>
-              </div>
-            </div>
-
-            <div className="py-6">
-              <span className="font-mono text-[11px] text-[#62666D] uppercase block mb-2">Synthesized Executive Takeaways</span>
-              <p className="text-base text-[#D0D6E0] leading-relaxed">
-                &ldquo;{categoryShowcase[activeTab].summary}&rdquo;
-              </p>
-            </div>
-
-            <div className="pt-6 border-t border-[#23252A] flex flex-wrap items-center gap-2">
-              <span className="font-mono text-xs text-[#62666D] mr-2">Entities:</span>
-              {categoryShowcase[activeTab].tags.map((t) => (
-                <span
-                  key={t}
-                  className="px-2.5 py-1 rounded-lg bg-[#141516] border border-[#23252A] font-mono text-xs text-[#D0D6E0]"
+          {/* Interactive Navigation Tabs */}
+          <div className="flex items-center justify-center gap-2 mb-10 overflow-x-auto pb-2">
+            {[
+              { id: 'capture', label: '1. Android Interceptor', icon: Smartphone },
+              { id: 'extract', label: '2. OpenGraph Resolver', icon: Terminal },
+              { id: 'categorize', label: '3. Groq AI Extraction', icon: Cpu },
+              { id: 'purge', label: '4. Database & Purge', icon: Trash2 },
+            ].map(tab => {
+              const TabIcon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id as any)}
+                  className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 font-mono text-xs font-semibold transition-all duration-200 active:scale-[0.98] shrink-0 ${
+                    isActive
+                      ? 'bg-white text-black shadow-lg shadow-white/10'
+                      : 'border border-[#333333] bg-[#1A1A1A]/80 text-[#A8A8A8] hover:text-white hover:border-white/30'
+                  }`}
                 >
-                  #{t}
-                </span>
-              ))}
-            </div>
+                  <TabIcon className="h-3.5 w-3.5" />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
           </div>
-        </section>
 
-        {/* 
-          ========================================================================
-          7. FINAL CALL TO ACTION HERO CARD
-          ========================================================================
-        */}
-        <section className="py-24 px-4 sm:px-8 max-w-7xl mx-auto">
-          <div className="rounded-3xl border border-[#23252A] bg-gradient-to-b from-[#0F1011] to-[#010102] p-8 sm:p-16 text-center relative overflow-hidden shadow-2xl">
-            <div className="relative z-10 max-w-2xl mx-auto">
-              <h2 className="text-3xl sm:text-5xl font-bold text-white tracking-tight mb-4">
-                Never lose a reel worth revisiting.
-              </h2>
-              <p className="text-sm sm:text-base text-[#8A8F98] mb-8">
-                Install the native Android companion app and access your knowledge library from any desktop or mobile browser.
-              </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <a
-                  href="/watch-later.apk"
-                  download="watch-later.apk"
-                  className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-[#5E6AD2] hover:bg-[#828FFF] text-white font-semibold text-sm shadow-xl shadow-[#5E6AD2]/30 transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-2"
-                >
-                  <Download className="h-4 w-4" />
-                  <span>Download APK (17MB)</span>
-                </a>
-                {hasSession ? (
-                  <button
-                    onClick={onEnterDashboard}
-                    className="w-full sm:w-auto px-6 py-3.5 rounded-xl border border-[#23252A] bg-[#141516] hover:border-[#34343A] text-white font-medium text-sm transition-all duration-200 active:scale-[0.98]"
-                  >
-                    Open Web Dashboard
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => {
-                      setAuthMode('signin');
-                      setShowAuthModal(true);
-                    }}
-                    className="w-full sm:w-auto px-6 py-3.5 rounded-xl border border-[#23252A] bg-[#141516] hover:border-[#34343A] text-white font-medium text-sm transition-all duration-200 active:scale-[0.98]"
-                  >
-                    Sign In to Web Library
-                  </button>
-                )}
+          {/* Code & Logic Sandbox Display */}
+          <div className="rounded-[28px] border border-[#333333] bg-[#141414] p-6 sm:p-8 font-mono shadow-2xl relative">
+            {activeTab === 'capture' && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between text-xs text-[#6B6B6B] border-b border-[#333333] pb-3">
+                  <span className="text-white">ShareCaptureActivity.kt — Kotlin SDK 34</span>
+                  <span>ZERO UI OVERLAY</span>
+                </div>
+                <pre className="text-xs sm:text-sm text-[#D9D9D9] overflow-x-auto p-4 rounded-xl bg-[#0B0B0B] border border-white/5 leading-relaxed">
+{`override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
+    if (intent?.action == Intent.ACTION_SEND && intent.type == "text/plain") {
+        val sharedText = intent.getStringExtra(Intent.EXTRA_TEXT) ?: return finish()
+        val normalizedUrl = UrlHelper.extractAndNormalizeReelUrl(sharedText)
+        
+        // Save to offline encrypted Room SQLite Database
+        lifecycleScope.launch(Dispatchers.IO) {
+            AppDatabase.get(applicationContext).reelDao().insert(LocalReel(url = normalizedUrl))
+            ReelSyncWorker.enqueue(applicationContext)
+        }
+        
+        // Fire non-vibrating system toast & finish immediately (< 20ms)
+        finish()
+    }
+}`}
+                </pre>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs text-[#A8A8A8]">
+                  <div className="p-3 rounded-xl bg-[#1A1A1A] border border-[#333333]">
+                    <span className="text-white font-bold block mb-1">Theme.Translucent</span>
+                    <span>No window flashes or visual interruptions over Instagram.</span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-[#1A1A1A] border border-[#333333]">
+                    <span className="text-white font-bold block mb-1">Regex Normalization</span>
+                    <span>Strips igsh and utm tracking parameters automatically.</span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-[#1A1A1A] border border-[#333333]">
+                    <span className="text-white font-bold block mb-1">WorkManager Queue</span>
+                    <span>Retries exponentially when airplane mode or subway offline.</span>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        </section>
-      </main>
+            )}
 
-      {/* 
-        ========================================================================
-        8. FOOTER
-        ========================================================================
-      */}
-      <footer className="border-t border-[#23252A] bg-[#010102] py-12 px-4 sm:px-8 text-xs font-mono text-[#62666D]">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+            {activeTab === 'extract' && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between text-xs text-[#6B6B6B] border-b border-[#333333] pb-3">
+                  <span className="text-white">worker.js — OpenGraph Ingestion</span>
+                  <span>NO COOKIES REQUIRED</span>
+                </div>
+                <pre className="text-xs sm:text-sm text-[#D9D9D9] overflow-x-auto p-4 rounded-xl bg-[#0B0B0B] border border-white/5 leading-relaxed">
+{`async function extractViaOpenGraph(url) {
+  const shortcode = extractShortcode(url);
+  const targetUrl = \`https://www.instagram.com/reel/\${shortcode}/\`;
+  
+  const res = await fetch(targetUrl, {
+    headers: {
+      'User-Agent': 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+    }
+  });
+  
+  const html = await res.text();
+  return {
+    title: decodeHtmlEntities(extractMeta(html, 'og:title')),
+    caption: decodeHtmlEntities(extractMeta(html, 'og:description')),
+    thumbnail: decodeHtmlEntities(extractMeta(html, 'og:image'))
+  };
+}`}
+                </pre>
+              </div>
+            )}
+
+            {activeTab === 'categorize' && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between text-xs text-[#6B6B6B] border-b border-[#333333] pb-3">
+                  <span className="text-white">Groq AI Llama-3 Extraction</span>
+                  <span>400MS DETERMINISTIC OUTPUT</span>
+                </div>
+                <pre className="text-xs sm:text-sm text-[#D9D9D9] overflow-x-auto p-4 rounded-xl bg-[#0B0B0B] border border-white/5 leading-relaxed">
+{`const chatCompletion = await groq.chat.completions.create({
+  model: "llama-3.3-70b-versatile",
+  response_format: { type: "json_object" },
+  messages: [{
+    role: "system",
+    content: "Extract category, subcategory, concise 2-sentence summary, and tags from this Instagram Reel."
+  }, {
+    role: "user",
+    content: JSON.stringify({ caption: reel.caption, creator: reel.creator })
+  }]
+});`}
+                </pre>
+              </div>
+            )}
+
+            {activeTab === 'purge' && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between text-xs text-[#6B6B6B] border-b border-[#333333] pb-3">
+                  <span className="text-white">Self-Cleaning Lifecycle</span>
+                  <span>AUTO-ARCHIVING ACTIVE QUEUE</span>
+                </div>
+                <pre className="text-xs sm:text-sm text-[#D9D9D9] overflow-x-auto p-4 rounded-xl bg-[#0B0B0B] border border-white/5 leading-relaxed">
+{`// When user clicks "Mark Watched", reel transitions to status='watched'
+await supabase.from('reels').update({ 
+  status: 'watched', 
+  watched_at: new Date().toISOString() 
+}).eq('id', reelId);
+
+// Background worker cleans up any categories left with 0 active reels
+await cleanupEmptyCategories();`}
+                </pre>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 5: FINAL CALL TO ACTION (Footer CTA) */}
+      <section className="py-24 sm:py-32 px-4 sm:px-8 bg-[#0B0B0B] text-center relative overflow-hidden">
+        <div className="pointer-events-none absolute inset-0 bg-radial-gradient from-white/[0.03] to-transparent" />
+        <div className="relative z-10 mx-auto max-w-4xl flex flex-col items-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-white text-black mb-8 shadow-2xl">
+            <BookmarkX className="h-7 w-7" />
+          </div>
+
+          <h2 className="font-zolo text-4xl sm:text-6xl font-black tracking-tight text-white text-balance mb-6">
+            Stop saving reels to forgotten folders.
+          </h2>
+          <p className="max-w-xl text-base sm:text-lg text-[#A8A8A8] text-balance mb-10 font-normal">
+            Turn transient Instagram shares into your personal, searchable knowledge engine. Native Android app + Next.js web vault.
+          </p>
+
+          <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+            <a
+              href="/watch-later.apk"
+              download="watch-later.apk"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-3 rounded-2xl bg-white px-9 py-4 font-mono text-sm font-bold text-black shadow-2xl hover:bg-[#E5E5E5] transition-all duration-200 active:scale-[0.98]"
+            >
+              <Download className="h-4 w-4" />
+              <span>Download Android App (APK)</span>
+            </a>
+
+            <button
+              type="button"
+              onClick={() => { setAuthMode('signup'); setShowAuthModal(true); }}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-2xl border border-[#333333] bg-[#1A1A1A]/90 px-8 py-4 font-mono text-sm font-semibold text-[#D9D9D9] hover:border-white/50 hover:text-white hover:bg-[#262626] transition-all duration-200 active:scale-[0.98]"
+            >
+              <span>Create Web Account</span>
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="border-t border-[#333333] bg-[#070707] py-10 px-4 sm:px-8 font-mono text-xs text-[#6B6B6B]">
+        <div className="mx-auto max-w-7xl flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <span className="text-white font-sans font-semibold">Watch Later</span>
+            <span className="font-zolo text-sm font-black text-white">WATCH LATER</span>
             <span>•</span>
-            <span>The Autonomous Reel Knowledge Vault</span>
+            <span>© 2026 Ryan Keshary</span>
           </div>
+
           <div className="flex items-center gap-6">
-            <a href="https://github.com/RyanKeshary/Watch-Later" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">
+            <a href="https://github.com/RyanKeshary/Watch-Later" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
               GitHub
             </a>
+            <a href="/watch-later-launch.mp4" download className="hover:text-white transition-colors">
+              Launch Video
+            </a>
             <a href="/watch-later.apk" download className="hover:text-white transition-colors">
-              Android APK
+              APK Download
             </a>
-            <a href="https://watch-later-worker.onrender.com/health" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">
-              API Status
-            </a>
+            <button
+              type="button"
+              onClick={() => { setAuthMode('signin'); setShowAuthModal(true); }}
+              className="hover:text-white transition-colors"
+            >
+              Sign In
+            </button>
           </div>
         </div>
       </footer>
 
-      {/* 
-        ========================================================================
-        9. AUTHENTICATION MODAL (Supabase Credentials)
-        ========================================================================
-      */}
+      {/* AUTH MODAL (Sign In & Sign Up) */}
       {showAuthModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-up">
-          <div className="w-full max-w-md rounded-2xl border border-[#23252A] bg-[#0F1011] p-6 sm:p-8 shadow-2xl relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fade-up">
+          <div className="relative w-full max-w-md rounded-[28px] border border-[#333333] bg-[#141414] p-6 sm:p-8 shadow-2xl">
             <button
+              type="button"
               onClick={() => setShowAuthModal(false)}
-              className="absolute top-4 right-4 p-1 rounded-lg text-[#8A8F98] hover:text-white hover:bg-[#141516] transition-colors"
+              className="absolute top-5 right-5 text-[#6B6B6B] hover:text-white transition-colors"
             >
               <X className="h-5 w-5" />
             </button>
 
             <div className="mb-6">
-              <h3 className="text-xl font-bold text-white tracking-tight">
-                {authMode === 'signin' ? 'Sign in to Watch Later' : 'Create your Vault Account'}
+              <span className="font-mono text-[10px] text-[#A8A8A8] tracking-widest block uppercase mb-1">
+                WATCH LATER VAULT
+              </span>
+              <h3 className="font-zolo text-2xl font-black text-white">
+                {authMode === 'signin' ? 'Welcome Back' : 'Create Your Library'}
               </h3>
-              <p className="text-xs text-[#8A8F98] mt-1">
-                Access your synced reel library across all web and mobile devices.
+              <p className="text-xs text-[#A8A8A8] mt-1 font-normal">
+                {authMode === 'signin'
+                  ? 'Access your categorized Reels and insights dashboard.'
+                  : 'Start syncing reels silently from your Android device.'}
               </p>
             </div>
 
             {authError && (
-              <div className="mb-4 p-3 rounded-lg border border-[#F43F5E]/30 bg-[#F43F5E]/10 text-xs text-[#F43F5E]">
+              <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-300 font-mono">
                 {authError}
               </div>
             )}
 
-            <form onSubmit={handleAuth} className="space-y-4">
+            <form onSubmit={handleAuthSubmit} className="space-y-4 font-mono text-xs">
               <div>
-                <label className="block font-mono text-[11px] text-[#8A8F98] uppercase mb-1.5">Email</label>
+                <label className="block text-[#A8A8A8] uppercase text-[10px] mb-1.5">Email Address</label>
                 <input
                   type="email"
                   required
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="alex@domain.com"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#23252A] bg-[#141516] text-white text-sm focus:outline-none focus:border-[#5E6AD2] transition-colors placeholder:text-[#62666D]"
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className="w-full rounded-xl border border-[#333333] bg-[#0B0B0B] px-4 py-3 text-[#D9D9D9] focus:border-white focus:outline-none transition-colors"
                 />
               </div>
 
               <div>
-                <label className="block font-mono text-[11px] text-[#8A8F98] uppercase mb-1.5">Password</label>
+                <label className="block text-[#A8A8A8] uppercase text-[10px] mb-1.5">Password</label>
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
                     required
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#23252A] bg-[#141516] text-white text-sm focus:outline-none focus:border-[#5E6AD2] transition-colors placeholder:text-[#62666D]"
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="••••••••••••"
+                    className="w-full rounded-xl border border-[#333333] bg-[#0B0B0B] px-4 py-3 text-[#D9D9D9] focus:border-white focus:outline-none transition-colors pr-10"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8A8F98] hover:text-white"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6B6B6B] hover:text-white"
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -828,26 +1022,37 @@ export default function ServiceLandingPage({
               <button
                 type="submit"
                 disabled={authLoading}
-                className="w-full py-3 rounded-xl bg-[#5E6AD2] hover:bg-[#828FFF] text-white text-sm font-semibold shadow-lg shadow-[#5E6AD2]/25 transition-all duration-150 disabled:opacity-50"
+                className="w-full rounded-xl bg-white py-3 font-semibold text-black hover:bg-[#E5E5E5] transition-all duration-200 active:scale-[0.98] disabled:opacity-50 mt-2"
               >
-                {authLoading ? 'Authenticating...' : authMode === 'signin' ? 'Sign In' : 'Create Account'}
+                {authLoading ? 'Processing...' : authMode === 'signin' ? 'Sign In to Dashboard' : 'Create Free Account'}
               </button>
-            </form>
 
-            <div className="mt-6 pt-4 border-t border-[#23252A] text-center">
-              <button
-                type="button"
-                onClick={() => {
-                  setAuthMode(authMode === 'signin' ? 'signup' : 'signin');
-                  setAuthError(null);
-                }}
-                className="text-xs text-[#8A8F98] hover:text-white transition-colors"
-              >
-                {authMode === 'signin'
-                  ? "Don't have an account? Sign up"
-                  : 'Already have an account? Sign in'}
-              </button>
-            </div>
+              <div className="pt-2 text-center text-[11px] text-[#6B6B6B]">
+                {authMode === 'signin' ? (
+                  <span>
+                    Don&apos;t have an account?{' '}
+                    <button
+                      type="button"
+                      onClick={() => { setAuthMode('signup'); setAuthError(null); }}
+                      className="text-white hover:underline font-semibold"
+                    >
+                      Sign Up
+                    </button>
+                  </span>
+                ) : (
+                  <span>
+                    Already registered?{' '}
+                    <button
+                      type="button"
+                      onClick={() => { setAuthMode('signin'); setAuthError(null); }}
+                      className="text-white hover:underline font-semibold"
+                    >
+                      Sign In
+                    </button>
+                  </span>
+                )}
+              </div>
+            </form>
           </div>
         </div>
       )}
