@@ -810,6 +810,18 @@ export default function SplashCursor({
       gl.clear(gl.COLOR_BUFFER_BIT);
     };
 
+    const clearTarget = (target: any) => {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, target.fbo);
+      gl.viewport(0, 0, target.width, target.height);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+    };
+
+    const clearDouble = (pair: any) => {
+      clearTarget(pair.read);
+      clearTarget(pair.write);
+    };
+
     const pointers = new Map<any, any>();
     const bursts: any[] = [];
     const motionQuery = window.matchMedia?.('(prefers-reduced-motion: reduce)');
@@ -830,6 +842,8 @@ export default function SplashCursor({
           cancelAnimationFrame(raf);
           raf = 0;
         }
+        clearDouble(dye);
+        clearDouble(velocity);
         clearScreen();
       }
     };

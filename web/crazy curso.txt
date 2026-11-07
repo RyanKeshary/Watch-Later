@@ -18,6 +18,7 @@ export default function LandingPage() {
     <div style={{ position: 'relative', minHeight: '100vh', overflow: 'hidden' }}>
       {/* Background fluid canvas */}
       <SplashCursor
+        contained
         rainbow
         size={0.65}
         force={0.3}
@@ -858,6 +859,18 @@ function SplashCursor({
       gl.clear(gl.COLOR_BUFFER_BIT);
     };
 
+    const clearTarget = target => {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, target.fbo);
+      gl.viewport(0, 0, target.width, target.height);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+    };
+
+    const clearDouble = pair => {
+      clearTarget(pair.read);
+      clearTarget(pair.write);
+    };
+
     const pointers = new Map();
     const bursts = [];
     const motionQuery = window.matchMedia?.('(prefers-reduced-motion: reduce)');
@@ -878,6 +891,8 @@ function SplashCursor({
           cancelAnimationFrame(raf);
           raf = 0;
         }
+        clearDouble(dye);
+        clearDouble(velocity);
         clearScreen();
       }
     };
