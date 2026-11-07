@@ -9,6 +9,16 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        paper: "var(--color-paper)",
+        "paper-2": "var(--color-paper-2)",
+        "paper-3": "var(--color-paper-3)",
+        ink: "var(--color-ink)",
+        "ink-2": "var(--color-ink-2)",
+        muted: "var(--color-muted)",
+        rule: "var(--color-rule)",
+        accent: "var(--color-accent)",
+        "accent-deep": "var(--color-accent-deep)",
+        "accent-ink": "var(--color-accent-ink)",
         surface: {
           base: "#0B0B0B",
           card: "#1A1A1A",
