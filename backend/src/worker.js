@@ -31,11 +31,6 @@ function extractShortcode(url) {
   return match ? match[1] : null;
 }
 
-function detectPostType(url) {
-  if (/\/reels?\/[A-Za-z0-9_-]+/i.test(url)) return 'reel';
-  return 'post'; // image or carousel
-}
-
 /**
  * Fallback metadata resolver using public OpenGraph headers
  */
@@ -167,24 +162,27 @@ async function categorizeWithGroq(metadata, existingCategoryTree) {
     subcategories: (cat.subcategories || []).map(s => s.name)
   }));
 
-  const systemPrompt = `You are an expert AI content classifier and taxonomist.
-Your task is to organize user social saves into a clean, minimalist hierarchical taxonomy.
+const systemPrompt = `You are an expert AI content classifier and taxonomist.
+Your task is to organize user social saves into a clean, intuitive hierarchical taxonomy with high-quality subcategories.
 
-CRITICAL RULES FOR MINIMALIST, ACCURATE TAXONOMY:
-1. CHECK EXISTING PARENT CATEGORIES FIRST:
+STRUCTURING RULES:
+1. ALWAYS inspect the existing category hierarchy first:
 ${JSON.stringify(categoriesContext, null, 2)}
-- If any existing parent category is broadly related to this post (e.g. if an existing category is "Cooking" or "Food & Cooking", and this post is about food or cooking), you MUST REUSE that exact parent category name! DO NOT create synonyms or variations like "Cooking" vs "Food & Cooking" or "Animal" vs "Animals".
-- If the post fits into an existing parent category, KEEP "subcategory" as "" (empty string) unless there are already multiple reels in this category and this post represents a clearly distinct sub-niche.
-- NEVER create a subcategory if it is redundant with the parent.
-2. ONLY IF NO EXISTING CATEGORY MATCHES:
-- Create ONE concise, high-level parent category name (e.g. "Animals", "Food", "Tech", "Fitness", "Design").
-- Set "subcategory" to "" (empty string). Do not create subcategories for new standalone categories.
-3. NEVER return synonyms or overlapping names.
+2. PARENT CATEGORIES:
+- If this post fits into an existing parent category, ALWAYS reuse that parent category name (e.g. if "Food & Cooking" exists, do not create "Cooking" or "Recipes").
+- If no existing parent category fits, create ONE high-level parent category name (e.g. "Food & Cooking", "Tech & AI", "Fitness", "Animals & Nature").
+3. SUBCATEGORIES (IMPORTANT):
+- Every post should ideally be classified into a relevant subcategory (e.g. within "Food & Cooking": "Desserts & Baking", "Italian Cuisine", "Quick Dinners", "Cocktails & Drinks"; within "Fitness": "Strength Training", "Cardio", "Nutrition").
+- If an existing subcategory fits this reel, reuse it.
+- If no existing subcategory fits, create a concise, descriptive subcategory (2-4 words) that captures the reel's specific niche.
+- Never make the subcategory name identical to the parent category name.
+- Only leave subcategory as "" if the post is truly broad and cannot be classified into a specific sub-niche.
+4. DO NOT create duplicate or synonymous parent categories.
 
 Return strictly a valid JSON object matching this schema:
 {
-  "category": string (domain category name - REUSE existing where possible),
-  "subcategory": string (sub-niche, or "" if none needed),
+  "category": string (domain parent category name - reuse existing whenever possible),
+  "subcategory": string (specific niche subcategory name),
   "topic": string (laser-focused topic),
   "tags": string[] (3-6 precise keywords),
   "ai_title": string (engaging, informative headline, max 65 chars),
@@ -575,11 +573,27 @@ async function cleanupEmptyCategories() {
       }).map(c => c.id);
 
       if (emptyIds.length > 0) {
-        const { error: delErr } = await supabase.from('categories').delete().in('id', emptyIds);
-        if (!delErr) {
-          console.log(`[Worker] Startup cleanup removed ${emptyIds.length} empty categories.`);
-        } else {
-          console.error(`[Worker] Error deleting empty categories during startup cleanup:`, delErr.message);
+        // Immediate verification against live reels to prevent deleting categories adopted during cleanup
+        const { data: liveCheck } = await supabase
+          .from('reels')
+          .select('category_id, subcategory_id')
+          .or(`category_id.in.(${emptyIds.join(',')}),subcategory_id.in.(${emptyIds.join(',')})`);
+
+        const liveActiveIds = new Set();
+        for (const r of liveCheck || []) {
+          if (r.category_id) liveActiveIds.add(r.category_id);
+          if (r.subcategory_id) liveActiveIds.add(r.subcategory_id);
+        }
+
+        const confirmedEmptyIds = emptyIds.filter(id => !liveActiveIds.has(id));
+
+        if (confirmedEmptyIds.length > 0) {
+          const { error: delErr } = await supabase.from('categories').delete().in('id', confirmedEmptyIds);
+          if (!delErr) {
+            console.log(`[Worker] Startup cleanup removed ${confirmedEmptyIds.length} empty categories.`);
+          } else {
+            console.error(`[Worker] Error deleting empty categories during startup cleanup:`, delErr.message);
+          }
         }
       }
     }

@@ -424,6 +424,14 @@ export default function App() {
     }
   };
 
+  const persistCategoryMeta = (updatedMap: Record<string, { icon?: string; description?: string }>) => {
+    try {
+      localStorage.setItem('watchlater_category_meta', JSON.stringify(updatedMap));
+    } catch (e) {
+      console.warn('Failed to persist category metadata:', e);
+    }
+  };
+
   const handleCreateCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     if (categoryInsertPending) return;
@@ -493,11 +501,10 @@ export default function App() {
           icon: categoryParentId ? 'Tag' : 'Folder',
           description: categoryParentId ? `Sub-niche under parent category` : `Curated collection for ${trimmed}`
         };
-        setCategoryMetaMap(prev => {
-          const updated = { ...prev, [data.id]: meta };
-          localStorage.setItem('watchlater_category_meta', JSON.stringify(updated));
-          return updated;
-        });
+        const updatedMeta = { ...categoryMetaMap, [data.id]: meta };
+        setCategoryMetaMap(updatedMeta);
+        persistCategoryMeta(updatedMeta);
+
         setNewCategoryName('');
         setIsCreatingCategory(false);
         setCategoryParentId(null);
@@ -524,18 +531,16 @@ export default function App() {
 
       setCategories(prev => prev.map(c => c.id === editingCategory.id ? { ...c, name: newName } : c));
 
-      // Save icon and description metadata
-      setCategoryMetaMap(prev => {
-        const updated = {
-          ...prev,
-          [editingCategory.id]: {
-            icon: editCategoryIcon,
-            description: editCategoryDesc.trim() || prev[editingCategory.id]?.description || `Curated collection for ${newName}`
-          }
-        };
-        localStorage.setItem('watchlater_category_meta', JSON.stringify(updated));
-        return updated;
-      });
+      // Save icon and description metadata outside state updater
+      const updatedMeta = {
+        ...categoryMetaMap,
+        [editingCategory.id]: {
+          icon: editCategoryIcon,
+          description: editCategoryDesc.trim() || categoryMetaMap[editingCategory.id]?.description || `Curated collection for ${newName}`
+        }
+      };
+      setCategoryMetaMap(updatedMeta);
+      persistCategoryMeta(updatedMeta);
 
       setEditingCategory(null);
     } catch (err: any) {
@@ -547,8 +552,19 @@ export default function App() {
     if (e) e.stopPropagation();
     if (!confirm('Are you sure you want to delete this category? Subcategories will also be deleted.')) return;
 
-    setCategories(prev => prev.filter(c => c.id !== catId && c.parent_id !== catId));
-    setPinnedFolderIds(prev => prev.filter(id => id !== catId));
+    const childCatIds = categories.filter(c => c.parent_id === catId).map(c => c.id);
+    const allDeletedIds = new Set([catId, ...childCatIds]);
+
+    setCategories(prev => prev.filter(c => !allDeletedIds.has(c.id)));
+    setPinnedFolderIds(prev => prev.filter(id => !allDeletedIds.has(id)));
+
+    // Remove deleted category and its children from metadata
+    const updatedMeta = { ...categoryMetaMap };
+    Array.from(allDeletedIds).forEach(id => {
+      delete updatedMeta[id];
+    });
+    setCategoryMetaMap(updatedMeta);
+    persistCategoryMeta(updatedMeta);
 
     try {
       const { error } = await supabase.from('categories').delete().eq('id', catId);
