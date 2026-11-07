@@ -135,6 +135,20 @@ export default function App() {
   const [clearCategoriesAlso, setClearCategoriesAlso] = useState(false);
   const [isClearingHistory, setIsClearingHistory] = useState(false);
 
+  // Close any open lightbox on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (detailReelId) setDetailReelId(null);
+        if (categoryLightbox) setCategoryLightbox(null);
+        if (editingCategory) setEditingCategory(null);
+        if (showClearHistoryLightbox && !isClearingHistory) setShowClearHistoryLightbox(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [detailReelId, categoryLightbox, editingCategory, showClearHistoryLightbox, isClearingHistory]);
+
   // Load preferences from localStorage
   useEffect(() => {
     try {
@@ -1009,36 +1023,6 @@ export default function App() {
                 )}
               </div>
             )}
-
-            {/* Post Type Filters (Reels vs Posts vs Carousels) */}
-            {currentPage !== 'home' && currentPage !== 'settings' && (currentPage !== 'categories' || selectedCategoryId) && (
-              <div className="flex items-center bg-[#1A1A1A] p-0.5 rounded-lg border border-[#333333] text-[11px]">
-                <button
-                  onClick={() => setPostTypeFilter('all')}
-                  className={`px-2 py-1 rounded transition ${postTypeFilter === 'all' ? 'bg-[#D9D9D9] text-[#0B0B0B] font-semibold' : 'text-[#6B6B6B] hover:text-white'}`}
-                >
-                  All
-                </button>
-                <button
-                  onClick={() => setPostTypeFilter('reels')}
-                  className={`px-2 py-1 rounded transition ${postTypeFilter === 'reels' ? 'bg-[#D9D9D9] text-[#0B0B0B] font-semibold' : 'text-[#6B6B6B] hover:text-white'}`}
-                >
-                  Reels
-                </button>
-                <button
-                  onClick={() => setPostTypeFilter('carousels')}
-                  className={`px-2 py-1 rounded transition ${postTypeFilter === 'carousels' ? 'bg-[#D9D9D9] text-[#0B0B0B] font-semibold' : 'text-[#6B6B6B] hover:text-white'}`}
-                >
-                  Carousels
-                </button>
-                <button
-                  onClick={() => setPostTypeFilter('posts')}
-                  className={`px-2 py-1 rounded transition ${postTypeFilter === 'posts' ? 'bg-[#D9D9D9] text-[#0B0B0B] font-semibold' : 'text-[#6B6B6B] hover:text-white'}`}
-                >
-                  Posts
-                </button>
-              </div>
-            )}
           </div>
 
           <div className="flex items-center gap-2.5">
@@ -1910,27 +1894,38 @@ export default function App() {
 
       {/* REEL DETAIL PANEL / LIGHTBOX */}
       {detailReel && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
-          <div className="w-full max-w-3xl max-h-[90vh] flex flex-col rounded-2xl border border-zinc-800 bg-zinc-900 shadow-2xl overflow-hidden">
-            <div className="flex items-center justify-between border-b border-zinc-800 px-6 py-4">
-              <div className="flex items-center gap-2 truncate">
-                <Film className="h-5 w-5 text-indigo-400 shrink-0" />
-                <h3 className="text-base font-bold text-white truncate">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-fade-up"
+          onClick={() => setDetailReelId(null)}
+        >
+          <div
+            className="w-full max-w-4xl max-h-[92vh] flex flex-col rounded-2xl border border-[#333333] bg-[#1A1A1A] shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-[#333333] px-6 py-4 bg-[#0B0B0B]/60">
+              <div className="flex items-center gap-3 truncate">
+                <div className="h-8 w-8 rounded-lg bg-[#0B0B0B] border border-[#333333] flex items-center justify-center text-white shrink-0">
+                  <Film className="h-4 w-4 text-[#D9D9D9]" />
+                </div>
+                <h3 className="font-zolo text-lg font-bold text-white truncate">
                   {detailReel.ai_title || 'Post Details'}
                 </h3>
               </div>
               <button
                 onClick={() => setDetailReelId(null)}
-                className="p-1 rounded-lg text-zinc-400 hover:bg-zinc-800 hover:text-white transition"
+                className="p-1.5 rounded-lg text-[#6B6B6B] hover:bg-[#333333] hover:text-white transition"
+                title="Close (Esc)"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 space-y-5">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                 {detailReel.thumbnail_url ? (
-                  <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-zinc-800 border border-zinc-700/50 group/preview">
+                  <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-[#0B0B0B] border border-[#333333] group/preview">
                     <img
                       src={detailReel.thumbnail_url}
                       alt="Thumbnail"
@@ -1940,39 +1935,39 @@ export default function App() {
                       href={detailReel.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover/preview:opacity-100 transition"
+                      className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover/preview:opacity-100 transition"
                       title="Play Reel on Instagram"
                     >
-                      <div className="h-12 w-12 rounded-full bg-indigo-600 flex items-center justify-center text-white shadow-lg">
-                        <Play className="h-5 w-5 fill-white ml-0.5" />
+                      <div className="h-12 w-12 rounded-full bg-white flex items-center justify-center text-black shadow-xl">
+                        <Play className="h-5 w-5 fill-black ml-0.5" />
                       </div>
                     </a>
                   </div>
                 ) : (
-                  <div className="aspect-video w-full rounded-xl bg-zinc-850 flex items-center justify-center text-zinc-600 text-xs">
-                    No thumbnail available
+                  <div className="aspect-video w-full rounded-xl bg-[#0B0B0B] border border-[#333333] flex items-center justify-center text-[#6B6B6B] text-xs font-mono-micro">
+                    [NO THUMBNAIL AVAILABLE]
                   </div>
                 )}
 
-                <div className="flex flex-col justify-between space-y-3">
+                <div className="flex flex-col justify-between space-y-4 bg-[#0B0B0B] p-5 rounded-xl border border-[#333333]">
                   <div>
-                    <span className="text-[10px] uppercase font-semibold text-indigo-400 block mb-1">Creator</span>
-                    <span className="text-sm font-mono text-white">
+                    <span className="font-mono-micro text-[#6B6B6B] block mb-1">CREATOR</span>
+                    <span className="text-base font-bold font-mono text-white">
                       {detailReel.creator_username ? `@${detailReel.creator_username}` : 'Unknown Creator'}
                     </span>
                   </div>
 
                   <div>
-                    <span className="text-[10px] uppercase font-semibold text-zinc-500 block mb-1">Category &amp; Subcategory</span>
-                    <span className="text-xs text-zinc-200">
+                    <span className="font-mono-micro text-[#6B6B6B] block mb-1">TAXONOMY</span>
+                    <span className="text-sm font-semibold text-[#D9D9D9]">
                       {categories.find(c => c.id === detailReel.category_id)?.name || 'Uncategorized'}
                       {detailReel.subcategory_id && ` / ${categories.find(c => c.id === detailReel.subcategory_id)?.name}`}
                     </span>
                   </div>
 
                   <div>
-                    <span className="text-[10px] uppercase font-semibold text-zinc-500 block mb-1">Saved On</span>
-                    <span className="text-xs text-zinc-400 font-mono">
+                    <span className="font-mono-micro text-[#6B6B6B] block mb-1">SAVED TIMESTAMP</span>
+                    <span className="text-xs text-[#999999] font-mono">
                       {new Date(detailReel.created_at).toLocaleString()}
                     </span>
                   </div>
@@ -1980,64 +1975,65 @@ export default function App() {
               </div>
 
               {detailReel.ai_summary && (
-                <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-800">
-                  <span className="text-[10px] uppercase font-semibold text-indigo-400 block mb-1">Summary</span>
-                  <p className="text-xs text-zinc-300 leading-relaxed whitespace-pre-wrap">
+                <div className="p-5 rounded-xl bg-[#0B0B0B] border border-[#333333]">
+                  <span className="font-mono-micro text-[#D9D9D9] block mb-2 font-bold tracking-wider">[KEY TAKEAWAYS &amp; SUMMARY]</span>
+                  <p className="text-sm text-[#D9D9D9] leading-relaxed whitespace-pre-wrap">
                     {detailReel.ai_summary}
                   </p>
                 </div>
               )}
 
               {detailReel.ai_description && (
-                <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-800">
-                  <span className="text-[10px] uppercase font-semibold text-zinc-400 block mb-1">Description</span>
-                  <p className="text-xs text-zinc-300 leading-relaxed">
+                <div className="p-5 rounded-xl bg-[#0B0B0B] border border-[#333333]">
+                  <span className="font-mono-micro text-[#6B6B6B] block mb-2 font-bold tracking-wider">[DESCRIPTION]</span>
+                  <p className="text-sm text-[#999999] leading-relaxed">
                     {detailReel.ai_description}
                   </p>
                 </div>
               )}
 
-              <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-800">
-                <span className="text-[10px] uppercase font-semibold text-zinc-400 block mb-1">Full Caption</span>
-                <p className="text-xs text-zinc-400 whitespace-pre-wrap max-h-40 overflow-y-auto">
+              <div className="p-5 rounded-xl bg-[#0B0B0B] border border-[#333333]">
+                <span className="font-mono-micro text-[#6B6B6B] block mb-2 font-bold tracking-wider">[ORIGINAL CAPTION]</span>
+                <p className="text-xs text-[#999999] whitespace-pre-wrap max-h-48 overflow-y-auto font-mono leading-relaxed">
                   {detailReel.caption || detailReel.raw_shared_text || 'No caption found'}
                 </p>
               </div>
 
-              {/* Play Link opens on new tab */}
-              <div className="flex items-center justify-between p-3 rounded-xl bg-indigo-950/30 border border-indigo-900/40">
-                <div>
+              {/* Direct Play Link */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-xl bg-[#0B0B0B] border border-[#333333] gap-3">
+                <div className="min-w-0 flex-1">
                   <span className="text-xs font-semibold text-white block">Watch Original Instagram Reel</span>
-                  <span className="text-[11px] text-zinc-400 truncate max-w-sm block font-mono">{detailReel.url}</span>
+                  <span className="text-[11px] text-[#6B6B6B] truncate block font-mono">{detailReel.url}</span>
                 </div>
                 <a
                   href={detailReel.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 text-xs font-medium text-white transition"
+                  className="flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-xs font-bold text-black transition hover:bg-[#D9D9D9] active:scale-95 shrink-0"
                 >
-                  <Play className="h-3.5 w-3.5 fill-white" />
-                  <span>Play Reel</span>
+                  <Play className="h-3.5 w-3.5 fill-black" />
+                  <span>Play on Instagram</span>
                   <ExternalLink className="h-3 w-3" />
                 </a>
               </div>
             </div>
 
-            <div className="border-t border-zinc-800 px-6 py-4 flex items-center justify-between bg-zinc-950">
-              <span className="text-xs text-zinc-500 capitalize">
-                Status: {detailReel.completion_status} ({detailReel.processing_status})
+            {/* Footer */}
+            <div className="border-t border-[#333333] px-6 py-4 flex items-center justify-between bg-[#0B0B0B]">
+              <span className="font-mono-micro text-[#6B6B6B]">
+                STATUS: {detailReel.completion_status} ({detailReel.processing_status})
               </span>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2.5">
                 <button
                   onClick={() => handleStatusChange(detailReel.id, 'completed')}
-                  className="rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 px-3 py-1.5 text-xs font-medium text-emerald-300 transition"
+                  className="rounded-lg bg-[#1A1A1A] hover:bg-[#333333] border border-[#333333] px-3.5 py-1.5 text-xs font-semibold text-white transition active:scale-95"
                 >
                   Mark Watched
                 </button>
                 <button
                   onClick={() => handleStatusChange(detailReel.id, 'archived')}
-                  className="rounded-lg bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-300 transition"
+                  className="rounded-lg bg-[#1A1A1A] hover:bg-[#333333] border border-[#333333] px-3.5 py-1.5 text-xs font-semibold text-[#999999] hover:text-white transition active:scale-95"
                 >
                   Archive
                 </button>
@@ -2049,34 +2045,48 @@ export default function App() {
 
       {/* CATEGORY EXPLORER LIGHTBOX (FOLDER-TYPE DRILL-DOWN) */}
       {categoryLightbox && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
-          <div className="w-full max-w-2xl max-h-[85vh] flex flex-col rounded-2xl border border-zinc-800 bg-zinc-900 shadow-2xl overflow-hidden">
-            <div className="flex items-center justify-between border-b border-zinc-800 px-6 py-4">
-              <div className="flex items-center gap-2">
-                <Folder className="h-5 w-5 text-indigo-400" />
-                <h3 className="text-base font-bold text-white">{categoryLightbox.name}</h3>
-                <span className="text-xs text-zinc-400 font-mono">
-                  ({reels.filter(r => r.category_id === categoryLightbox.id || r.subcategory_id === categoryLightbox.id).length} items)
-                </span>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-fade-up"
+          onClick={() => setCategoryLightbox(null)}
+        >
+          <div
+            className="w-full max-w-3xl max-h-[88vh] flex flex-col rounded-2xl border border-[#333333] bg-[#1A1A1A] shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-[#333333] px-6 py-4 bg-[#0B0B0B]/60">
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-8 rounded-lg bg-[#0B0B0B] border border-[#333333] flex items-center justify-center text-white shrink-0">
+                  <Folder className="h-4 w-4 text-[#D9D9D9]" />
+                </div>
+                <div>
+                  <h3 className="font-zolo text-lg font-bold text-white leading-tight">{categoryLightbox.name}</h3>
+                  <span className="font-mono-micro text-[#6B6B6B]">
+                    {reels.filter(r => r.category_id === categoryLightbox.id || r.subcategory_id === categoryLightbox.id).length} SAVED POSTS
+                  </span>
+                </div>
               </div>
               <button
                 onClick={() => setCategoryLightbox(null)}
-                className="p-1 rounded-lg text-zinc-400 hover:bg-zinc-800 hover:text-white transition"
+                className="p-1.5 rounded-lg text-[#6B6B6B] hover:bg-[#333333] hover:text-white transition"
+                title="Close (Esc)"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 space-y-5">
+            <div className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-6">
               {/* Direct View Posts Button */}
-              <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-950 border border-zinc-800">
-                <span className="text-xs text-zinc-300">View all reels in this folder:</span>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-xl bg-[#0B0B0B] border border-[#333333] gap-3">
+                <div>
+                  <span className="text-sm font-semibold text-white block">View Folder Collection</span>
+                  <span className="text-xs text-[#6B6B6B]">Filter and browse all posts inside {categoryLightbox.name}</span>
+                </div>
                 <button
                   onClick={() => {
                     setSelectedCategoryId(categoryLightbox.id);
                     setCategoryLightbox(null);
                   }}
-                  className="rounded-lg bg-indigo-600 hover:bg-indigo-500 px-3 py-1 text-xs font-medium text-white transition"
+                  className="rounded-lg bg-white hover:bg-[#D9D9D9] text-black px-4 py-2 text-xs font-bold transition active:scale-95 shrink-0"
                 >
                   Open {categoryLightbox.name} Posts →
                 </button>
@@ -2084,9 +2094,9 @@ export default function App() {
 
               {/* Subcategory Folders */}
               <div>
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-                    Sub-Folders &amp; Niches
+                <div className="flex items-center justify-between mb-4">
+                  <span className="font-mono-micro text-[#6B6B6B]">
+                    SUB-FOLDERS &amp; NICHES
                   </span>
                   <button
                     onClick={() => {
@@ -2094,16 +2104,18 @@ export default function App() {
                       setIsCreatingCategory(true);
                       setCategoryLightbox(null);
                     }}
-                    className="flex items-center gap-1 text-[11px] font-medium text-indigo-400 hover:text-indigo-300 transition"
+                    className="flex items-center gap-1.5 text-xs font-semibold text-white hover:text-[#D9D9D9] transition"
                   >
-                    <Plus className="h-3 w-3" />
+                    <Plus className="h-3.5 w-3.5" />
                     <span>Add Sub-Folder</span>
                   </button>
                 </div>
                 {getSubcategories(categoryLightbox.id).length === 0 ? (
-                  <p className="text-xs text-zinc-600 italic">No nested sub-folders.</p>
+                  <div className="p-8 rounded-xl border border-dashed border-[#333333] text-center bg-[#0B0B0B]/50">
+                    <p className="text-xs text-[#6B6B6B]">No nested sub-folders yet.</p>
+                  </div>
                 ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5">
                     {getSubcategories(categoryLightbox.id).map(sub => {
                       const count = reels.filter(r => r.subcategory_id === sub.id).length;
                       return (
@@ -2113,7 +2125,7 @@ export default function App() {
                             setSelectedCategoryId(sub.id);
                             setCategoryLightbox(null);
                           }}
-                          className="group/sub relative flex flex-col items-center justify-center p-3 rounded-xl border border-zinc-800 bg-zinc-950/60 hover:border-indigo-500/50 hover:bg-zinc-850 cursor-pointer transition text-center"
+                          className="group/sub relative flex flex-col items-center justify-center p-4 rounded-xl border border-[#333333] bg-[#0B0B0B] hover:border-[#6B6B6B] hover:bg-[#1A1A1A] cursor-pointer transition text-center shadow-sm"
                         >
                           <button
                             onClick={(e) => {
@@ -2124,14 +2136,14 @@ export default function App() {
                               setEditCategoryIcon(categoryMetaMap[sub.id]?.icon || 'Tag');
                               setEditCategoryDesc(categoryMetaMap[sub.id]?.description || '');
                             }}
-                            className="absolute top-1.5 right-1.5 p-1 text-zinc-500 hover:text-indigo-300 opacity-0 group-hover/sub:opacity-100 transition rounded"
+                            className="absolute top-2 right-2 p-1 text-[#6B6B6B] hover:text-white opacity-0 group-hover/sub:opacity-100 transition rounded"
                             title="Edit Subcategory"
                           >
-                            <Edit2 className="h-3 w-3" />
+                            <Edit2 className="h-3.5 w-3.5" />
                           </button>
-                          {renderCategoryIcon(categoryMetaMap[sub.id]?.icon || 'Tag', "h-8 w-8 text-indigo-400 mb-1")}
-                          <span className="text-xs font-medium text-white truncate w-full">{sub.name}</span>
-                          <span className="text-[10px] text-zinc-500 font-mono">{count} posts</span>
+                          {renderCategoryIcon(categoryMetaMap[sub.id]?.icon || 'Tag', "h-8 w-8 text-[#D9D9D9] mb-2")}
+                          <span className="text-xs font-semibold text-white truncate w-full">{sub.name}</span>
+                          <span className="font-mono-micro text-[#6B6B6B] mt-1">{count} posts</span>
                         </div>
                       );
                     })}
