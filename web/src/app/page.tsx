@@ -355,20 +355,7 @@ export default function App() {
 
           // Reconcile saved-later IDs using functional update only after an error-free fetch
           if (!reelsRes.error) {
-            let nextPrunedToPersist: string[] | null = null;
-            setSavedLaterIds(prevSaved => {
-              const pruned = prevSaved.filter(id => typeof id === 'string' && fetchedIds.has(id));
-              if (pruned.length !== prevSaved.length) {
-                nextPrunedToPersist = pruned;
-              }
-              return pruned;
-            });
-            // Keep localStorage writes outside state updaters, using the value produced by the update
-            if (nextPrunedToPersist !== null) {
-              try {
-                localStorage.setItem(`watchlater_saved_later_ids_${requestUserId}`, JSON.stringify(nextPrunedToPersist));
-              } catch (e) { }
-            }
+            setSavedLaterIds(prevSaved => prevSaved.filter(id => typeof id === 'string' && fetchedIds.has(id)));
           }
         }
         if (catsRes.data) setCategories(catsRes.data as Category[]);
@@ -410,6 +397,16 @@ export default function App() {
 
     return () => subscription.unsubscribe();
   }, [loadSavedLaterIdsForUser]);
+
+  // Persist savedLaterIds tied to the active user's key
+  useEffect(() => {
+    const currentUserId = session?.user?.id;
+    if (currentUserId && !loading) {
+      try {
+        localStorage.setItem(`watchlater_saved_later_ids_${currentUserId}`, JSON.stringify(savedLaterIds));
+      } catch (e) { }
+    }
+  }, [savedLaterIds, session?.user?.id, loading]);
 
   // Real-time synchronization & new reel alert banner
   useEffect(() => {

@@ -888,6 +888,8 @@ export default function SplashCursor({
       }
       if (!pointer.ready) {
         pointer.x = point.x;
+        pointer.px = point.x;
+        pointer.y = point.y;
         pointer.py = point.y;
         pointer.ready = true;
         return;
@@ -938,13 +940,15 @@ export default function SplashCursor({
     };
     const onRestored = () => setGeneration(value => value + 1);
 
-    window.addEventListener('pointermove', onPointerMove, { passive: true });
-    window.addEventListener('pointerdown', onPointerDown, { passive: true });
-    window.addEventListener('touchstart', onTouchStart, { passive: true });
-    window.addEventListener('touchmove', onTouchMove, { passive: true });
-    window.addEventListener('touchend', onTouchEnd, { passive: true });
-    window.addEventListener('touchcancel', onTouchEnd, { passive: true });
-    document.documentElement.addEventListener('pointerleave', onLeave);
+    if (!reduced) {
+      window.addEventListener('pointermove', onPointerMove, { passive: true });
+      window.addEventListener('pointerdown', onPointerDown, { passive: true });
+      window.addEventListener('touchstart', onTouchStart, { passive: true });
+      window.addEventListener('touchmove', onTouchMove, { passive: true });
+      window.addEventListener('touchend', onTouchEnd, { passive: true });
+      window.addEventListener('touchcancel', onTouchEnd, { passive: true });
+      document.documentElement.addEventListener('pointerleave', onLeave);
+    }
     canvas.addEventListener('webglcontextlost', onLost);
     canvas.addEventListener('webglcontextrestored', onRestored);
 

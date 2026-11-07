@@ -419,7 +419,10 @@ export default function ServiceLandingPage({
                         <span className="font-mono-micro text-white">LIVE DEMO SIMULATION</span>
                       </div>
                       <button
-                        onClick={() => setIsVideoPlaying(false)}
+                        onClick={() => {
+                          setIsVideoPlaying(false);
+                          setDemoStep(0);
+                        }}
                         className="text-xs text-[#6B6B6B] hover:text-white font-mono"
                       >
                         Reset Demo ✕
@@ -461,7 +464,10 @@ export default function ServiceLandingPage({
                       {[0, 1, 2, 3].map((step) => (
                         <button
                           key={step}
+                          type="button"
                           onClick={() => setDemoStep(step)}
+                          aria-label={`Demo step ${step + 1} of 4`}
+                          aria-current={demoStep === step ? 'step' : undefined}
                           className={`h-1.5 flex-1 rounded-full transition-all ${demoStep === step ? 'bg-white' : 'bg-[#333333]'}`}
                         />
                       ))}
