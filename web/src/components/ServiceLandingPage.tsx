@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, MouseEvent } from 'react';
+import { useState, useEffect, useRef, MouseEvent } from 'react';
 import {
   Download,
   Share2,
@@ -8,20 +8,22 @@ import {
   AlertOctagon,
   Play,
   RotateCcw,
-  Check,
-  ChevronDown,
+  ArrowRight,
   ArrowUpRight,
   Sparkles,
   Smartphone,
   Eye,
   EyeOff,
   X,
-  Folder,
-  ArrowRight
+  Compass,
+  CheckCircle2,
+  Layers,
+  Terminal,
+  Cpu,
+  BookmarkX
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import SplashCursor from '@/components/SplashCursor';
-import ProductionLaunchVideo from '@/components/ProductionLaunchVideo';
 
 interface ServicePageProps {
   onSignInSuccess?: () => void;
@@ -34,7 +36,7 @@ export default function ServiceLandingPage({
   onEnterDashboard,
   hasSession = false
 }: ServicePageProps) {
-  // Auth modal state for existing account sign-in
+  // Auth modal
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
@@ -43,74 +45,68 @@ export default function ServiceLandingPage({
   const [authError, setAuthError] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(false);
 
-  // Magnetic CTA button coordinates
-  const [ctaOffset, setCtaOffset] = useState({ x: 0, y: 0 });
-  const [isCtaHovered, setIsCtaHovered] = useState(false);
+  // Interactive Live Pipeline simulator
+  const [pipelineState, setPipelineState] = useState<0 | 1 | 2 | 3 | 4>(0);
+  const [autoPlayPipeline, setAutoPlayPipeline] = useState(true);
 
-  // 3D Tilt for Hero Phone Demo Card
-  const [phoneTilt, setPhoneTilt] = useState({ x: 0, y: 0 });
-  const heroCardRef = useRef<HTMLDivElement>(null);
+  // Video Demo state
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const [videoTimeline, setVideoTimeline] = useState(0);
 
-  // Demo Video / Interactive Showcase state
-  const [demoPlaying, setDemoPlaying] = useState(false);
-  const [demoStep, setDemoStep] = useState(0);
+  // Mouse coords for spatial perspective
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
-  // FAQ accordion state
-  const [openFaq, setOpenFaq] = useState<number | null>(0);
+  // FAQ accordion
+  const [activeFaq, setActiveFaq] = useState<number | null>(0);
 
-  // Reduced motion preference
+  // Motion preference
   const [reducedMotion, setReducedMotion] = useState(false);
 
   useEffect(() => {
     if (typeof window === 'undefined' || !window.matchMedia) return;
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
     setReducedMotion(mq.matches);
-    const onChange = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
-    mq.addEventListener('change', onChange);
-    return () => mq.removeEventListener('change', onChange);
+    const handler = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
   }, []);
 
-  // Demo timer loop
+  // Global mouse tracking for spatial tilt
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (demoPlaying) {
-      interval = setInterval(() => {
-        setDemoStep((prev) => (prev + 1) % 4);
-      }, 2600);
-    }
-    return () => clearInterval(interval);
-  }, [demoPlaying]);
-
-  const handleCtaMouseMove = (e: MouseEvent<HTMLAnchorElement>) => {
     if (reducedMotion) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - (rect.left + rect.width / 2);
-    const y = e.clientY - (rect.top + rect.height / 2);
-    setCtaOffset({ x: x * 0.22, y: y * 0.22 });
-  };
+    const onMove = (e: globalThis.MouseEvent) => {
+      const x = (e.clientX / window.innerWidth - 0.5) * 2;
+      const y = (e.clientY / window.innerHeight - 0.5) * 2;
+      setMousePos({ x, y });
+    };
+    window.addEventListener('mousemove', onMove, { passive: true });
+    return () => window.removeEventListener('mousemove', onMove);
+  }, [reducedMotion]);
 
-  const handleCtaMouseLeave = () => {
-    setCtaOffset({ x: 0, y: 0 });
-    setIsCtaHovered(false);
-  };
+  // Automated pipeline cycle
+  useEffect(() => {
+    if (!autoPlayPipeline) return;
+    const t = setInterval(() => {
+      setPipelineState((prev) => ((prev + 1) % 5) as 0 | 1 | 2 | 3 | 4);
+    }, 3200);
+    return () => clearInterval(t);
+  }, [autoPlayPipeline]);
 
-  const handlePhoneMouseMove = (e: MouseEvent<HTMLDivElement>) => {
-    if (reducedMotion || !heroCardRef.current) return;
-    const rect = heroCardRef.current.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width - 0.5;
-    const y = (e.clientY - rect.top) / rect.height - 0.5;
-    setPhoneTilt({ x: -y * 14, y: x * 14 });
-  };
-
-  const handlePhoneMouseLeave = () => {
-    setPhoneTilt({ x: 0, y: 0 });
-  };
+  // Video demo timeline ticker
+  useEffect(() => {
+    let t: NodeJS.Timeout;
+    if (isVideoPlaying) {
+      t = setInterval(() => {
+        setVideoTimeline((prev) => (prev + 1) % 4);
+      }, 2500);
+    }
+    return () => clearInterval(t);
+  }, [isVideoPlaying]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthLoading(true);
     setAuthError(null);
-
     try {
       if (authMode === 'signin') {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -130,104 +126,80 @@ export default function ServiceLandingPage({
 
   const pipelineStages = [
     {
-      num: '01',
-      title: 'Share the Reel',
-      action: 'Native share sheet',
-      detail: 'Tap share on Instagram and choose Watch Later. Exactly like sharing a link to a friend, but this time it actually gets handled.',
-      badge: 'Zero new habits',
-      renderVisual: () => (
-        <div className="rounded-xl border border-[#2a2a2a] bg-[#0c0c0c] p-3.5 text-left">
-          <div className="flex items-center gap-2 mb-2.5">
-            <Share2 className="h-4 w-4 text-white" />
-            <span className="font-mono-micro text-[#888888]">Instagram share sheet</span>
-          </div>
-          <div className="flex items-center gap-2.5 rounded-lg border border-[#262626] bg-[#161616] p-2">
-            <img src="/logo.jpg" alt="Icon" className="h-6 w-6 rounded-md object-cover" />
-            <div className="text-[11px] leading-tight">
-              <span className="font-semibold text-white block">Watch Later</span>
-              <span className="text-[#666666] text-[10px]">One tap · Instant dismiss</span>
-            </div>
-          </div>
-        </div>
-      )
+      index: 0,
+      number: '01',
+      title: 'Instagram Share',
+      subtitle: 'Native share sheet hook',
+      description: 'Tap share on Instagram and choose Watch Later. Exactly like sending to a friend, but this time it actually gets digested.',
+      tag: 'CLIENT HOOK',
+      preview: {
+        badge: 'INSTAGRAM INTENT',
+        primary: 'Share to Watch Later',
+        detail: 'Instant background capture · 0 UI dialogs'
+      }
     },
     {
-      num: '02',
-      title: 'Silent Background Capture',
-      action: 'No UI interrupts',
-      detail: 'The app catches the reel silently in the background. No popup form, no folder picking, no screen interruption.',
-      badge: 'Background worker',
-      renderVisual: () => (
-        <div className="rounded-xl border border-[#2a2a2a] bg-[#0c0c0c] p-3.5 text-left">
-          <div className="flex items-center justify-between font-mono-micro mb-2">
-            <span className="text-[#888888]">Capture status</span>
-            <span className="text-emerald-400 font-semibold">200 captured</span>
-          </div>
-          <p className="text-xs text-white font-medium">Silent background queue verified</p>
-          <div className="mt-2.5 h-1 w-full rounded-full bg-[#1e1e1e] overflow-hidden">
-            <div className="h-full w-full bg-emerald-400 animate-pulse" />
-          </div>
-        </div>
-      )
+      index: 1,
+      number: '02',
+      title: 'Silent Intercept',
+      subtitle: 'No popup forms or UI',
+      description: 'The app catches the reel silently and dismisses. You never leave your feed, and no clumsy tagging dialog interrupts your flow.',
+      tag: 'DAEMON WORKER',
+      preview: {
+        badge: 'BACKGROUND DAEMON',
+        primary: 'Queue confirmed [200 OK]',
+        detail: 'Target ~3-4s roundtrip availability'
+      }
     },
     {
-      num: '03',
-      title: 'Real Substance Extraction',
-      action: 'Captions, transcript, creator',
-      detail: 'We pull the caption, transcript, and creator details, then automatically sort the reel into focused categories without manual tagging.',
-      badge: 'Automatic sorting',
-      renderVisual: () => (
-        <div className="rounded-xl border border-[#2a2a2a] bg-[#0c0c0c] p-3.5 text-left">
-          <span className="font-mono-micro text-[#888888] block mb-1.5">Parsed entity</span>
-          <div className="flex flex-wrap gap-1.5">
-            <span className="text-[10px] px-2 py-0.5 rounded-md bg-[#1a1a1a] border border-[#333333] text-white">Folder: Systems</span>
-            <span className="text-[10px] px-2 py-0.5 rounded-md bg-[#1a1a1a] border border-[#333333] text-[#aaaaaa]">Transcript synced</span>
-          </div>
-        </div>
-      )
+      index: 2,
+      number: '03',
+      title: 'Substance Extraction',
+      subtitle: 'Audio, captions & transcripts',
+      description: 'We pull the spoken transcript, caption text, and creator handle, clustering it automatically into logical pillars.',
+      tag: 'AI PARSER',
+      preview: {
+        badge: 'TRANSCRIPTION',
+        primary: 'Spoken speech converted to text',
+        detail: 'Category: Systems Architecture'
+      }
     },
     {
-      num: '04',
-      title: 'Centralized Clean Library',
-      action: 'Pick a niche and watch',
-      detail: 'Your dashboard is an organized library ready for browsing, not an overwhelming junk drawer you avoid opening.',
-      badge: 'Direct library',
-      renderVisual: () => (
-        <div className="rounded-xl border border-[#2a2a2a] bg-[#0c0c0c] p-3.5 text-left">
-          <div className="flex items-center justify-between text-[11px] mb-1">
-            <span className="text-white font-medium">Library niches</span>
-            <span className="font-mono-micro text-[#888888]">4 pillars</span>
-          </div>
-          <p className="text-[11px] text-[#777777]">Tech · Architecture · Cooking · Mobility</p>
-        </div>
-      )
+      index: 3,
+      number: '04',
+      title: 'Central Library',
+      subtitle: 'Organized niche pillars',
+      description: 'Your dashboard is a clean library, not a graveyard. Pick a niche, extract knowledge, and actually digest what you saved.',
+      tag: 'KNOWLEDGE BASE',
+      preview: {
+        badge: 'PILLAR SYSTEM',
+        primary: '4 Active Curated Pillars',
+        detail: 'Tech · Design Craft · Culinary · Mobility'
+      }
     },
     {
-      num: '05',
-      title: 'Auto-Cleans Watched Posts',
-      action: 'Zero stale backlog',
-      detail: 'Once you watch a reel, it automatically purges from your active queue. Unused categories retire so dead folders never pile up.',
-      badge: 'Auto-retire',
-      renderVisual: () => (
-        <div className="rounded-xl border border-[#2a2a2a] bg-[#0c0c0c] p-3.5 text-left flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Trash2 className="h-4 w-4 text-[#999999]" />
-            <span className="text-xs text-white">Watched queue cleared</span>
-          </div>
-          <span className="font-mono-micro text-emerald-400">Zero backlog</span>
-        </div>
-      )
+      index: 4,
+      number: '05',
+      title: 'Auto-Cleans Watched',
+      subtitle: 'Zero stale backlog forever',
+      description: 'Once watched, reels auto-purge from the active queue. Dead categories retire naturally so stale clutter never accumulates.',
+      tag: 'QUEUE PURGE',
+      preview: {
+        badge: 'SELF-CLEANING',
+        primary: 'Watched post purged',
+        detail: 'Queue stays pristine · No hoarding guilt'
+      }
     }
   ];
 
-  const libraryNiches = [
-    { title: 'Engineering & Architecture', count: 18, desc: 'Systems design, database indexes, and concurrency models worth studying.' },
-    { title: 'Craft & Kinetic Design', count: 14, desc: 'Concentric radii, physical spring curves, and typography scale rules.' },
-    { title: 'Culinary Techniques', count: 9, desc: 'Sourdough starter hydration, dough proofing curves, and wok techniques.' },
-    { title: 'Health & Movement', count: 11, desc: 'Desk posture rehab, thoracic mobility, and wrist decompression routines.' }
+  const editorialNiches = [
+    { id: '01', title: 'Systems & Architecture', count: '18 SAVED', description: 'Distributed consensus, write-ahead logs, database locking internals.' },
+    { id: '02', title: 'Kinetic UI & Physics', count: '14 SAVED', description: 'Spring easing curves, concentric radii, subpixel font smoothing.' },
+    { id: '03', title: 'Culinary Techniques', count: '09 SAVED', description: 'Sourdough starter hydration, dough hydration curves, wok tossing.' },
+    { id: '04', title: 'Movement & Mobility', count: '11 SAVED', description: 'Desk posture rehab, thoracic mobility, wrist decompression.' }
   ];
 
-  const realFaqs = [
+  const faqs = [
     {
       q: 'Does the app open every time I share a reel?',
       a: 'No. Watch Later registers a silent Android share intent. When you tap share on Instagram, the capture activity intercepts the URL in the background and immediately finishes. You stay right where you were in your feed.'
@@ -251,8 +223,8 @@ export default function ServiceLandingPage({
   ];
 
   return (
-    <div className="relative min-h-screen bg-fabric text-[#d9d9d9] font-sans antialiased selection:bg-[#333333] selection:text-white">
-      {/* SplashCursor ambient fluid in dark ink mode with #9b9b9b tone */}
+    <div className="relative min-h-screen bg-[#09090b] text-[#f4f4f5] selection:bg-white selection:text-black antialiased font-sans overflow-x-clip">
+      {/* Dynamic Fluid Ink Canvas */}
       <SplashCursor
         colors={['#ffffff', '#9b9b9b', '#d9d9d9']}
         rainbow={false}
@@ -271,258 +243,460 @@ export default function ServiceLandingPage({
         zIndex={0}
       />
 
-      {/* 2.1 Nav */}
-      <header className="sticky top-0 z-40 w-full border-b border-[#222222] bg-[#0b0b0b]/85 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
+      {/* Grid Pattern Overlay */}
+      <div
+        className="pointer-events-none fixed inset-0 z-[1] opacity-[0.035]"
+        style={{
+          backgroundImage: 'linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px)',
+          backgroundSize: '48px 48px'
+        }}
+      />
+
+      {/* Top Editorial Nav Header */}
+      <header className="sticky top-0 z-40 w-full border-b border-white/10 bg-[#09090b]/80 backdrop-blur-xl">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-8">
           <div className="flex items-center gap-3">
-            <img src="/logo.jpg" alt="Watch Later" className="h-8 w-8 rounded-lg object-cover border border-[#2a2a2a]" />
+            <img src="/logo.jpg" alt="Logo" className="h-8 w-8 rounded-lg border border-white/10 object-cover" />
             <div>
               <span className="font-zolo text-base font-bold tracking-tight text-white block leading-none">Watch Later</span>
-              <span className="font-mono-micro text-[#666666] block mt-0.5">Share, don&apos;t save</span>
+              <span className="font-mono text-[10px] tracking-widest text-[#71717a] block mt-0.5">SHARE, DON&apos;T SAVE</span>
             </div>
           </div>
 
-          <nav className="flex items-center gap-4 sm:gap-6">
-            <a href="#how-it-works" className="hidden sm:inline-block text-xs font-mono text-[#888888] hover:text-white transition">
-              How it works
+          <div className="flex items-center gap-6">
+            <a href="#pipeline" className="hidden sm:inline-block font-mono text-xs text-[#a1a1aa] hover:text-white transition">
+              The Pipeline
             </a>
-            <a href="#faq" className="hidden sm:inline-block text-xs font-mono text-[#888888] hover:text-white transition">
+            <a href="#library" className="hidden sm:inline-block font-mono text-xs text-[#a1a1aa] hover:text-white transition">
+              Library
+            </a>
+            <a href="#faq" className="hidden sm:inline-block font-mono text-xs text-[#a1a1aa] hover:text-white transition">
               FAQ
             </a>
+
             {hasSession ? (
               <button
+                type="button"
                 onClick={onEnterDashboard}
-                className="flex items-center gap-1.5 rounded-lg border border-[#333333] bg-[#141414] px-3.5 py-1.5 text-xs font-semibold text-white transition hover:bg-[#202020] active:scale-[0.98]"
+                className="flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-white/10 hover:border-white/40 active:scale-[0.98]"
               >
-                <span>Open Library</span>
+                <span>Enter Library</span>
                 <ArrowRight className="h-3.5 w-3.5" />
               </button>
             ) : (
               <button
+                type="button"
                 onClick={() => {
                   setAuthMode('signin');
                   setShowAuthModal(true);
                 }}
-                className="flex items-center gap-1.5 rounded-lg border border-[#333333] bg-[#141414] px-3.5 py-1.5 text-xs font-semibold text-white transition hover:bg-[#202020] active:scale-[0.98]"
+                className="flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-white/10 hover:border-white/40 active:scale-[0.98]"
               >
                 <span>Sign in</span>
                 <ArrowRight className="h-3.5 w-3.5" />
               </button>
             )}
-          </nav>
+          </div>
         </div>
       </header>
 
       <main className="relative z-10">
-        {/* 2.2 Hero: Exactly ONE Primary CTA Button (Install APK) */}
-        <section className="relative pt-20 pb-16 sm:pt-28 sm:pb-24 border-b border-[#222222]">
-          <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
-            {/* Tagline treated as headline */}
-            <h1 className="font-zolo text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-white leading-[1.06] text-balance">
+        {/* HERO SECTION: Monumental Typography & Kinetic Architecture */}
+        <section className="relative pt-24 pb-20 sm:pt-36 sm:pb-32 border-b border-white/10">
+          <div className="mx-auto max-w-7xl px-4 sm:px-8">
+            {/* Top Status Capsule */}
+            <div className="inline-flex items-center gap-2.5 rounded-full border border-white/15 bg-white/[0.04] px-4 py-1.5 mb-8 backdrop-blur-md">
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="font-mono text-[11px] tracking-wider text-[#d4d4d8]">ANDROID APK v1.0 • SILENT SHARE SHEET INTERCEPT</span>
+            </div>
+
+            {/* Monumental Headline */}
+            <h1 className="font-zolo text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-black tracking-[-0.05em] text-white leading-[0.92] text-balance max-w-6xl">
               Never lose a reel worth revisiting.
             </h1>
 
-            {/* One supporting line explaining the real mechanism */}
-            <p className="mt-6 text-base sm:text-lg text-[#999999] max-w-2xl mx-auto leading-relaxed">
-              Share reels from Instagram straight to Watch Later. They are captured silently in the background, categorized into a clean library, and auto-cleaned once watched.
-            </p>
+            {/* Editorial Lead Paragraph */}
+            <div className="mt-8 sm:mt-12 flex flex-col md:flex-row md:items-end justify-between gap-8 pt-8 border-t border-white/10">
+              <p className="text-lg sm:text-xl md:text-2xl font-light text-[#a1a1aa] max-w-2xl leading-relaxed text-balance">
+                Share reels from Instagram straight to Watch Later with one tap. They are captured silently, transcribed into text, grouped into focused pillars, and auto-cleaned once watched.
+              </p>
 
-            {/* Exactly ONE Hero CTA Button: Download Android APK */}
-            <div className="mt-8 flex flex-col items-center justify-center">
-              <a
-                href="/watch-later.apk"
-                download="watch-later.apk"
-                onMouseMove={handleCtaMouseMove}
-                onMouseEnter={() => setIsCtaHovered(true)}
-                onMouseLeave={handleCtaMouseLeave}
-                style={reducedMotion ? undefined : {
-                  transform: `translate3d(${ctaOffset.x}px, ${ctaOffset.y}px, 0)`,
-                  transition: isCtaHovered ? 'transform 0.08s ease-out' : 'transform 0.3s ease-out'
-                }}
-                className="group relative inline-flex items-center justify-center gap-3 rounded-xl bg-white px-8 py-4 text-base font-bold text-black transition-colors hover:bg-[#ececec] active:scale-[0.98] shadow-[0_0_35px_rgba(255,255,255,0.18)]"
-              >
-                <Download className="h-5 w-5 text-black transition-transform duration-200 group-hover:-translate-y-0.5" />
-                <span>Download Android App (APK)</span>
-              </a>
-              <span className="mt-3 text-[11px] font-mono text-[#666666]">
-                Direct APK download · Silent share-sheet capture · Free
-              </span>
+              {/* EXACTLY ONE HERO CTA BUTTON: DOWNLOAD ANDROID APK */}
+              <div className="shrink-0 flex flex-col items-start md:items-end gap-2.5">
+                <a
+                  href="/watch-later.apk"
+                  download="watch-later.apk"
+                  className="group relative inline-flex items-center gap-3 rounded-full bg-white px-8 py-5 text-base font-bold text-black transition-all duration-300 hover:bg-[#e4e4e7] hover:scale-[1.03] active:scale-[0.98] shadow-[0_0_50px_rgba(255,255,255,0.2)]"
+                >
+                  <Download className="h-5 w-5 text-black transition-transform duration-300 group-hover:-translate-y-0.5" />
+                  <span>Download Android App (APK)</span>
+                </a>
+                <span className="font-mono text-[11px] text-[#71717a]">
+                  Direct APK · Silent Background Capture · Free
+                </span>
+              </div>
             </div>
 
-            {/* SECTION 1.2: EXACTLY ONE VIDEO ON THE ENTIRE PAGE (THE BRAG DEMO MOMENT) */}
-            <div className="mt-14 max-w-3xl mx-auto">
-              <ProductionLaunchVideo />
+            {/* HERO 3D TILT PRODUCT CARD (Spatial Interaction) */}
+            <div className="mt-16 sm:mt-24 max-w-5xl mx-auto">
+              <div
+                style={reducedMotion ? undefined : {
+                  transform: `perspective(1200px) rotateX(${mousePos.y * -4}deg) rotateY(${mousePos.x * 4}deg)`,
+                  transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+                }}
+                className="relative rounded-3xl border border-white/15 bg-gradient-to-b from-[#18181b]/90 to-[#09090b]/95 p-6 sm:p-10 shadow-[0_30px_100px_rgba(0,0,0,0.8)] backdrop-blur-2xl"
+              >
+                {/* Visual Glass Sheen */}
+                <div className="pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-tr from-white/[0.03] via-transparent to-transparent" />
+
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/10 font-mono text-xs text-[#71717a]">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2.5 w-2.5 rounded-full bg-white/20" />
+                    <span className="text-white font-medium">REEL_INGESTION_PIPELINE</span>
+                  </div>
+                  <span className="text-[#a1a1aa] bg-white/5 px-3 py-1 rounded-full border border-white/10">
+                    REALTIME HOOK: ACTIVE
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6">
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+                    <span className="font-mono text-[10px] tracking-wider text-[#71717a] block mb-2">01 // THE TRIGGER</span>
+                    <h4 className="font-zolo text-lg font-bold text-white mb-1">Single Share Action</h4>
+                    <p className="text-xs text-[#a1a1aa] leading-relaxed">
+                      Tap share inside Instagram. Intercepted silently with zero popup windows.
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+                    <span className="font-mono text-[10px] tracking-wider text-[#71717a] block mb-2">02 // THE EXTRACTION</span>
+                    <h4 className="font-zolo text-lg font-bold text-white mb-1">Spoken Transcripts &amp; Audio</h4>
+                    <p className="text-xs text-[#a1a1aa] leading-relaxed">
+                      Full speech-to-text, creator details, and semantic topics extracted automatically.
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+                    <span className="font-mono text-[10px] tracking-wider text-[#71717a] block mb-2">03 // THE CLEANUP</span>
+                    <h4 className="font-zolo text-lg font-bold text-white mb-1">Self-Purging Library</h4>
+                    <p className="text-xs text-[#a1a1aa] leading-relaxed">
+                      Completed reels auto-purge. Unused categories retire so backlog never accumulates.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </section>
 
-        {/* 2.3 The Problem: Brief, Honest, Human */}
-        <section className="py-20 border-b border-[#222222] bg-[#0c0c0c]/60">
-          <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 text-center">
-            <span className="font-mono-micro text-[#777777] block mb-2">The problem</span>
-            <h2 className="font-zolo text-2xl sm:text-4xl font-bold text-white tracking-tight">
+        {/* SECTION 1.2: EXACTLY ONE VIDEO ON THE ENTIRE PAGE (THE BRAG DEMO MOMENT) */}
+        <section className="py-24 sm:py-32 border-b border-white/10 bg-black/40">
+          <div className="mx-auto max-w-5xl px-4 sm:px-8">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
+              <div>
+                <span className="font-mono text-[11px] tracking-widest text-[#71717a] block mb-2">THE 10-SECOND DEMO</span>
+                <h2 className="font-zolo text-3xl sm:text-5xl font-black tracking-tight text-white">
+                  See the mechanism in action.
+                </h2>
+              </div>
+              <p className="text-xs sm:text-sm text-[#a1a1aa] max-w-sm">
+                Watch how a single tap replaces cluttered bookmark folders forever.
+              </p>
+            </div>
+
+            {/* Standalone Video Player Stage */}
+            <div className="relative rounded-3xl border border-white/15 bg-[#0e0e11] p-3 sm:p-4 shadow-2xl overflow-hidden">
+              <div className="relative aspect-video w-full rounded-2xl bg-[#050507] border border-white/10 overflow-hidden flex flex-col justify-between">
+                {!isVideoPlaying ? (
+                  <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-gradient-to-b from-white/[0.04] to-transparent">
+                    <button
+                      type="button"
+                      onClick={() => setIsVideoPlaying(true)}
+                      aria-label="Play Product Launch Video"
+                      className="group relative flex h-20 w-20 items-center justify-center rounded-full bg-white text-black transition-transform duration-300 hover:scale-110 active:scale-95 shadow-[0_0_50px_rgba(255,255,255,0.3)] mb-4 cursor-pointer"
+                    >
+                      <Play className="h-8 w-8 fill-black text-black ml-1 transition-transform group-hover:scale-110" />
+                    </button>
+                    <span className="font-mono text-[11px] text-[#71717a] tracking-wider block mb-1">INTERACTIVE WALKTHROUGH</span>
+                    <h3 className="font-zolo text-xl font-bold text-white mb-1">The 4-Stage Reel Pipeline</h3>
+                    <p className="text-xs text-[#a1a1aa] max-w-md">
+                      Share Sheet → Background Worker → Automatic Pillar Sort → Auto-Clean
+                    </p>
+                  </div>
+                ) : (
+                  <div className="w-full h-full p-6 sm:p-8 flex flex-col justify-between bg-black/95 text-left">
+                    <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                        <span className="font-mono text-xs text-white">INTERACTIVE SIMULATION</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsVideoPlaying(false);
+                          setVideoTimeline(0);
+                        }}
+                        className="flex items-center gap-1.5 text-xs font-mono text-[#a1a1aa] hover:text-white transition"
+                      >
+                        <RotateCcw className="h-3 w-3" />
+                        <span>Reset Walkthrough</span>
+                      </button>
+                    </div>
+
+                    <div className="my-auto py-4">
+                      {videoTimeline === 0 && (
+                        <div className="animate-fade-up max-w-lg">
+                          <span className="font-mono text-xs text-sky-400 block mb-1">STAGE 01 // INSTAGRAM SHARE SHEET</span>
+                          <h4 className="font-zolo text-2xl sm:text-3xl font-bold text-white mb-2">User taps &quot;Share to Watch Later&quot;</h4>
+                          <p className="text-sm text-[#a1a1aa] leading-relaxed">No dialogs or folder pickers open. You stay right where you were in your Instagram feed.</p>
+                        </div>
+                      )}
+                      {videoTimeline === 1 && (
+                        <div className="animate-fade-up max-w-lg">
+                          <span className="font-mono text-xs text-purple-400 block mb-1">STAGE 02 // BACKGROUND CAPTURE</span>
+                          <h4 className="font-zolo text-2xl sm:text-3xl font-bold text-white mb-2">Silent Metadata &amp; Transcript Parse</h4>
+                          <p className="text-sm text-[#a1a1aa] leading-relaxed">Extracts captions, author details, and spoken speech into searchable text silently.</p>
+                        </div>
+                      )}
+                      {videoTimeline === 2 && (
+                        <div className="animate-fade-up max-w-lg">
+                          <span className="font-mono text-xs text-emerald-400 block mb-1">STAGE 03 // AUTOMATIC TAXONOMY</span>
+                          <h4 className="font-zolo text-2xl sm:text-3xl font-bold text-white mb-2">Assigned to &quot;Systems Architecture&quot;</h4>
+                          <p className="text-sm text-[#a1a1aa] leading-relaxed">AI assigns existing parent pillars without creating duplicate or hallucinated folders.</p>
+                        </div>
+                      )}
+                      {videoTimeline === 3 && (
+                        <div className="animate-fade-up max-w-lg">
+                          <span className="font-mono text-xs text-amber-400 block mb-1">STAGE 04 // AUTO-CLEANUP ON COMPLETION</span>
+                          <h4 className="font-zolo text-2xl sm:text-3xl font-bold text-white mb-2">Watched reel cleared from queue</h4>
+                          <p className="text-sm text-[#a1a1aa] leading-relaxed">No backlog accumulates to haunt you. Categories that fall out of use retire automatically.</p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-3 border-t border-white/10">
+                      {[0, 1, 2, 3].map((step) => (
+                        <button
+                          key={step}
+                          type="button"
+                          onClick={() => setVideoTimeline(step)}
+                          aria-label={`Demo step ${step + 1} of 4`}
+                          aria-current={videoTimeline === step ? 'step' : undefined}
+                          className={`h-1.5 flex-1 rounded-full transition-colors ${videoTimeline === step ? 'bg-white' : 'bg-white/20'}`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* 2.3 THE PROBLEM: Brutally Honest & Human */}
+        <section className="py-24 sm:py-32 border-b border-white/10">
+          <div className="mx-auto max-w-4xl px-4 sm:px-8 text-center">
+            <span className="font-mono text-[11px] tracking-widest text-rose-400 block mb-3">[THE REAL PROBLEM]</span>
+            <h2 className="font-zolo text-4xl sm:text-6xl font-black tracking-tight text-white mb-6 text-balance leading-tight">
               You save reels to watch later. You never watch them.
             </h2>
-            <p className="mt-4 text-sm sm:text-base text-[#999999] leading-relaxed max-w-2xl mx-auto">
-              Saves get scattered across Instagram&apos;s own Saved folder, random DM threads to yourself, screenshots, and notes apps. Nothing is organized, nothing gets revisited, and eventually it&apos;s just clutter you avoid opening.
+            <p className="text-base sm:text-xl text-[#a1a1aa] leading-relaxed max-w-2xl mx-auto font-light">
+              Your saves end up scattered across Instagram&apos;s own Saved folder, random DM threads to yourself, screenshots, and notes apps. Nothing is organized, nothing gets revisited, and eventually it&apos;s just clutter no one has the energy to sort through.
             </p>
           </div>
         </section>
 
-        {/* 2.4 How It Works: Real Mechanism in Order with Horizontal Scroll Strip */}
-        <section id="how-it-works" className="py-20 border-b border-[#222222]">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+        {/* 2.4 HOW IT WORKS: Horizontal Scroll Pipeline Track */}
+        <section id="pipeline" className="py-24 sm:py-32 border-b border-white/10">
+          <div className="mx-auto max-w-7xl px-4 sm:px-8 mb-12 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div>
-              <span className="font-mono-micro text-[#777777] block mb-1">How it works</span>
-              <h2 className="font-zolo text-2xl sm:text-4xl font-bold text-white tracking-tight">
-                The 5-Step Pipeline
+              <span className="font-mono text-[11px] tracking-widest text-[#71717a] block mb-2">THE PIPELINE</span>
+              <h2 className="font-zolo text-3xl sm:text-5xl font-black tracking-tight text-white">
+                How It Actually Works
               </h2>
             </div>
-            <span className="font-mono-micro text-[#777777]">Swipe horizontally →</span>
+            <span className="font-mono text-xs text-[#71717a]">Scroll horizontally to inspect each stage →</span>
           </div>
 
           {/* Mandatory Horizontal Scroll Strip */}
           <div
             role="region"
             tabIndex={0}
-            aria-label="How Watch Later works pipeline sequence"
-            className="flex gap-5 overflow-x-auto px-4 sm:px-6 lg:px-8 pb-6 pt-2 no-scrollbar scroll-smooth snap-x focus:outline-none focus:ring-1 focus:ring-[#444444]"
+            aria-label="5-step reel processing pipeline"
+            className="flex gap-6 overflow-x-auto px-4 sm:px-8 pb-8 pt-2 no-scrollbar scroll-smooth snap-x focus:outline-none focus:ring-1 focus:ring-white/20"
           >
-            {pipelineStages.map((stage) => (
-              <div
-                key={stage.num}
-                className="snap-center min-w-[280px] sm:min-w-[320px] max-w-[340px] shrink-0 rounded-2xl border border-[#262626] bg-[#121212] p-5 flex flex-col justify-between hover:border-[#444444] transition-colors shadow-lg"
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="font-zolo text-xl font-bold text-white">{stage.num}</span>
-                    <span className="font-mono-micro text-[#aaaaaa] bg-[#1c1c1c] px-2 py-0.5 rounded border border-[#2b2b2b]">
-                      {stage.badge}
-                    </span>
-                  </div>
-                  <h3 className="font-zolo text-base font-bold text-white mb-1">{stage.title}</h3>
-                  <span className="font-mono-micro text-[#888888] block mb-3">{stage.action}</span>
-                  <p className="text-xs text-[#999999] leading-relaxed mb-6">{stage.detail}</p>
-                </div>
+            {pipelineStages.map((stage) => {
+              const isCurrent = pipelineState === stage.index;
+              return (
+                <div
+                  key={stage.number}
+                  onClick={() => {
+                    setPipelineState(stage.index as any);
+                    setAutoPlayPipeline(false);
+                  }}
+                  className={`snap-center min-w-[320px] sm:min-w-[380px] max-w-[400px] shrink-0 rounded-3xl border p-7 flex flex-col justify-between transition-all duration-300 cursor-pointer ${
+                    isCurrent
+                      ? 'border-white bg-[#18181b] shadow-[0_20px_50px_rgba(0,0,0,0.8)] scale-[1.01]'
+                      : 'border-white/10 bg-[#121215] hover:border-white/30'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-6">
+                      <span className="font-zolo text-3xl font-black text-white">{stage.number}</span>
+                      <span className="font-mono text-[10px] px-2.5 py-1 rounded-full border border-white/10 bg-white/5 text-[#d4d4d8]">
+                        {stage.tag}
+                      </span>
+                    </div>
 
-                {stage.renderVisual()}
-              </div>
-            ))}
+                    <h3 className="font-zolo text-2xl font-bold text-white mb-1">{stage.title}</h3>
+                    <span className="font-mono text-xs text-[#a1a1aa] block mb-4">{stage.subtitle}</span>
+                    <p className="text-sm text-[#71717a] leading-relaxed mb-8">{stage.description}</p>
+                  </div>
+
+                  {/* Stage Visual Card */}
+                  <div className="rounded-2xl border border-white/10 bg-[#09090b] p-4 text-left">
+                    <span className="font-mono text-[10px] text-[#71717a] block mb-1">{stage.preview.badge}</span>
+                    <p className="text-xs font-semibold text-white">{stage.preview.primary}</p>
+                    <p className="text-[11px] text-[#71717a] mt-0.5">{stage.preview.detail}</p>
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
-          {/* Explicit Trust Signal: Never Hallucinates a Category */}
-          <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 mt-12">
-            <div className="rounded-2xl border border-[#2b2b2b] bg-[#121212] p-6 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              <div className="h-10 w-10 rounded-xl bg-red-950/40 border border-red-800/40 flex items-center justify-center shrink-0">
-                <AlertOctagon className="h-5 w-5 text-red-400" />
+          {/* Explicit Trust Signal: Never Hallucinates */}
+          <div className="mx-auto max-w-4xl px-4 sm:px-8 mt-16">
+            <div className="rounded-3xl border border-red-500/20 bg-red-950/10 p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center gap-6">
+              <div className="h-12 w-12 rounded-2xl bg-red-500/20 border border-red-500/30 flex items-center justify-center shrink-0">
+                <AlertOctagon className="h-6 w-6 text-red-400" />
               </div>
               <div>
-                <h4 className="text-xs font-semibold text-white mb-1">
-                  Honest Failed Folder — Never Fake Summaries
+                <span className="font-mono text-xs text-red-400 block mb-1">HONEST FAILURE POLICY</span>
+                <h4 className="font-zolo text-lg font-bold text-white mb-1.5">
+                  Never Guessing, Never Hallucinating
                 </h4>
-                <p className="text-xs text-[#888888] leading-relaxed">
-                  If extraction genuinely fails because a reel was deleted, set to private, or blocked, Watch Later <span className="text-white font-medium">never guesses or hallucinates a category or summary</span>. It lands in a clearly labeled Failed folder so you always see what happened honestly.
+                <p className="text-sm text-[#a1a1aa] leading-relaxed">
+                  If extraction genuinely fails because a reel was deleted, set to private, or blocked by Instagram, Watch Later <span className="text-white font-medium">never fabricates a fake category or summary</span>. It gets placed in a clearly labeled <span className="text-red-400 font-mono font-medium">Failed</span> folder instead — visible and separate, never silently discarded and never faked.
                 </p>
               </div>
             </div>
           </div>
         </section>
 
-        {/* 2.5 The Dashboard / What You Get */}
-        <section className="py-20 border-b border-[#222222] bg-[#0c0c0c]/50">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-10 gap-3">
+        {/* 2.5 THE DASHBOARD / WHAT YOU GET: Centralized Library */}
+        <section id="library" className="py-24 sm:py-32 border-b border-white/10 bg-[#0c0c0e]/40">
+          <div className="mx-auto max-w-7xl px-4 sm:px-8">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-16">
               <div>
-                <span className="font-mono-micro text-[#777777] block mb-1">The dashboard</span>
-                <h2 className="font-zolo text-2xl sm:text-4xl font-bold text-white tracking-tight">
-                  A Library, Not a Dump
+                <span className="font-mono text-[11px] tracking-widest text-[#71717a] block mb-2">THE DESTINATION</span>
+                <h2 className="font-zolo text-3xl sm:text-5xl font-black tracking-tight text-white">
+                  A library, not a dump.
                 </h2>
               </div>
-              <p className="text-xs sm:text-sm text-[#888888] max-w-md">
-                Pick a niche, extract knowledge, and actually digest what you saved.
+              <p className="text-sm text-[#a1a1aa] max-w-md">
+                Pick a niche, extract knowledge, and actually digest what you saved without the distraction of algorithmic feeds.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {libraryNiches.map((niche, idx) => (
-                <div key={idx} className="rounded-2xl border border-[#262626] bg-[#121212] p-5 transition hover:border-[#3a3a3a]">
-                  <div className="flex items-center justify-between mb-2.5">
-                    <h3 className="font-zolo text-base font-bold text-white">{niche.title}</h3>
-                    <span className="font-mono-micro text-[#888888] px-2 py-0.5 rounded bg-[#1a1a1a] border border-[#262626]">
-                      {niche.count} posts
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {editorialNiches.map((niche) => (
+                <div
+                  key={niche.id}
+                  className="rounded-3xl border border-white/10 bg-[#121215] p-8 transition-colors hover:border-white/30"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="font-mono text-xs text-[#71717a]">{niche.id} &bull; PILLAR</span>
+                    <span className="font-mono text-xs px-3 py-1 rounded-full border border-white/10 bg-white/5 text-white">
+                      {niche.count}
                     </span>
                   </div>
-                  <p className="text-xs text-[#888888] leading-relaxed">{niche.desc}</p>
+                  <h3 className="font-zolo text-2xl font-bold text-white mb-2">{niche.title}</h3>
+                  <p className="text-sm text-[#71717a] leading-relaxed">{niche.description}</p>
                 </div>
               ))}
             </div>
 
-            {/* Subtle interest insights mention */}
-            <div className="mt-6 rounded-2xl border border-[#262626] bg-[#121212] p-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+            {/* Light personality insights callout */}
+            <div className="mt-8 rounded-3xl border border-white/10 bg-white/[0.02] p-8 flex flex-col sm:flex-row items-center justify-between gap-6">
               <div>
-                <p className="text-xs font-semibold text-white">Lightweight interest insights</p>
-                <p className="text-[11px] text-[#777777]">Over time, your library surfaces subtle reflections of what you genuinely gravitate toward.</p>
+                <h4 className="font-zolo text-lg font-bold text-white mb-1">Lightweight Interest Insights</h4>
+                <p className="text-sm text-[#a1a1aa]">
+                  As a natural side effect of what you curate over time, the dashboard surfaces gentle insights into your evolving interests.
+                </p>
               </div>
-              <span className="font-mono-micro text-[#666666] shrink-0">Derived automatically</span>
+              <span className="font-mono text-xs text-[#71717a] shrink-0 border border-white/10 px-4 py-2 rounded-full">
+                DERIVED AUTOMATICALLY
+              </span>
             </div>
           </div>
         </section>
 
-        {/* 2.6 Proof & Credibility: Honest Targets (No Fabricated Stats) */}
-        <section className="py-20 border-b border-[#222222]">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-            <div className="text-center max-w-2xl mx-auto mb-12">
-              <span className="font-mono-micro text-[#777777] block mb-1">Architecture</span>
-              <h2 className="font-zolo text-2xl sm:text-4xl font-bold text-white tracking-tight">
-                Engineering Targets, Not Fake Stats
+        {/* 2.6 PROOF & CREDIBILITY: Honest Targets, No Synthetic Claims */}
+        <section className="py-24 sm:py-32 border-b border-white/10">
+          <div className="mx-auto max-w-7xl px-4 sm:px-8">
+            <div className="text-center max-w-3xl mx-auto mb-16">
+              <span className="font-mono text-[11px] tracking-widest text-[#71717a] block mb-2">SYSTEM SPECIFICATIONS</span>
+              <h2 className="font-zolo text-3xl sm:text-5xl font-black tracking-tight text-white">
+                Honest engineering targets.
               </h2>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-              <div className="rounded-2xl border border-[#262626] bg-[#121212] p-6 text-center">
-                <span className="font-mono-micro text-[#888888] block mb-2">Target capture time</span>
-                <div className="font-zolo text-3xl font-bold text-white mb-2">~3-4s</div>
-                <p className="text-xs text-[#888888]">Typical round-trip target from phone share sheet to parsed cloud library entry.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              <div className="rounded-3xl border border-white/10 bg-[#121215] p-8 text-center">
+                <span className="font-mono text-xs text-[#71717a] block mb-2">TYPICAL ROUNDTRIP</span>
+                <div className="font-zolo text-4xl sm:text-5xl font-black text-white mb-2">~3-4s</div>
+                <h4 className="text-sm font-semibold text-white mb-1">Capture to Cloud Availability</h4>
+                <p className="text-xs text-[#71717a] leading-relaxed">
+                  Design target from tapping share in Instagram to the parsed post appearing in your web library.
+                </p>
               </div>
 
-              <div className="rounded-2xl border border-[#262626] bg-[#121212] p-6 text-center">
-                <span className="font-mono-micro text-[#888888] block mb-2">Data security</span>
-                <div className="font-zolo text-3xl font-bold text-white mb-2">Row-Level</div>
-                <p className="text-xs text-[#888888]">PostgreSQL RLS ensures every saved reel and category is isolated strictly to you.</p>
+              <div className="rounded-3xl border border-white/10 bg-[#121215] p-8 text-center">
+                <span className="font-mono text-xs text-[#71717a] block mb-2">ISOLATION</span>
+                <div className="font-zolo text-4xl sm:text-5xl font-black text-white mb-2">Row-Level</div>
+                <h4 className="text-sm font-semibold text-white mb-1">PostgreSQL Security</h4>
+                <p className="text-xs text-[#71717a] leading-relaxed">
+                  Postgres Row Level Security ensures every reel, summary, and category is isolated strictly to your account.
+                </p>
               </div>
 
-              <div className="rounded-2xl border border-[#262626] bg-[#121212] p-6 text-center">
-                <span className="font-mono-micro text-[#888888] block mb-2">Queue maintenance</span>
-                <div className="font-zolo text-3xl font-bold text-white mb-2">Auto-Clean</div>
-                <p className="text-xs text-[#888888]">Watched posts auto-purge so an overwhelming backlog never piles up.</p>
+              <div className="rounded-3xl border border-white/10 bg-[#121215] p-8 text-center">
+                <span className="font-mono text-xs text-[#71717a] block mb-2">HYGIENE</span>
+                <div className="font-zolo text-4xl sm:text-5xl font-black text-white mb-2">Auto-Purge</div>
+                <h4 className="text-sm font-semibold text-white mb-1">Queue Self-Cleaning</h4>
+                <p className="text-xs text-[#71717a] leading-relaxed">
+                  Watched reels clean out automatically so stale backlogs never accumulate or overwhelm you.
+                </p>
               </div>
             </div>
           </div>
         </section>
 
-        {/* 2.7 FAQ Grounded in Actual Mechanics */}
-        <section id="faq" className="py-20 border-b border-[#222222] bg-[#0c0c0c]/60">
-          <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <span className="font-mono-micro text-[#777777] block mb-1">FAQ</span>
-              <h2 className="font-zolo text-2xl sm:text-4xl font-bold text-white tracking-tight">
+        {/* 2.7 FAQ Grounded in Actual Mechanism */}
+        <section id="faq" className="py-24 sm:py-32 border-b border-white/10 bg-[#0c0c0e]/40">
+          <div className="mx-auto max-w-4xl px-4 sm:px-8">
+            <div className="text-center mb-16">
+              <span className="font-mono text-[11px] tracking-widest text-[#71717a] block mb-2">FAQ</span>
+              <h2 className="font-zolo text-3xl sm:text-5xl font-black tracking-tight text-white">
                 Frequently Asked Questions
               </h2>
             </div>
 
-            <div className="space-y-3">
-              {realFaqs.map((faq, idx) => (
-                <div key={idx} className="rounded-2xl border border-[#262626] bg-[#121212] overflow-hidden">
+            <div className="space-y-4">
+              {faqs.map((faq, idx) => (
+                <div key={idx} className="rounded-3xl border border-white/10 bg-[#121215] overflow-hidden">
                   <button
                     type="button"
-                    onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
-                    className="w-full flex items-center justify-between p-5 text-left text-sm font-semibold text-white transition hover:text-[#cccccc]"
+                    onClick={() => setActiveFaq(activeFaq === idx ? null : idx)}
+                    className="w-full flex items-center justify-between p-6 text-left text-base font-semibold text-white transition hover:text-[#d4d4d8]"
                   >
                     <span>{faq.q}</span>
-                    <ChevronDown className={`h-4 w-4 text-[#777777] transition-transform ${openFaq === idx ? 'rotate-180 text-white' : ''}`} />
+                    <span className="font-mono text-lg text-[#71717a] ml-4 shrink-0">
+                      {activeFaq === idx ? '−' : '+'}
+                    </span>
                   </button>
-                  {openFaq === idx && (
-                    <div className="px-5 pb-5 pt-1 text-xs text-[#888888] leading-relaxed border-t border-[#1e1e1e]">
+                  {activeFaq === idx && (
+                    <div className="px-6 pb-6 pt-1 text-sm text-[#a1a1aa] leading-relaxed border-t border-white/5 font-light">
                       {faq.a}
                     </div>
                   )}
@@ -532,103 +706,104 @@ export default function ServiceLandingPage({
           </div>
         </section>
 
-        {/* 2.8 Final CTA: Exact Same Install Action Echoing Tagline */}
-        <section className="py-24 text-center">
-          <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-            <h2 className="font-zolo text-3xl sm:text-5xl font-bold text-white tracking-tight mb-4 text-balance">
+        {/* 2.8 FINAL CTA: Echoing Tagline with Exact Same Install Action */}
+        <section className="py-32 sm:py-44 text-center relative overflow-hidden">
+          <div className="mx-auto max-w-4xl px-4 sm:px-8 relative z-10">
+            <span className="font-mono text-xs tracking-widest text-[#71717a] block mb-4">[GET THE APP]</span>
+            <h2 className="font-zolo text-4xl sm:text-6xl md:text-7xl font-black tracking-tight text-white mb-6 text-balance leading-tight">
               Never lose a reel worth revisiting.
             </h2>
-            <p className="text-sm sm:text-base text-[#888888] max-w-xl mx-auto mb-8 leading-relaxed">
-              Replace scattered DMs to yourself with a single action: share it once, and actually watch it later.
+            <p className="text-base sm:text-xl text-[#a1a1aa] max-w-xl mx-auto mb-10 font-light leading-relaxed">
+              Replace scattered DMs and forgotten saves with one silent habit. Share it once, and actually watch it later.
             </p>
-            <div className="flex flex-col items-center justify-center">
+            <div className="flex flex-col items-center justify-center gap-3">
               <a
                 href="/watch-later.apk"
                 download="watch-later.apk"
-                className="group inline-flex items-center justify-center gap-3 rounded-xl bg-white px-8 py-4 text-base font-bold text-black transition hover:bg-[#ececec] active:scale-[0.98] shadow-2xl"
+                className="group relative inline-flex items-center gap-3 rounded-full bg-white px-9 py-5 text-lg font-bold text-black transition-all duration-300 hover:bg-[#e4e4e7] hover:scale-[1.03] active:scale-[0.98] shadow-[0_0_60px_rgba(255,255,255,0.25)]"
               >
-                <Download className="h-5 w-5 text-black transition-transform duration-200 group-hover:-translate-y-0.5" />
+                <Download className="h-5 w-5 text-black transition-transform duration-300 group-hover:-translate-y-0.5" />
                 <span>Download Android App (APK)</span>
               </a>
-              <span className="mt-3 text-[11px] font-mono text-[#666666]">
-                Android APK · Free · Instant background capture
+              <span className="font-mono text-xs text-[#71717a]">
+                Android APK · Free · Instant Background Capture
               </span>
             </div>
           </div>
         </section>
       </main>
 
-      {/* 2.9 Minimal Footer */}
-      <footer className="border-t border-[#222222] py-8 text-center text-xs text-[#666666]">
-        <div className="mx-auto max-w-6xl px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <img src="/logo.jpg" alt="Logo" className="h-5 w-5 rounded object-cover" />
-            <span className="font-zolo font-semibold text-white">Watch Later</span>
+      {/* 2.9 MINIMAL FOOTER */}
+      <footer className="border-t border-white/10 py-10 text-xs text-[#71717a]">
+        <div className="mx-auto max-w-7xl px-4 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <img src="/logo.jpg" alt="Logo" className="h-6 w-6 rounded-md object-cover border border-white/10" />
+            <span className="font-zolo font-bold text-white text-sm">Watch Later</span>
             <span>— Never lose a reel worth revisiting.</span>
           </div>
-          <span className="font-mono-micro">Silent share-sheet capture</span>
+          <span className="font-mono text-[11px]">NATIVE ANDROID SHARE INTERCEPT &amp; LIBRARY</span>
         </div>
       </footer>
 
       {/* Sign-in Modal for returning users */}
       {showAuthModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-up"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fade-up"
           onClick={() => setShowAuthModal(false)}
         >
           <div
-            className="w-full max-w-md rounded-2xl border border-[#2b2b2b] bg-[#141414] p-7 shadow-2xl"
+            className="w-full max-w-md rounded-3xl border border-white/15 bg-[#141417] p-8 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between mb-5">
-              <div className="flex items-center gap-2.5">
-                <img src="/logo.jpg" alt="Logo" className="h-7 w-7 rounded-lg object-cover" />
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <img src="/logo.jpg" alt="Logo" className="h-8 w-8 rounded-lg object-cover border border-white/10" />
                 <span className="font-zolo text-lg font-bold text-white">Watch Later</span>
               </div>
               <button
                 type="button"
                 onClick={() => setShowAuthModal(false)}
-                className="text-[#666666] hover:text-white p-1 rounded-lg"
+                className="text-[#71717a] hover:text-white p-1 rounded-lg"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            <h3 className="font-zolo text-lg font-bold text-white mb-1">
+            <h3 className="font-zolo text-xl font-bold text-white mb-1">
               {authMode === 'signin' ? 'Sign in to your library' : 'Create an account'}
             </h3>
-            <p className="text-xs text-[#888888] mb-5">
+            <p className="text-xs text-[#a1a1aa] mb-6">
               Enter your credentials to access your synced library.
             </p>
 
             <form onSubmit={handleAuth} className="space-y-4">
               <div>
-                <label className="text-xs font-semibold text-[#888888]">Email</label>
+                <label className="text-xs font-semibold text-[#a1a1aa]">Email</label>
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@example.com"
-                  className="mt-1 w-full rounded-lg border border-[#2b2b2b] bg-[#0c0c0c] px-3 py-2 text-sm text-white placeholder-[#555555] focus:border-[#777777] focus:outline-none"
+                  className="mt-1.5 w-full rounded-xl border border-white/10 bg-[#09090b] px-4 py-2.5 text-sm text-white placeholder-[#52525b] focus:border-white focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-[#888888]">Password</label>
-                <div className="relative mt-1">
+                <label className="text-xs font-semibold text-[#a1a1aa]">Password</label>
+                <div className="relative mt-1.5">
                   <input
                     type={showPassword ? 'text' : 'password'}
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full rounded-lg border border-[#2b2b2b] bg-[#0c0c0c] px-3 py-2 pr-10 text-sm text-white placeholder-[#555555] focus:border-[#777777] focus:outline-none"
+                    className="w-full rounded-xl border border-white/10 bg-[#09090b] px-4 py-2.5 pr-10 text-sm text-white placeholder-[#52525b] focus:border-white focus:outline-none"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-2.5 text-[#666666] hover:text-white"
+                    className="absolute right-3.5 top-3 text-[#71717a] hover:text-white"
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -636,7 +811,7 @@ export default function ServiceLandingPage({
               </div>
 
               {authError && (
-                <div className="rounded-lg bg-red-950/40 p-3 text-xs text-red-400 border border-red-800/40">
+                <div className="rounded-xl bg-red-950/40 p-3 text-xs text-red-400 border border-red-800/40">
                   {authError}
                 </div>
               )}
@@ -644,20 +819,20 @@ export default function ServiceLandingPage({
               <button
                 type="submit"
                 disabled={authLoading}
-                className="w-full rounded-lg bg-white text-black py-2.5 text-sm font-semibold transition hover:bg-[#eaeaea] active:scale-[0.98] disabled:opacity-50"
+                className="w-full rounded-xl bg-white text-black py-3 text-sm font-bold transition hover:bg-[#e4e4e7] active:scale-[0.98] disabled:opacity-50 mt-2"
               >
                 {authLoading ? 'Authenticating...' : authMode === 'signin' ? 'Sign In' : 'Create Account'}
               </button>
             </form>
 
-            <div className="mt-5 text-center">
+            <div className="mt-6 text-center">
               <button
                 type="button"
                 onClick={() => {
                   setAuthMode(authMode === 'signin' ? 'signup' : 'signin');
                   setAuthError(null);
                 }}
-                className="text-xs text-[#888888] hover:text-white transition"
+                className="text-xs text-[#a1a1aa] hover:text-white transition"
               >
                 {authMode === 'signin' ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
               </button>
