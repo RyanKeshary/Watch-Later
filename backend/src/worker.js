@@ -575,7 +575,8 @@ async function cleanupEmptyCategories() {
 
       if (emptyIds.length > 0) {
         // Immediate verification against live reels in bounded chunks to prevent query overflow
-        const chunkSize = 200;
+        // UUIDs are 36 chars; 50 IDs duplicated across .or() (~3.8KB query string) stay well within URL limits (<8KB)
+        const chunkSize = 50;
         const liveActiveIds = new Set();
         let chunkFailed = false;
 

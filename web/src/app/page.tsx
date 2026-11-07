@@ -138,7 +138,9 @@ export default function App() {
     try {
       const savedPins = localStorage.getItem('watchlater_pinned_folders');
       if (savedPins) setPinnedFolderIds(JSON.parse(savedPins));
+    } catch (e) { }
 
+    try {
       const savedMaxGen = localStorage.getItem('watchlater_max_generations');
       if (savedMaxGen) setMaxGenerations(parseInt(savedMaxGen, 10));
 
@@ -159,11 +161,15 @@ export default function App() {
 
       const savedRetention = localStorage.getItem('watchlater_archive_retention') as any;
       if (savedRetention) setRetentionPeriod(savedRetention);
+    } catch (e) { }
 
+    // Read category metadata independently and enable synchronization only when read succeeds
+    try {
       const savedCatMeta = localStorage.getItem('watchlater_category_meta');
       if (savedCatMeta) setCategoryMetaMap(JSON.parse(savedCatMeta));
-    } catch (e) { } finally {
       setMetaLoaded(true);
+    } catch (e) {
+      console.warn('Failed to parse category metadata from localStorage:', e);
     }
   }, []);
 
@@ -1413,10 +1419,10 @@ export default function App() {
                           <div className="flex flex-wrap items-center justify-between gap-1.5 mb-2">
                             <span
                               className={`rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider ${reel.is_failed || reel.processing_status === 'extraction_failed'
-                                  ? 'bg-red-950/80 text-red-400 border border-red-800/50'
-                                  : reel.processing_status === 'processed'
-                                    ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800/50'
-                                    : 'bg-zinc-800 text-zinc-400'
+                                ? 'bg-red-950/80 text-red-400 border border-red-800/50'
+                                : reel.processing_status === 'processed'
+                                  ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800/50'
+                                  : 'bg-zinc-800 text-zinc-400'
                                 }`}
                             >
                               {reel.processing_status}
@@ -1550,10 +1556,10 @@ export default function App() {
                             <div className="flex items-center gap-2 mb-1">
                               <span
                                 className={`rounded px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wider ${reel.is_failed || reel.processing_status === 'extraction_failed'
-                                    ? 'bg-red-950/80 text-red-400 border border-red-800/50'
-                                    : reel.processing_status === 'processed'
-                                      ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800/50'
-                                      : 'bg-zinc-800 text-zinc-400'
+                                  ? 'bg-red-950/80 text-red-400 border border-red-800/50'
+                                  : reel.processing_status === 'processed'
+                                    ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800/50'
+                                    : 'bg-zinc-800 text-zinc-400'
                                   }`}
                               >
                                 {reel.processing_status}
@@ -2283,8 +2289,8 @@ export default function App() {
                       type="button"
                       onClick={() => setEditCategoryIcon(item.icon)}
                       className={`flex flex-col items-center justify-center p-2 rounded-xl border text-xs transition ${editCategoryIcon === item.icon
-                          ? 'border-indigo-500 bg-indigo-950/40 text-indigo-300'
-                          : 'border-zinc-800 bg-zinc-950/40 text-zinc-400 hover:bg-zinc-800'
+                        ? 'border-indigo-500 bg-indigo-950/40 text-indigo-300'
+                        : 'border-zinc-800 bg-zinc-950/40 text-zinc-400 hover:bg-zinc-800'
                         }`}
                     >
                       {renderCategoryIcon(item.icon, "h-5 w-5 mb-1")}
