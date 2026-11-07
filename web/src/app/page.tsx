@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Reel, Category, Device } from '@/types/database';
 import { Morph, Loading } from 'loading-dev';
+import ServiceLandingPage from '@/components/ServiceLandingPage';
 import {
   Home,
   Film,
@@ -780,76 +781,11 @@ export default function App() {
 
   if (!session) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-fabric p-4 text-[#D9D9D9]">
-        <div className="w-full max-w-md rounded-2xl border border-[#333333] bg-[#1A1A1A]/90 p-8 backdrop-blur shadow-2xl animate-fade-up">
-          <div className="mb-8 text-center">
-            <div className="inline-flex items-center justify-center p-2 rounded-2xl bg-[#0B0B0B] border border-[#333333] mb-4">
-              <img src="/logo.jpg" alt="Watch Later" className="h-12 w-12 rounded-xl object-cover" />
-            </div>
-            <h1 className="font-zolo text-3xl font-bold tracking-tight text-white">Watch Later</h1>
-            <p className="mt-2 text-xs font-medium text-[#6B6B6B]">Never lose a reel worth revisiting.</p>
-          </div>
-
-          <form onSubmit={handleAuth} className="space-y-4">
-            <div>
-              <label className="text-xs font-semibold text-[#999999]">Email Address</label>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-[#333333] bg-[#0B0B0B] px-3 py-2 text-sm text-white placeholder-[#6B6B6B] focus:border-[#D9D9D9] focus:outline-none transition"
-                placeholder="name@example.com"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-[#999999]">Password</label>
-              <div className="relative mt-1">
-                <input
-                  type={showAuthPassword ? 'text' : 'password'}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-lg border border-[#333333] bg-[#0B0B0B] px-3 py-2 pr-10 text-sm text-white placeholder-[#6B6B6B] focus:border-[#D9D9D9] focus:outline-none transition"
-                  placeholder="••••••••"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowAuthPassword(!showAuthPassword)}
-                  className="absolute right-3 top-2.5 text-[#6B6B6B] hover:text-white transition"
-                >
-                  {showAuthPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
-
-            {authError && (
-              <div className="rounded-lg bg-red-950/40 p-3 text-xs text-red-400 border border-red-800/40">
-                {authError}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              className="w-full rounded-lg bg-[#D9D9D9] text-[#0B0B0B] py-2.5 text-sm font-semibold transition hover:bg-white active:scale-[0.99]"
-            >
-              {authMode === 'signin' ? 'Sign In' : 'Sign Up'}
-            </button>
-          </form>
-
-          <div className="mt-6 text-center">
-            <button
-              onClick={() => {
-                setAuthMode(authMode === 'signin' ? 'signup' : 'signin');
-                setAuthError(null);
-              }}
-              className="text-xs text-[#6B6B6B] hover:text-white transition"
-            >
-              {authMode === 'signin' ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
-            </button>
-          </div>
-        </div>
-      </div>
+      <ServiceLandingPage
+        hasSession={false}
+        onSignInSuccess={() => loadData()}
+        onEnterDashboard={() => loadData()}
+      />
     );
   }
 
