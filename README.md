@@ -15,6 +15,11 @@
 </p>
 
 <p align="center">
+  <a href="https://watchlatertool.vercel.app"><img src="https://img.shields.io/badge/Live_Demo-watchlatertool.vercel.app-000?style=for-the-badge&logo=vercel&logoColor=white" alt="Live Demo"></a>
+  <a href="https://watch-later-worker.onrender.com/health"><img src="https://img.shields.io/badge/Worker_API-Render_Active-46e3b7?style=for-the-badge&logo=render&logoColor=white" alt="Render Worker"></a>
+</p>
+
+<p align="center">
   <a href="#-license--credits"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square" alt="License: MIT"></a>
   <img src="https://img.shields.io/badge/Android-SDK_34-3DDC84.svg?style=flat-square&logo=android&logoColor=white" alt="Android SDK 34">
   <img src="https://img.shields.io/badge/Next.js-14-black.svg?style=flat-square&logo=next.js" alt="Next.js 14">
@@ -344,7 +349,7 @@ npm run start
 5. A quiet toast notification confirms: *"Saved to Watch Later"*. Done.
 
 ### Managing Knowledge on the Web
-1. Open the Web Dashboard (`http://localhost:3000` or your deployed URL).
+1. Open the Web Dashboard at **[watchlatertool.vercel.app](https://watchlatertool.vercel.app)** (or your local `http://localhost:3000`).
 2. Log in with your Supabase credentials.
 3. Browse your auto-generated shelves:
    - Filter by AI-derived categories (e.g. *Frontend Architecture*, *Productivity*).
