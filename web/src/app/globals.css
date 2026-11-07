@@ -5,38 +5,6 @@
 :root {
   --font-zolo: 'Space Grotesk', -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
-  
-  /* Hallmark Darkroom Tokens */
-  --color-paper: oklch(12.5% 0.008 55);
-  --color-paper-2: oklch(16% 0.009 55);
-  --color-paper-3: oklch(20.5% 0.01 55);
-  --color-ink: oklch(92% 0.012 78);
-  --color-ink-2: oklch(80% 0.012 75);
-  --color-muted: oklch(64% 0.012 65);
-  --color-rule: oklch(29% 0.01 55);
-  --color-accent: oklch(73% 0.15 58);
-  --color-accent-deep: oklch(50% 0.11 52);
-  --color-accent-ink: oklch(12.5% 0.008 55);
-  --color-focus: oklch(73% 0.15 58);
-  --font-display: var(--font-darkroom-display), "Sofia Sans Extra Condensed", sans-serif;
-  --font-body: var(--font-darkroom-body), "Barlow", sans-serif;
-}
-
-/* Hallmark floor rules */
-html, body {
-  overflow-x: clip;
-}
-
-.font-darkroom-head {
-  font-family: var(--font-display);
-  font-weight: 200;
-  letter-spacing: -0.01em;
-  text-transform: uppercase;
-  line-height: 0.95;
-}
-
-.font-darkroom-body {
-  font-family: var(--font-body);
 }
 
 /* Fabric Micro-Texture Background Pattern */
