@@ -94,16 +94,21 @@ export default function ProductionLaunchVideo() {
 
   // Sound triggering on scene cues
   const lastCueRef = useRef<number>(-1);
+  const playSoundRef = useRef(playSound);
+  useEffect(() => {
+    playSoundRef.current = playSound;
+  });
+
   useEffect(() => {
     if (!isPlaying) return;
     const currentSecond = Math.floor(currentTime);
     if (currentSecond !== lastCueRef.current) {
       lastCueRef.current = currentSecond;
-      if (currentSecond === 0) playSound('beat');
-      if (currentSecond === 4) { playSound('whoosh'); playSound('beat'); }
-      if (currentSecond === 8) { playSound('ping'); }
-      if (currentSecond === 13) { playSound('success'); }
-      if (currentSecond === 17) { playSound('drop'); }
+      if (currentSecond === 0) playSoundRef.current('beat');
+      if (currentSecond === 4) { playSoundRef.current('whoosh'); playSoundRef.current('beat'); }
+      if (currentSecond === 8) { playSoundRef.current('ping'); }
+      if (currentSecond === 13) { playSoundRef.current('success'); }
+      if (currentSecond === 17) { playSoundRef.current('drop'); }
     }
   }, [currentTime, isPlaying]);
 
