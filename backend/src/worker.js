@@ -63,8 +63,11 @@ async function extractViaOpenGraph(url) {
       const propMatch = tag.match(new RegExp(`(?:property|name)=(["'])${propertyName}\\1`, 'i'));
       if (propMatch) {
         const contentMatch = tag.match(/content=(["'])([\s\S]*?)\1/i);
-        if (contentMatch && contentMatch[2] && contentMatch[2].trim().length > 0) {
-          return contentMatch[2];
+        if (contentMatch && contentMatch[2]) {
+          const decodedValue = decodeHtmlEntities(contentMatch[2]);
+          if (decodedValue.trim().length > 0) {
+            return contentMatch[2];
+          }
         }
         if (contentMatch && firstFoundContent === null) {
           firstFoundContent = contentMatch[2];

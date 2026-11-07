@@ -284,14 +284,22 @@ class MainActivity : ComponentActivity() {
     private suspend fun registerDevice(token: String, userId: String) {
         try {
             val deviceName = "${Build.MANUFACTURER} ${Build.MODEL}"
-            // Upsert / check existing device to avoid duplicates
-            val checkUrl = "${BuildConfig.SUPABASE_URL}/rest/v1/devices?user_id=eq.$userId&device_name=eq.${java.net.URLEncoder.encode(deviceName, "UTF-8")}&select=id"
-            val checkResponse: io.ktor.client.statement.HttpResponse = httpClient.get(checkUrl) {
+            // Upsert / check existing device to avoid duplicates using query parameters
+            val checkResponse: io.ktor.client.statement.HttpResponse = httpClient.get("${BuildConfig.SUPABASE_URL}/rest/v1/devices") {
                 header("apikey", BuildConfig.SUPABASE_ANON_KEY)
                 header("Authorization", "Bearer $token")
+                url {
+                    parameters.append("user_id", "eq.$userId")
+                    parameters.append("device_name", "eq.\"$deviceName\"")
+                    parameters.append("select", "id")
+                }
             }
-            val existingBody = checkResponse.bodyAsText()
-            if (existingBody.contains("\"id\"")) {
+            if (checkResponse.status.value in 200..299) {
+                val existingBody = checkResponse.bodyAsText()
+                if (existingBody.contains("\"id\"")) {
+                    return
+                }
+            } else {
                 return
             }
 

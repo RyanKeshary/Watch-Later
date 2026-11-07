@@ -11,10 +11,10 @@
 .bg-fabric {
   background-color: #0B0B0B;
   background-image: 
-    radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-    radial-gradient(rgba(255, 255, 255, 0.02) 1px, #0B0B0B 1px);
-  background-size: 24px 24px, 12px 12px;
-  background-position: 0 0, 6px 6px;
+    radial-gradient(rgba(255, 255, 255, 0.09) 1px, transparent 1px),
+    radial-gradient(rgba(255, 255, 255, 0.05) 1px, #0B0B0B 1px);
+  background-size: 20px 20px, 10px 10px;
+  background-position: 0 0, 5px 5px;
 }
 
 /* Subtle border sheen & typography */

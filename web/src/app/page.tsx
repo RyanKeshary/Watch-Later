@@ -741,7 +741,7 @@ export default function App() {
   const rootCategories = useMemo(() => categories.filter(c => !c.parent_id), [categories]);
   const getSubcategories = (parentId: string) => categories.filter(c => c.parent_id === parentId);
 
-  const renderCategoryIcon = (iconName?: string, className: string = 'h-10 w-10 text-indigo-400') => {
+  const renderCategoryIcon = (iconName?: string, className: string = 'h-10 w-10 text-[#D9D9D9]') => {
     switch (iconName) {
       case 'Star': return <Star className={className} />;
       case 'Sparkles': return <Sparkles className={className} />;
@@ -792,7 +792,7 @@ export default function App() {
 
           <form onSubmit={handleAuth} className="space-y-4">
             <div>
-              <label className="text-xs font-semibold text-[#6B6B6B]">Email Address</label>
+              <label className="text-xs font-semibold text-[#999999]">Email Address</label>
               <input
                 type="email"
                 required
@@ -803,7 +803,7 @@ export default function App() {
               />
             </div>
             <div>
-              <label className="text-xs font-semibold text-[#6B6B6B]">Password</label>
+              <label className="text-xs font-semibold text-[#999999]">Password</label>
               <div className="relative mt-1">
                 <input
                   type={showAuthPassword ? 'text' : 'password'}
@@ -988,8 +988,8 @@ export default function App() {
           {/* Pinned Folders */}
           <div className="mt-5 space-y-1">
             {!sidebarCollapsed && (
-              <div className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wider text-zinc-500 flex items-center gap-1.5">
-                <Pin className="h-3 w-3 text-indigo-400" />
+              <div className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wider text-[#999999] flex items-center gap-1.5">
+                <Pin className="h-3 w-3 text-[#D9D9D9]" />
                 <span>Pinned Folders</span>
               </div>
             )}
@@ -1002,20 +1002,20 @@ export default function App() {
                     setCurrentPage('categories');
                     setSelectedCategoryId(cat.id);
                   }}
-                  className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} rounded-lg px-2.5 py-1.5 text-xs font-medium transition group ${currentPage === 'categories' && selectedCategoryId === cat.id ? 'bg-indigo-600/15 text-indigo-400 font-semibold' : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
+                  className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} rounded-lg px-2.5 py-1.5 text-xs font-medium transition group ${currentPage === 'categories' && selectedCategoryId === cat.id ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#999999] hover:bg-[#1A1A1A] hover:text-white'
                     }`}
                   title={cat.name}
                 >
                   <div className="flex items-center gap-2 truncate">
-                    <Tag className="h-3.5 w-3.5 shrink-0 text-indigo-400" />
+                    <Tag className="h-3.5 w-3.5 shrink-0 text-[#D9D9D9]" />
                     {!sidebarCollapsed && <span className="truncate">{cat.name}</span>}
                   </div>
                   {!sidebarCollapsed && (
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] text-zinc-500">{count}</span>
+                      <span className="font-mono-micro text-[#6B6B6B]">{count}</span>
                       <span
                         onClick={(e) => togglePin(cat.id, e)}
-                        className="opacity-0 group-hover:opacity-100 hover:text-amber-400 p-0.5 rounded transition"
+                        className="opacity-0 group-hover:opacity-100 hover:text-white p-0.5 rounded transition"
                       >
                         <PinOff className="h-3 w-3" />
                       </span>
@@ -1073,36 +1073,6 @@ export default function App() {
                 )}
               </div>
             )}
-
-            {/* Post Type Filters (Reels vs Posts vs Carousels) */}
-            {currentPage !== 'home' && currentPage !== 'settings' && (currentPage !== 'categories' || selectedCategoryId) && (
-              <div className="flex items-center bg-[#1A1A1A] p-0.5 rounded-lg border border-[#333333] text-[11px]">
-                <button
-                  onClick={() => setPostTypeFilter('all')}
-                  className={`px-2 py-1 rounded transition ${postTypeFilter === 'all' ? 'bg-[#D9D9D9] text-[#0B0B0B] font-semibold' : 'text-[#6B6B6B] hover:text-white'}`}
-                >
-                  All
-                </button>
-                <button
-                  onClick={() => setPostTypeFilter('reels')}
-                  className={`px-2 py-1 rounded transition ${postTypeFilter === 'reels' ? 'bg-[#D9D9D9] text-[#0B0B0B] font-semibold' : 'text-[#6B6B6B] hover:text-white'}`}
-                >
-                  Reels
-                </button>
-                <button
-                  onClick={() => setPostTypeFilter('carousels')}
-                  className={`px-2 py-1 rounded transition ${postTypeFilter === 'carousels' ? 'bg-[#D9D9D9] text-[#0B0B0B] font-semibold' : 'text-[#6B6B6B] hover:text-white'}`}
-                >
-                  Carousels
-                </button>
-                <button
-                  onClick={() => setPostTypeFilter('posts')}
-                  className={`px-2 py-1 rounded transition ${postTypeFilter === 'posts' ? 'bg-[#D9D9D9] text-[#0B0B0B] font-semibold' : 'text-[#6B6B6B] hover:text-white'}`}
-                >
-                  Posts
-                </button>
-              </div>
-            )}
           </div>
 
           <div className="flex items-center gap-2.5">
@@ -1138,11 +1108,11 @@ export default function App() {
         </header>
 
         {/* Dynamic Views */}
-        <div className="flex-1 overflow-y-auto p-6 animate-fade-up">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 animate-fade-up">
           {/* HOME VIEW: BENTO STATS & NICHE DISTRIBUTION */}
           {currentPage === 'home' && (
-            <div className="space-y-6 max-w-6xl">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-6 w-full">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="rounded-2xl border border-[#333333] bg-[#1A1A1A]/80 p-5 shadow-sm">
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-mono-micro text-[#6B6B6B]">01 // TOTAL ARCHIVE</span>
@@ -1271,7 +1241,7 @@ export default function App() {
               )}
 
               {/* Folder-Type Tiles */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-4">
                 {rootCategories.map(cat => {
                   const subcats = getSubcategories(cat.id);
                   const count = reels.filter(r => r.category_id === cat.id).length;
@@ -1315,7 +1285,7 @@ export default function App() {
                       </div>
 
                       <div className="relative mb-3">
-                        <Folder className="h-12 w-12 text-[#D9D9D9] group-hover:scale-105 transition" />
+                        {renderCategoryIcon(categoryMetaMap[cat.id]?.icon, "h-12 w-12 text-[#D9D9D9] group-hover:scale-105 transition")}
                         {subcats.length > 0 && (
                           <span className="absolute -bottom-1 -right-1 bg-[#0B0B0B] text-[9px] font-mono text-[#D9D9D9] rounded px-1 border border-[#333333]">
                             +{subcats.length}
@@ -1380,10 +1350,10 @@ export default function App() {
               ) : viewLayout === 'grid' ? (
                 <div className={
                   density === 'compact'
-                    ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5"
+                    ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3.5"
                     : density === 'spacious'
-                      ? "grid grid-cols-1 md:grid-cols-2 gap-6"
-                      : "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5"
+                      ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
+                      : "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5"
                 }>
                   {displayedReels.map((reel) => {
                     const extractionErr = Array.isArray(reel.extracted_content)
@@ -1661,7 +1631,7 @@ export default function App() {
 
           {/* SETTINGS VIEW */}
           {currentPage === 'settings' && (
-            <div className="max-w-4xl space-y-6">
+            <div className="w-full max-w-5xl space-y-6">
               {/* Account Settings with Password Preview */}
               <div className="rounded-2xl border border-[#333333] bg-[#1A1A1A]/90 p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
@@ -1960,7 +1930,7 @@ export default function App() {
                   <p className="text-xs text-[#6B6B6B] mt-0.5">Sign out of your Watch Later account on this browser.</p>
                 </div>
                 <button
-                  onClick={() => supabase.auth.signOut()}
+                  onClick={() => supabase.auth.signOut({ scope: 'local' })}
                   className="flex items-center gap-2 rounded-lg border border-red-800/50 bg-red-950/40 hover:bg-red-900/60 text-red-300 px-4 py-2 text-xs font-semibold transition"
                 >
                   <LogOut className="h-4 w-4" />
