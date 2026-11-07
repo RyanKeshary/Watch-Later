@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Reel, Category, Device } from '@/types/database';
-import { Morph, Loading } from 'loading-dev';
+import { Loader2 } from 'lucide-react';
 import ServiceLandingPage from '@/components/ServiceLandingPage';
 import { NumberTicker } from '@/components/NumberTicker';
 import {
@@ -944,7 +944,7 @@ export default function App() {
     return (
       <div className="flex h-screen items-center justify-center bg-fabric text-[#D9D9D9]">
         <div className="flex flex-col items-center gap-4">
-          <Loading size={48} />
+          <Loader2 className="h-10 w-10 animate-spin text-[#A8A8A8]" />
         </div>
       </div>
     );
@@ -1503,7 +1503,7 @@ export default function App() {
                           {/* Inbox / Scrape Morph Animation or Thumbnail */}
                           {isPending ? (
                             <div className="relative mb-3 aspect-video w-full overflow-hidden rounded-xl bg-[#0B0B0B] border border-[#333333] flex flex-col items-center justify-center gap-2">
-                              <Morph duration={1360} size={48} />
+                              <Loader2 className="h-8 w-8 animate-spin text-[#6B6B6B]" />
                               <span className="font-mono-micro text-[#6B6B6B] animate-pulse">PARSING REEL CONTENT...</span>
                             </div>
                           ) : showThumbnails && reel.thumbnail_url ? (
@@ -1659,7 +1659,7 @@ export default function App() {
                         <div className="flex items-center gap-3.5 min-w-0 flex-1 w-full sm:w-auto">
                           {isPending ? (
                             <div className="relative h-16 w-16 sm:h-14 sm:w-20 shrink-0 overflow-hidden rounded-lg bg-[#0B0B0B] border border-[#333333] flex items-center justify-center">
-                              <Morph duration={1360} size={32} />
+                              <Loader2 className="h-6 w-6 animate-spin text-[#6B6B6B]" />
                             </div>
                           ) : showThumbnails && reel.thumbnail_url ? (
                             <div className="relative h-16 w-16 sm:h-14 sm:w-20 shrink-0 overflow-hidden rounded-lg bg-[#0B0B0B] border border-[#333333] group/thumb">
