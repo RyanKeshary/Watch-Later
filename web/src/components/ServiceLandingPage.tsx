@@ -300,12 +300,13 @@ export default function ServiceLandingPage({
         trail={2.8}
         clickSplash
         colorSpeed={0.45}
-        intensity={0.6}
+        intensity={0.45}
         momentum={0.7}
-        glow={0.35}
+        glow={0.25}
         shading={0.8}
         quality="low"
         intro={false}
+        zIndex={0}
       />
 
       {/* 2.1 Navigation Bar */}
