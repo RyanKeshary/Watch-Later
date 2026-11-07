@@ -606,4 +606,22 @@ async function runLoop() {
   }
 }
 
+const http = require('http');
+
+// Simple health-check HTTP server so Render Free Tier Web Service keeps running
+const PORT = process.env.PORT || 10000;
+const server = http.createServer((req, res) => {
+  if (req.url === '/health' || req.url === '/') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ status: 'ok', service: 'watch-later-worker', uptime: process.uptime() }));
+  } else {
+    res.writeHead(404);
+    res.end();
+  }
+});
+
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`[Worker] Health check HTTP server listening on port ${PORT}`);
+});
+
 runLoop();
