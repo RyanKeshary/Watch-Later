@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import SplashCursor from '@/components/SplashCursor';
+import ProductionLaunchVideo from '@/components/ProductionLaunchVideo';
 
 interface ServicePageProps {
   onSignInSuccess?: () => void;
@@ -349,101 +350,8 @@ export default function ServiceLandingPage({
             </div>
 
             {/* SECTION 1.2: EXACTLY ONE VIDEO ON THE ENTIRE PAGE (THE BRAG DEMO MOMENT) */}
-            <div className="mt-14 max-w-2xl mx-auto">
-              <div
-                ref={heroCardRef}
-                onMouseMove={handlePhoneMouseMove}
-                onMouseLeave={handlePhoneMouseLeave}
-                style={reducedMotion ? undefined : {
-                  transform: `perspective(1000px) rotateX(${phoneTilt.x}deg) rotateY(${phoneTilt.y}deg)`,
-                  transition: 'transform 0.15s ease-out'
-                }}
-                className="relative rounded-2xl border border-[#2b2b2b] bg-[#121212] p-2 shadow-2xl"
-              >
-                <div className="relative aspect-video w-full rounded-xl bg-[#090909] border border-[#202020] flex flex-col justify-between overflow-hidden">
-                  {!demoPlaying ? (
-                    <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-gradient-to-b from-[#141414] to-[#090909]">
-                      <button
-                        type="button"
-                        onClick={() => setDemoPlaying(true)}
-                        aria-label="Play interactive demo of silent capture"
-                        className="h-16 w-16 rounded-full bg-white/10 border border-white/20 flex items-center justify-center mb-4 transition transform hover:scale-110 active:scale-95 cursor-pointer shadow-lg"
-                      >
-                        <Play className="h-7 w-7 text-white fill-white ml-1" />
-                      </button>
-                      <span className="font-mono-micro text-[#888888] block mb-1">Product demo</span>
-                      <h3 className="font-zolo text-lg font-bold text-white mb-1">Watch the 10-Second Mechanism</h3>
-                      <p className="text-xs text-[#888888] max-w-md">
-                        Tap play to see how sharing directly from Instagram organizes your reels without clutter.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="w-full h-full p-5 sm:p-6 flex flex-col justify-between bg-black/95 text-left">
-                      <div className="flex items-center justify-between border-b border-[#222222] pb-2.5">
-                        <div className="flex items-center gap-2">
-                          <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                          <span className="font-mono-micro text-white">Live demo walkthrough</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setDemoPlaying(false);
-                            setDemoStep(0);
-                          }}
-                          className="flex items-center gap-1 text-[11px] font-mono text-[#888888] hover:text-white transition"
-                        >
-                          <RotateCcw className="h-3 w-3" />
-                          <span>Reset</span>
-                        </button>
-                      </div>
-
-                      <div className="my-auto py-2">
-                        {demoStep === 0 && (
-                          <div className="animate-fade-up">
-                            <span className="font-mono-micro text-[#888888] block mb-1">01 / Share sheet</span>
-                            <h4 className="font-zolo text-xl font-bold text-white mb-1.5">You tap &quot;Share to Watch Later&quot;</h4>
-                            <p className="text-xs text-[#888888]">No popup forms or dialogs appear. You stay in your Instagram feed.</p>
-                          </div>
-                        )}
-                        {demoStep === 1 && (
-                          <div className="animate-fade-up">
-                            <span className="font-mono-micro text-[#888888] block mb-1">02 / Background capture</span>
-                            <h4 className="font-zolo text-xl font-bold text-white mb-1.5">Silent metadata &amp; transcript parse</h4>
-                            <p className="text-xs text-[#888888]">Extracts creator handle, source caption, and spoken audio in the background.</p>
-                          </div>
-                        )}
-                        {demoStep === 2 && (
-                          <div className="animate-fade-up">
-                            <span className="font-mono-micro text-[#888888] block mb-1">03 / Automatic sorting</span>
-                            <h4 className="font-zolo text-xl font-bold text-white mb-1.5">Categorized into &quot;Systems Design&quot;</h4>
-                            <p className="text-xs text-[#888888]">No manual tagging required. Similar topics cluster together cleanly.</p>
-                          </div>
-                        )}
-                        {demoStep === 3 && (
-                          <div className="animate-fade-up">
-                            <span className="font-mono-micro text-[#888888] block mb-1">04 / Auto-cleanup</span>
-                            <h4 className="font-zolo text-xl font-bold text-white mb-1.5">Watched reel cleared from queue</h4>
-                            <p className="text-xs text-[#888888]">Completed items auto-purge so an overwhelming backlog never accumulates.</p>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-2 pt-2 border-t border-[#222222]">
-                        {[0, 1, 2, 3].map((step) => (
-                          <button
-                            key={step}
-                            type="button"
-                            onClick={() => setDemoStep(step)}
-                            aria-label={`Demo step ${step + 1} of 4`}
-                            aria-current={demoStep === step ? 'step' : undefined}
-                            className={`h-1.5 flex-1 rounded-full transition-colors ${demoStep === step ? 'bg-white' : 'bg-[#2b2b2b]'}`}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
+            <div className="mt-14 max-w-3xl mx-auto">
+              <ProductionLaunchVideo />
             </div>
           </div>
         </section>
