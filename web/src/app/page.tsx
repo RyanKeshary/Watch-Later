@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Reel, Category, Device } from '@/types/database';
 import { Morph, Loading } from 'loading-dev';
@@ -109,6 +109,12 @@ export default function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [pinnedFolderIds, setPinnedFolderIds] = useState<string[]>([]);
   const [savedLaterIds, setSavedLaterIds] = useState<string[]>([]);
+  const reelsRef = useRef<Reel[]>([]);
+  const savedLaterIdsRef = useRef<string[]>([]);
+  const sessionRef = useRef<any>(session);
+  useEffect(() => { reelsRef.current = reels; }, [reels]);
+  useEffect(() => { savedLaterIdsRef.current = savedLaterIds; }, [savedLaterIds]);
+  useEffect(() => { sessionRef.current = session; }, [session]);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   // Settings & Preferences
@@ -215,6 +221,20 @@ export default function App() {
       setCategoryLightbox(null);
     }
   }, [categories, selectedCategoryId, categoryLightbox]);
+
+  const loadSavedLaterIdsForUser = useCallback((userId: string | null | undefined): string[] => {
+    if (!userId) return [];
+    try {
+      const userSaved = localStorage.getItem(`watchlater_saved_later_ids_${userId}`);
+      if (userSaved) {
+        const parsed = JSON.parse(userSaved);
+        if (Array.isArray(parsed)) {
+          return parsed.filter((id): id is string => typeof id === 'string');
+        }
+      }
+    } catch (e) { }
+    return [];
+  }, []);
 
   const togglePin = (catId: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -325,28 +345,28 @@ export default function App() {
       if (latestSession?.user?.id === requestUserId) {
         if (reelsRes.data) {
           const fetchedReels = reelsRes.data as Reel[];
-          // Merge fetchedReels with any active realtime reels to prevent losing items captured during fetch
-          setReels(prev => {
-            const fetchedIds = new Set(fetchedReels.map(r => r.id));
-            const recentNewReels = prev.filter(r => !fetchedIds.has(r.id));
-            const merged = [...recentNewReels, ...fetchedReels];
+          // Compute merged reels using the latest reels state to prevent losing items captured during fetch
+          const currentReels = reelsRef.current;
+          const fetchedIds = new Set(fetchedReels.map(r => r.id));
+          const recentNewReels = currentReels.filter(r => !fetchedIds.has(r.id));
+          const merged = [...recentNewReels, ...fetchedReels];
 
-            // Reconcile saved-later IDs only when the fetch completed error-free
-            if (!reelsRes.error) {
-              setSavedLaterIds(currentSaved => {
-                const authoritativeIds = new Set(merged.map(r => r.id));
-                const pruned = currentSaved.filter(id => typeof id === 'string' && authoritativeIds.has(id));
-                if (pruned.length !== currentSaved.length) {
-                  try {
-                    localStorage.setItem(`watchlater_saved_later_ids_${requestUserId}`, JSON.stringify(pruned));
-                  } catch (e) { }
-                }
-                return pruned;
-              });
+          setReels(merged);
+
+          // Reconcile saved-later IDs outside the setReels updater, only after an error-free fetch
+          if (!reelsRes.error) {
+            const authoritativeIds = new Set(merged.map(r => r.id));
+            const currentSaved = savedLaterIdsRef.current;
+            const pruned = currentSaved.filter(id => typeof id === 'string' && authoritativeIds.has(id));
+
+            setSavedLaterIds(pruned);
+
+            if (pruned.length !== currentSaved.length) {
+              try {
+                localStorage.setItem(`watchlater_saved_later_ids_${requestUserId}`, JSON.stringify(pruned));
+              } catch (e) { }
             }
-
-            return merged;
-          });
+          }
         }
         if (catsRes.data) setCategories(catsRes.data as Category[]);
         if (devsRes.data) setDevices(devsRes.data as Device[]);
@@ -361,62 +381,32 @@ export default function App() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      if (session?.user?.id) {
-        try {
-          const userSaved = localStorage.getItem(`watchlater_saved_later_ids_${session.user.id}`);
-          if (userSaved) {
-            const parsed = JSON.parse(userSaved);
-            if (Array.isArray(parsed)) {
-              setSavedLaterIds(parsed.filter((id): id is string => typeof id === 'string'));
-            } else {
-              setSavedLaterIds([]);
-            }
-          } else {
-            setSavedLaterIds([]);
-          }
-        } catch (e) {
-          setSavedLaterIds([]);
-        }
-      } else {
-        setSavedLaterIds([]);
-      }
+      setSavedLaterIds(loadSavedLaterIdsForUser(session?.user?.id));
       setLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
-      setSession((prevSession: any) => {
-        if (!newSession?.user) {
-          setReels([]);
-          setCategories([]);
-          setDevices([]);
-          setSavedLaterIds([]);
-        } else if (prevSession?.user?.id && newSession?.user?.id !== prevSession.user.id) {
-          setReels([]);
-          setCategories([]);
-          setDevices([]);
-          try {
-            const userSaved = localStorage.getItem(`watchlater_saved_later_ids_${newSession.user.id}`);
-            if (userSaved) {
-              const parsed = JSON.parse(userSaved);
-              if (Array.isArray(parsed)) {
-                setSavedLaterIds(parsed.filter((id): id is string => typeof id === 'string'));
-              } else {
-                setSavedLaterIds([]);
-              }
-            } else {
-              setSavedLaterIds([]);
-            }
-          } catch (e) {
-            setSavedLaterIds([]);
-          }
-        }
-        return newSession;
-      });
+      const prevUserId = sessionRef.current?.user?.id;
+      const nextUserId = newSession?.user?.id;
+
+      if (!nextUserId) {
+        setReels([]);
+        setCategories([]);
+        setDevices([]);
+        setSavedLaterIds([]);
+      } else if (nextUserId !== prevUserId) {
+        setReels([]);
+        setCategories([]);
+        setDevices([]);
+        setSavedLaterIds(loadSavedLaterIdsForUser(nextUserId));
+      }
+
+      setSession(newSession);
       setLoading(false);
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [loadSavedLaterIdsForUser]);
 
   // Real-time synchronization & new reel alert banner
   useEffect(() => {
