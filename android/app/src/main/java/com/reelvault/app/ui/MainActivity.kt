@@ -290,7 +290,7 @@ class MainActivity : ComponentActivity() {
                 header("Authorization", "Bearer $token")
                 url {
                     parameters.append("user_id", "eq.$userId")
-                    parameters.append("device_name", "eq.\"$deviceName\"")
+                    parameters.append("device_name", "eq.$deviceName")
                     parameters.append("select", "id")
                 }
             }

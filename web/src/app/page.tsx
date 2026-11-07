@@ -1009,6 +1009,36 @@ export default function App() {
                 )}
               </div>
             )}
+
+            {/* Post Type Filters (Reels vs Posts vs Carousels) */}
+            {currentPage !== 'home' && currentPage !== 'settings' && (currentPage !== 'categories' || selectedCategoryId) && (
+              <div className="flex items-center bg-[#1A1A1A] p-0.5 rounded-lg border border-[#333333] text-[11px]">
+                <button
+                  onClick={() => setPostTypeFilter('all')}
+                  className={`px-2 py-1 rounded transition ${postTypeFilter === 'all' ? 'bg-[#D9D9D9] text-[#0B0B0B] font-semibold' : 'text-[#6B6B6B] hover:text-white'}`}
+                >
+                  All
+                </button>
+                <button
+                  onClick={() => setPostTypeFilter('reels')}
+                  className={`px-2 py-1 rounded transition ${postTypeFilter === 'reels' ? 'bg-[#D9D9D9] text-[#0B0B0B] font-semibold' : 'text-[#6B6B6B] hover:text-white'}`}
+                >
+                  Reels
+                </button>
+                <button
+                  onClick={() => setPostTypeFilter('carousels')}
+                  className={`px-2 py-1 rounded transition ${postTypeFilter === 'carousels' ? 'bg-[#D9D9D9] text-[#0B0B0B] font-semibold' : 'text-[#6B6B6B] hover:text-white'}`}
+                >
+                  Carousels
+                </button>
+                <button
+                  onClick={() => setPostTypeFilter('posts')}
+                  className={`px-2 py-1 rounded transition ${postTypeFilter === 'posts' ? 'bg-[#D9D9D9] text-[#0B0B0B] font-semibold' : 'text-[#6B6B6B] hover:text-white'}`}
+                >
+                  Posts
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-2.5">
@@ -1286,7 +1316,7 @@ export default function App() {
               ) : viewLayout === 'grid' ? (
                 <div className={
                   density === 'compact'
-                    ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3.5"
+                    ? "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3.5"
                     : density === 'spacious'
                       ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
                       : "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5"
@@ -1399,12 +1429,12 @@ export default function App() {
                             </span>
                           </div>
 
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex flex-wrap items-center gap-1.5">
                             {(reel.is_failed || reel.processing_status === 'extraction_failed') && (
                               <button
                                 onClick={() => handleRetryExtraction(reel.id)}
                                 disabled={isThisRetrying}
-                                className="flex-1 flex items-center justify-center gap-1 rounded-lg border border-[#333333] bg-[#0B0B0B] hover:bg-[#333333] px-2.5 py-1 text-xs text-[#D9D9D9]"
+                                className="flex-1 min-w-[70px] flex items-center justify-center gap-1 rounded-lg border border-[#333333] bg-[#0B0B0B] hover:bg-[#333333] px-2.5 py-1 text-xs text-[#D9D9D9]"
                               >
                                 <RotateCcw className={`h-3 w-3 ${isThisRetrying ? 'animate-spin text-white' : ''}`} />
                                 <span>Retry</span>
@@ -1414,7 +1444,7 @@ export default function App() {
                             {reel.completion_status !== 'completed' && (
                               <button
                                 onClick={() => handleStatusChange(reel.id, 'completed')}
-                                className="flex-1 rounded-lg bg-[#0B0B0B] hover:bg-[#333333] border border-[#333333] px-2.5 py-1 text-xs font-medium text-[#D9D9D9] transition"
+                                className="flex-1 min-w-[70px] rounded-lg bg-[#0B0B0B] hover:bg-[#333333] border border-[#333333] px-2.5 py-1 text-xs font-medium text-[#D9D9D9] transition"
                               >
                                 Watched
                               </button>
@@ -1423,7 +1453,7 @@ export default function App() {
                             {reel.completion_status !== 'archived' && (
                               <button
                                 onClick={() => handleStatusChange(reel.id, 'archived')}
-                                className="flex-1 rounded-lg bg-[#0B0B0B] hover:bg-[#333333] border border-[#333333] px-2.5 py-1 text-xs font-medium text-[#6B6B6B] hover:text-[#D9D9D9] transition"
+                                className="flex-1 min-w-[70px] rounded-lg bg-[#0B0B0B] hover:bg-[#333333] border border-[#333333] px-2.5 py-1 text-xs font-medium text-[#6B6B6B] hover:text-[#D9D9D9] transition"
                               >
                                 Archive
                               </button>
