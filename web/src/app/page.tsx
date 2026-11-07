@@ -116,6 +116,17 @@ export default function App() {
   const [editCategoryIcon, setEditCategoryIcon] = useState('Folder');
   const [editCategoryDesc, setEditCategoryDesc] = useState('');
   const [categoryMetaMap, setCategoryMetaMap] = useState<Record<string, { icon?: string; description?: string }>>({});
+  const [metaLoaded, setMetaLoaded] = useState(false);
+
+  // Sync category metadata to localStorage whenever state updates after initial load
+  useEffect(() => {
+    if (!metaLoaded) return;
+    try {
+      localStorage.setItem('watchlater_category_meta', JSON.stringify(categoryMetaMap));
+    } catch (e) {
+      console.warn('Failed to sync category metadata:', e);
+    }
+  }, [categoryMetaMap, metaLoaded]);
 
   // Clear history lightbox
   const [showClearHistoryLightbox, setShowClearHistoryLightbox] = useState(false);
@@ -151,7 +162,9 @@ export default function App() {
 
       const savedCatMeta = localStorage.getItem('watchlater_category_meta');
       if (savedCatMeta) setCategoryMetaMap(JSON.parse(savedCatMeta));
-    } catch (e) {}
+    } catch (e) { } finally {
+      setMetaLoaded(true);
+    }
   }, []);
 
   // Category state reconciliation
@@ -170,7 +183,7 @@ export default function App() {
       const next = prev.includes(catId) ? prev.filter(id => id !== catId) : [...prev, catId];
       try {
         localStorage.setItem('watchlater_pinned_folders', JSON.stringify(next));
-      } catch (err) {}
+      } catch (err) { }
       return next;
     });
   };
@@ -179,7 +192,7 @@ export default function App() {
     setViewLayout(val);
     try {
       localStorage.setItem('watchlater_view_layout', val);
-    } catch (err) {}
+    } catch (err) { }
   };
 
   const loadData = useCallback(async () => {
@@ -349,8 +362,8 @@ export default function App() {
     const retentionMs = retentionPeriod === 'day'
       ? 1 * msPerDay
       : retentionPeriod === 'month'
-      ? 30 * msPerDay
-      : 7 * msPerDay;
+        ? 30 * msPerDay
+        : 7 * msPerDay;
 
     const now = Date.now();
     const expiredArchived = reels.filter(r => {
@@ -442,7 +455,7 @@ export default function App() {
     // Prevent duplicate category creation locally
     const existing = categories.find(
       c => c.name.trim().toLowerCase() === trimmed.toLowerCase() &&
-           (categoryParentId ? c.parent_id === categoryParentId : !c.parent_id)
+        (categoryParentId ? c.parent_id === categoryParentId : !c.parent_id)
     );
     if (existing) {
       alert('A category with this name already exists at this level.');
@@ -496,14 +509,12 @@ export default function App() {
           if (prev.some(c => c.id === data.id)) return prev;
           return [...prev, data as Category];
         });
-        // Auto-assign default description & icon identity
+        // Auto-assign default description & icon identity deriving from latest state
         const meta = {
           icon: categoryParentId ? 'Tag' : 'Folder',
           description: categoryParentId ? `Sub-niche under parent category` : `Curated collection for ${trimmed}`
         };
-        const updatedMeta = { ...categoryMetaMap, [data.id]: meta };
-        setCategoryMetaMap(updatedMeta);
-        persistCategoryMeta(updatedMeta);
+        setCategoryMetaMap(prev => ({ ...prev, [data.id]: meta }));
 
         setNewCategoryName('');
         setIsCreatingCategory(false);
@@ -531,16 +542,15 @@ export default function App() {
 
       setCategories(prev => prev.map(c => c.id === editingCategory.id ? { ...c, name: newName } : c));
 
-      // Save icon and description metadata outside state updater
-      const updatedMeta = {
-        ...categoryMetaMap,
-        [editingCategory.id]: {
+      // Derive update from latest state
+      const targetId = editingCategory.id;
+      setCategoryMetaMap(prev => ({
+        ...prev,
+        [targetId]: {
           icon: editCategoryIcon,
-          description: editCategoryDesc.trim() || categoryMetaMap[editingCategory.id]?.description || `Curated collection for ${newName}`
+          description: editCategoryDesc.trim() || prev[targetId]?.description || `Curated collection for ${newName}`
         }
-      };
-      setCategoryMetaMap(updatedMeta);
-      persistCategoryMeta(updatedMeta);
+      }));
 
       setEditingCategory(null);
     } catch (err: any) {
@@ -558,19 +568,20 @@ export default function App() {
     setCategories(prev => prev.filter(c => !allDeletedIds.has(c.id)));
     setPinnedFolderIds(prev => prev.filter(id => !allDeletedIds.has(id)));
 
-    // Remove deleted category and its children from metadata
-    const updatedMeta = { ...categoryMetaMap };
-    Array.from(allDeletedIds).forEach(id => {
-      delete updatedMeta[id];
-    });
-    setCategoryMetaMap(updatedMeta);
-    persistCategoryMeta(updatedMeta);
-
     try {
       const { error } = await supabase.from('categories').delete().eq('id', catId);
       if (error) {
         alert(`Failed to delete category: ${error.message}`);
         await loadData();
+      } else {
+        // Remove from metadata only after database delete succeeds
+        setCategoryMetaMap(prev => {
+          const updated = { ...prev };
+          Array.from(allDeletedIds).forEach(id => {
+            delete updated[id];
+          });
+          return updated;
+        });
       }
     } catch (err: any) {
       alert(`Error deleting category: ${err.message || err}`);
@@ -848,9 +859,8 @@ export default function App() {
 
       {/* Navigation Sidebar */}
       <aside
-        className={`${
-          sidebarCollapsed ? 'w-16' : 'w-64'
-        } transition-all duration-200 border-r border-zinc-800 bg-zinc-900/40 p-3 flex flex-col justify-between select-none`}
+        className={`${sidebarCollapsed ? 'w-16' : 'w-64'
+          } transition-all duration-200 border-r border-zinc-800 bg-zinc-900/40 p-3 flex flex-col justify-between select-none`}
       >
         <div className="overflow-y-auto overflow-x-hidden">
           {/* Logo & Toggle */}
@@ -874,9 +884,8 @@ export default function App() {
           <div className="space-y-1">
             <button
               onClick={() => { setCurrentPage('home'); setSelectedCategoryId(null); }}
-              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'gap-2.5'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${
-                currentPage === 'home' ? 'bg-indigo-600/15 text-indigo-400 font-semibold' : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
-              }`}
+              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'gap-2.5'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'home' ? 'bg-indigo-600/15 text-indigo-400 font-semibold' : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
+                }`}
               title="Home (Stats & Insights)"
             >
               <Home className="h-4 w-4 shrink-0 text-indigo-400" />
@@ -885,9 +894,8 @@ export default function App() {
 
             <button
               onClick={() => { setCurrentPage('all'); setSelectedCategoryId(null); }}
-              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${
-                currentPage === 'all' && !selectedCategoryId ? 'bg-indigo-600/15 text-indigo-400 font-semibold' : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
-              }`}
+              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'all' && !selectedCategoryId ? 'bg-indigo-600/15 text-indigo-400 font-semibold' : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
+                }`}
               title="All Content"
             >
               <div className="flex items-center gap-2.5">
@@ -900,9 +908,8 @@ export default function App() {
             {/* Renamed from Sorted Saves to Categories */}
             <button
               onClick={() => { setCurrentPage('categories'); setSelectedCategoryId(null); }}
-              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${
-                currentPage === 'categories' && !selectedCategoryId ? 'bg-indigo-600/15 text-indigo-400 font-semibold' : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
-              }`}
+              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'categories' && !selectedCategoryId ? 'bg-indigo-600/15 text-indigo-400 font-semibold' : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
+                }`}
               title="Categories"
             >
               <div className="flex items-center gap-2.5">
@@ -914,9 +921,8 @@ export default function App() {
 
             <button
               onClick={() => { setCurrentPage('watched'); setSelectedCategoryId(null); }}
-              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${
-                currentPage === 'watched' ? 'bg-indigo-600/15 text-indigo-400 font-semibold' : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
-              }`}
+              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'watched' ? 'bg-indigo-600/15 text-indigo-400 font-semibold' : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
+                }`}
               title="Watched"
             >
               <div className="flex items-center gap-2.5">
@@ -928,9 +934,8 @@ export default function App() {
 
             <button
               onClick={() => { setCurrentPage('inbox'); setSelectedCategoryId(null); }}
-              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${
-                currentPage === 'inbox' ? 'bg-indigo-600/15 text-indigo-400 font-semibold' : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
-              }`}
+              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'inbox' ? 'bg-indigo-600/15 text-indigo-400 font-semibold' : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
+                }`}
               title="Inbox"
             >
               <div className="flex items-center gap-2.5">
@@ -942,9 +947,8 @@ export default function App() {
 
             <button
               onClick={() => { setCurrentPage('failed'); setSelectedCategoryId(null); }}
-              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${
-                currentPage === 'failed' ? 'bg-red-500/15 text-red-400 font-semibold' : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
-              }`}
+              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'failed' ? 'bg-red-500/15 text-red-400 font-semibold' : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
+                }`}
               title="Failed Extractions"
             >
               <div className="flex items-center gap-2.5">
@@ -956,9 +960,8 @@ export default function App() {
 
             <button
               onClick={() => { setCurrentPage('archived'); setSelectedCategoryId(null); }}
-              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${
-                currentPage === 'archived' ? 'bg-indigo-600/15 text-indigo-400 font-semibold' : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
-              }`}
+              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'archived' ? 'bg-indigo-600/15 text-indigo-400 font-semibold' : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
+                }`}
               title="Archived"
             >
               <div className="flex items-center gap-2.5">
@@ -986,9 +989,8 @@ export default function App() {
                     setCurrentPage('categories');
                     setSelectedCategoryId(cat.id);
                   }}
-                  className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} rounded-lg px-2.5 py-1.5 text-xs font-medium transition group ${
-                    currentPage === 'categories' && selectedCategoryId === cat.id ? 'bg-indigo-600/15 text-indigo-400 font-semibold' : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
-                  }`}
+                  className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} rounded-lg px-2.5 py-1.5 text-xs font-medium transition group ${currentPage === 'categories' && selectedCategoryId === cat.id ? 'bg-indigo-600/15 text-indigo-400 font-semibold' : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
+                    }`}
                   title={cat.name}
                 >
                   <div className="flex items-center gap-2 truncate">
@@ -1016,9 +1018,8 @@ export default function App() {
         <div className="border-t border-zinc-800/80 pt-3 mt-2 space-y-1">
           <button
             onClick={() => setCurrentPage('settings')}
-            className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'gap-2'} rounded-lg px-2.5 py-1.5 text-xs font-medium transition ${
-              currentPage === 'settings' ? 'bg-indigo-600/15 text-indigo-400 font-semibold' : 'text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200'
-            }`}
+            className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'gap-2'} rounded-lg px-2.5 py-1.5 text-xs font-medium transition ${currentPage === 'settings' ? 'bg-indigo-600/15 text-indigo-400 font-semibold' : 'text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200'
+              }`}
             title="Settings"
           >
             <SettingsIcon className="h-3.5 w-3.5 shrink-0" />
@@ -1365,8 +1366,8 @@ export default function App() {
                   density === 'compact'
                     ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5"
                     : density === 'spacious'
-                    ? "grid grid-cols-1 md:grid-cols-2 gap-6"
-                    : "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5"
+                      ? "grid grid-cols-1 md:grid-cols-2 gap-6"
+                      : "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5"
                 }>
                   {displayedReels.map((reel) => {
                     const extractionErr = Array.isArray(reel.extracted_content)
@@ -1381,9 +1382,8 @@ export default function App() {
                       <div
                         key={reel.id}
                         onClick={() => setDetailReelId(reel.id)}
-                        className={`flex flex-col justify-between rounded-xl border border-zinc-800 bg-zinc-900/50 ${
-                          density === 'compact' ? 'p-3' : density === 'spacious' ? 'p-5' : 'p-4'
-                        } backdrop-blur hover:border-zinc-700 cursor-pointer transition`}
+                        className={`flex flex-col justify-between rounded-xl border border-zinc-800 bg-zinc-900/50 ${density === 'compact' ? 'p-3' : density === 'spacious' ? 'p-5' : 'p-4'
+                          } backdrop-blur hover:border-zinc-700 cursor-pointer transition`}
                       >
                         <div>
                           {/* Thumbnail with direct Play / Redirect action */}
@@ -1412,13 +1412,12 @@ export default function App() {
                           {/* Header badges */}
                           <div className="flex flex-wrap items-center justify-between gap-1.5 mb-2">
                             <span
-                              className={`rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider ${
-                                reel.is_failed || reel.processing_status === 'extraction_failed'
+                              className={`rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider ${reel.is_failed || reel.processing_status === 'extraction_failed'
                                   ? 'bg-red-950/80 text-red-400 border border-red-800/50'
                                   : reel.processing_status === 'processed'
-                                  ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800/50'
-                                  : 'bg-zinc-800 text-zinc-400'
-                              }`}
+                                    ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800/50'
+                                    : 'bg-zinc-800 text-zinc-400'
+                                }`}
                             >
                               {reel.processing_status}
                             </span>
@@ -1523,9 +1522,8 @@ export default function App() {
                       <div
                         key={reel.id}
                         onClick={() => setDetailReelId(reel.id)}
-                        className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-xl border border-zinc-800 bg-zinc-900/50 ${
-                          density === 'compact' ? 'p-2.5 sm:py-2 sm:px-3' : density === 'spacious' ? 'p-4' : 'p-3'
-                        } backdrop-blur hover:border-zinc-700 cursor-pointer transition`}
+                        className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-xl border border-zinc-800 bg-zinc-900/50 ${density === 'compact' ? 'p-2.5 sm:py-2 sm:px-3' : density === 'spacious' ? 'p-4' : 'p-3'
+                          } backdrop-blur hover:border-zinc-700 cursor-pointer transition`}
                       >
                         <div className="flex items-center gap-3.5 min-w-0 flex-1">
                           {showThumbnails && reel.thumbnail_url && (
@@ -1551,13 +1549,12 @@ export default function App() {
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2 mb-1">
                               <span
-                                className={`rounded px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wider ${
-                                  reel.is_failed || reel.processing_status === 'extraction_failed'
+                                className={`rounded px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wider ${reel.is_failed || reel.processing_status === 'extraction_failed'
                                     ? 'bg-red-950/80 text-red-400 border border-red-800/50'
                                     : reel.processing_status === 'processed'
-                                    ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800/50'
-                                    : 'bg-zinc-800 text-zinc-400'
-                                }`}
+                                      ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800/50'
+                                      : 'bg-zinc-800 text-zinc-400'
+                                  }`}
                               >
                                 {reel.processing_status}
                               </span>
@@ -1787,9 +1784,8 @@ export default function App() {
                       setRetentionPeriod('day');
                       localStorage.setItem('watchlater_archive_retention', 'day');
                     }}
-                    className={`py-1.5 text-xs font-medium rounded-lg transition ${
-                      retentionPeriod === 'day' ? 'bg-indigo-600 text-white' : 'text-zinc-400 hover:text-zinc-200'
-                    }`}
+                    className={`py-1.5 text-xs font-medium rounded-lg transition ${retentionPeriod === 'day' ? 'bg-indigo-600 text-white' : 'text-zinc-400 hover:text-zinc-200'
+                      }`}
                   >
                     1 Day
                   </button>
@@ -1798,9 +1794,8 @@ export default function App() {
                       setRetentionPeriod('week');
                       localStorage.setItem('watchlater_archive_retention', 'week');
                     }}
-                    className={`py-1.5 text-xs font-medium rounded-lg transition ${
-                      retentionPeriod === 'week' ? 'bg-indigo-600 text-white' : 'text-zinc-400 hover:text-zinc-200'
-                    }`}
+                    className={`py-1.5 text-xs font-medium rounded-lg transition ${retentionPeriod === 'week' ? 'bg-indigo-600 text-white' : 'text-zinc-400 hover:text-zinc-200'
+                      }`}
                   >
                     1 Week
                   </button>
@@ -1809,9 +1804,8 @@ export default function App() {
                       setRetentionPeriod('month');
                       localStorage.setItem('watchlater_archive_retention', 'month');
                     }}
-                    className={`py-1.5 text-xs font-medium rounded-lg transition ${
-                      retentionPeriod === 'month' ? 'bg-indigo-600 text-white' : 'text-zinc-400 hover:text-zinc-200'
-                    }`}
+                    className={`py-1.5 text-xs font-medium rounded-lg transition ${retentionPeriod === 'month' ? 'bg-indigo-600 text-white' : 'text-zinc-400 hover:text-zinc-200'
+                      }`}
                   >
                     1 Month (Cap)
                   </button>
@@ -2288,11 +2282,10 @@ export default function App() {
                       key={item.icon}
                       type="button"
                       onClick={() => setEditCategoryIcon(item.icon)}
-                      className={`flex flex-col items-center justify-center p-2 rounded-xl border text-xs transition ${
-                        editCategoryIcon === item.icon
+                      className={`flex flex-col items-center justify-center p-2 rounded-xl border text-xs transition ${editCategoryIcon === item.icon
                           ? 'border-indigo-500 bg-indigo-950/40 text-indigo-300'
                           : 'border-zinc-800 bg-zinc-950/40 text-zinc-400 hover:bg-zinc-800'
-                      }`}
+                        }`}
                     >
                       {renderCategoryIcon(item.icon, "h-5 w-5 mb-1")}
                       <span className="text-[10px]">{item.label}</span>

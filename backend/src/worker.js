@@ -37,7 +37,7 @@ function extractShortcode(url) {
 async function extractViaOpenGraph(url) {
   const shortcode = extractShortcode(url);
   const isPost = /\/p\/[A-Za-z0-9_-]+/i.test(url);
-  const targetUrl = shortcode 
+  const targetUrl = shortcode
     ? (isPost ? `https://www.instagram.com/p/${shortcode}/` : `https://www.instagram.com/reel/${shortcode}/`)
     : url;
 
@@ -162,7 +162,7 @@ async function categorizeWithGroq(metadata, existingCategoryTree) {
     subcategories: (cat.subcategories || []).map(s => s.name)
   }));
 
-const systemPrompt = `You are an expert AI content classifier and taxonomist.
+  const systemPrompt = `You are an expert AI content classifier and taxonomist.
 Your task is to organize user social saves into a clean, intuitive hierarchical taxonomy with high-quality subcategories.
 
 STRUCTURING RULES:
@@ -332,7 +332,8 @@ async function processReel(reel) {
       categoryId = resolvedCat?.id || null;
 
       // Subcategory
-      if (validSubcategory && categoryId) {
+      const isSubDistinct = validSubcategory && validSubcategory.toLowerCase() !== validCategory.toLowerCase();
+      if (isSubDistinct && categoryId) {
         const { data: subRow, error: subSelectErr } = await supabase
           .from('categories')
           .select('id')
@@ -573,26 +574,40 @@ async function cleanupEmptyCategories() {
       }).map(c => c.id);
 
       if (emptyIds.length > 0) {
-        // Immediate verification against live reels to prevent deleting categories adopted during cleanup
-        const { data: liveCheck } = await supabase
-          .from('reels')
-          .select('category_id, subcategory_id')
-          .or(`category_id.in.(${emptyIds.join(',')}),subcategory_id.in.(${emptyIds.join(',')})`);
-
+        // Immediate verification against live reels in bounded chunks to prevent query overflow
+        const chunkSize = 200;
         const liveActiveIds = new Set();
-        for (const r of liveCheck || []) {
-          if (r.category_id) liveActiveIds.add(r.category_id);
-          if (r.subcategory_id) liveActiveIds.add(r.subcategory_id);
+        let chunkFailed = false;
+
+        for (let i = 0; i < emptyIds.length; i += chunkSize) {
+          const chunk = emptyIds.slice(i, i + chunkSize);
+          const { data: liveCheck, error: liveCheckErr } = await supabase
+            .from('reels')
+            .select('category_id, subcategory_id')
+            .or(`category_id.in.(${chunk.join(',')}),subcategory_id.in.(${chunk.join(',')})`);
+
+          if (liveCheckErr) {
+            console.error('[Worker] Startup live-reels check failed:', liveCheckErr.message);
+            chunkFailed = true;
+            break;
+          }
+
+          for (const r of liveCheck || []) {
+            if (r.category_id) liveActiveIds.add(r.category_id);
+            if (r.subcategory_id) liveActiveIds.add(r.subcategory_id);
+          }
         }
 
-        const confirmedEmptyIds = emptyIds.filter(id => !liveActiveIds.has(id));
+        if (!chunkFailed) {
+          const confirmedEmptyIds = emptyIds.filter(id => !liveActiveIds.has(id));
 
-        if (confirmedEmptyIds.length > 0) {
-          const { error: delErr } = await supabase.from('categories').delete().in('id', confirmedEmptyIds);
-          if (!delErr) {
-            console.log(`[Worker] Startup cleanup removed ${confirmedEmptyIds.length} empty categories.`);
-          } else {
-            console.error(`[Worker] Error deleting empty categories during startup cleanup:`, delErr.message);
+          if (confirmedEmptyIds.length > 0) {
+            const { error: delErr } = await supabase.from('categories').delete().in('id', confirmedEmptyIds);
+            if (!delErr) {
+              console.log(`[Worker] Startup cleanup removed ${confirmedEmptyIds.length} empty categories.`);
+            } else {
+              console.error(`[Worker] Error deleting empty categories during startup cleanup:`, delErr.message);
+            }
           }
         }
       }
