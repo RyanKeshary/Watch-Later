@@ -525,8 +525,14 @@ export default function SplashCursor({
       const width = gl.drawingBufferWidth;
       const height = gl.drawingBufferHeight;
       const aspect = Math.max(width, height) / Math.max(1, Math.min(width, height));
-      const short = Math.round(base);
-      const long = Math.round(base * aspect);
+      let short = Math.round(base);
+      let long = Math.round(base * aspect);
+      const maxTextureSize = gl.getParameter(gl.MAX_TEXTURE_SIZE) || 4096;
+      if (long > maxTextureSize) {
+        const scale = maxTextureSize / long;
+        long = maxTextureSize;
+        short = Math.max(1, Math.round(short * scale));
+      }
       return width > height ? { width: long, height: short } : { width: short, height: long };
     };
 
@@ -806,12 +812,28 @@ export default function SplashCursor({
 
     const pointers = new Map<any, any>();
     const bursts: any[] = [];
-    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    const motionQuery = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    let reduced = motionQuery?.matches ?? false;
     const introPointer = { x: 0, y: 0, px: 0, py: 0, ready: false, moved: false, offset: Math.random() };
     let introStart = introRef.current && !reduced ? performance.now() + 150 : -1;
     let raf = 0;
     let last = 0;
     let lastActivity = performance.now();
+
+    const onMotionChange = (e: MediaQueryListEvent) => {
+      reduced = e.matches;
+      if (reduced) {
+        introStart = -1;
+        pointers.clear();
+        bursts.length = 0;
+        if (raf) {
+          cancelAnimationFrame(raf);
+          raf = 0;
+        }
+        clearScreen();
+      }
+    };
+    motionQuery?.addEventListener?.('change', onMotionChange);
 
     const advanceIntro = (now: number) => {
       if (introStart < 0) return;
@@ -876,6 +898,7 @@ export default function SplashCursor({
     };
 
     const track = (id: any, clientX: number, clientY: number) => {
+      if (reduced) return;
       const point = locate(clientX, clientY);
       let pointer = pointers.get(id);
       if (!point) {
@@ -901,6 +924,7 @@ export default function SplashCursor({
     };
 
     const press = (clientX: number, clientY: number) => {
+      if (reduced) return;
       if (!settingsRef.current.clickSplash) return;
       const point = locate(clientX, clientY);
       if (!point) return;
@@ -940,15 +964,13 @@ export default function SplashCursor({
     };
     const onRestored = () => setGeneration(value => value + 1);
 
-    if (!reduced) {
-      window.addEventListener('pointermove', onPointerMove, { passive: true });
-      window.addEventListener('pointerdown', onPointerDown, { passive: true });
-      window.addEventListener('touchstart', onTouchStart, { passive: true });
-      window.addEventListener('touchmove', onTouchMove, { passive: true });
-      window.addEventListener('touchend', onTouchEnd, { passive: true });
-      window.addEventListener('touchcancel', onTouchEnd, { passive: true });
-      document.documentElement.addEventListener('pointerleave', onLeave);
-    }
+    window.addEventListener('pointermove', onPointerMove, { passive: true });
+    window.addEventListener('pointerdown', onPointerDown, { passive: true });
+    window.addEventListener('touchstart', onTouchStart, { passive: true });
+    window.addEventListener('touchmove', onTouchMove, { passive: true });
+    window.addEventListener('touchend', onTouchEnd, { passive: true });
+    window.addEventListener('touchcancel', onTouchEnd, { passive: true });
+    document.documentElement.addEventListener('pointerleave', onLeave);
     canvas.addEventListener('webglcontextlost', onLost);
     canvas.addEventListener('webglcontextrestored', onRestored);
 
@@ -958,6 +980,7 @@ export default function SplashCursor({
     return () => {
       disposed = true;
       cancelAnimationFrame(raf);
+      motionQuery?.removeEventListener?.('change', onMotionChange);
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('pointerdown', onPointerDown);
       window.removeEventListener('touchstart', onTouchStart);

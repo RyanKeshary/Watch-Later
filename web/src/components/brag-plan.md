@@ -11,3 +11,4 @@
   3. **Beat 3: The Engine (8-13s)** — Background audio transcription, caption parsing, and automatic taxonomy sorting into clean niche pillars.
   4. **Beat 4: The Payoff (13-17s)** — A curated, searchable library. Watch $\rightarrow$ Auto-cleared from queue. Zero backlog forever.
   5. **Beat 5: The Call to Action (17-20s)** — "Never lose a reel worth revisiting." Download Android App (APK).
+
