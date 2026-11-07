@@ -1,6 +1,8 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <style name="Theme.ReelVault" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:statusBarColor">#00000000</item>
+    <style name="Theme.ReelVault" parent="android:Theme.Material.NoActionBar">
+        <item name="android:statusBarColor">#0B0B0B</item>
+        <item name="android:navigationBarColor">#0B0B0B</item>
+        <item name="android:windowBackground">#0B0B0B</item>
     </style>
 
     <!-- Translucent invisible theme for silent share-capture -->

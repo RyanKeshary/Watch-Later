@@ -16,6 +16,7 @@ import com.reelvault.app.data.LocalReel
 import com.reelvault.app.util.PreferenceManager
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.android.Android
+import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -103,6 +104,41 @@ class ReelSyncWorker(
                         } catch (e: Exception) {
                             false
                         }
+                    }
+
+                    // Remote device registration check: if removed from web dashboard, deregister locally
+                    try {
+                        val deviceName = "${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL}"
+                        var checkRes = client.get("${BuildConfig.SUPABASE_URL}/rest/v1/devices") {
+                            header("apikey", BuildConfig.SUPABASE_ANON_KEY)
+                            header("Authorization", "Bearer $accessToken")
+                            url {
+                                parameters.append("user_id", "eq.$userId")
+                                parameters.append("device_name", "eq.$deviceName")
+                                parameters.append("select", "id")
+                            }
+                        }
+                        if (checkRes.status.value == 401 && refreshTokenCall()) {
+                            checkRes = client.get("${BuildConfig.SUPABASE_URL}/rest/v1/devices") {
+                                header("apikey", BuildConfig.SUPABASE_ANON_KEY)
+                                header("Authorization", "Bearer $accessToken")
+                                url {
+                                    parameters.append("user_id", "eq.$userId")
+                                    parameters.append("device_name", "eq.$deviceName")
+                                    parameters.append("select", "id")
+                                }
+                            }
+                        }
+                        if (checkRes.status.value in 200..299) {
+                            val body = checkRes.bodyAsText().trim()
+                            if (body == "[]") {
+                                Log.w("ReelSyncWorker", "Device deregistered on web dashboard. Clearing local session.")
+                                PreferenceManager.clearSession(context)
+                                return@withLock false
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Log.w("ReelSyncWorker", "Device registration check skipped: ${e.message}")
                     }
 
                     for (reel in pendingReels) {
