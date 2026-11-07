@@ -57,6 +57,7 @@ import kotlinx.serialization.json.put
 class MainActivity : ComponentActivity() {
 
     private val httpClient = HttpClient(Android)
+    private var isFirstResume = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -124,6 +125,10 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        if (isFirstResume) {
+            isFirstResume = false
+            return
+        }
         if (PreferenceManager.isLoggedIn(this)) {
             lifecycleScope.launch(Dispatchers.IO) {
                 val isStillRegistered = checkDeviceRegistration()
@@ -131,7 +136,6 @@ class MainActivity : ComponentActivity() {
                     withContext(Dispatchers.Main) {
                         PreferenceManager.clearSession(this@MainActivity)
                         Toast.makeText(this@MainActivity, "Device removed from dashboard. Signed out.", Toast.LENGTH_LONG).show()
-                        recreate()
                     }
                 }
             }
@@ -139,6 +143,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private suspend fun checkDeviceRegistration(): Boolean {
+        if (!PreferenceManager.isDeviceRegistered(this)) return true
         val token = PreferenceManager.getAccessToken(this) ?: return false
         val userId = PreferenceManager.getUserId(this) ?: return false
         val deviceName = "${Build.MANUFACTURER} ${Build.MODEL}"
@@ -301,30 +306,34 @@ class MainActivity : ComponentActivity() {
                                 }
 
                                 val responseText = response.bodyAsText()
-                                withContext(Dispatchers.Main) {
-                                    isLoading = false
-                                    if (response.status.isSuccess()) {
-                                        val json = Json.parseToJsonElement(responseText).jsonObject
-                                        val session = json["session"]?.jsonObject ?: json
-                                        val accessToken = session["access_token"]?.jsonPrimitive?.content
-                                        val refreshToken = session["refresh_token"]?.jsonPrimitive?.content
-                                        val user = session["user"]?.jsonObject ?: json["user"]?.jsonObject
-                                        val userId = user?.get("id")?.jsonPrimitive?.content ?: ""
+                                if (response.status.isSuccess()) {
+                                    val json = Json.parseToJsonElement(responseText).jsonObject
+                                    val session = json["session"]?.jsonObject ?: json
+                                    val accessToken = session["access_token"]?.jsonPrimitive?.content
+                                    val refreshToken = session["refresh_token"]?.jsonPrimitive?.content
+                                    val user = session["user"]?.jsonObject ?: json["user"]?.jsonObject
+                                    val userId = user?.get("id")?.jsonPrimitive?.content ?: ""
 
-                                        if (accessToken != null && refreshToken != null) {
-                                            PreferenceManager.saveSession(
-                                                this@MainActivity,
-                                                userId = userId,
-                                                email = email.trim(),
-                                                accessToken = accessToken,
-                                                refreshToken = refreshToken
-                                            )
-                                            // Register device row in database
-                                            lifecycleScope.launch(Dispatchers.IO) {
-                                                registerDevice(accessToken, userId)
+                                    if (accessToken != null && refreshToken != null) {
+                                        val registered = registerDevice(accessToken, userId)
+                                        withContext(Dispatchers.Main) {
+                                            isLoading = false
+                                            if (registered) {
+                                                PreferenceManager.saveSession(
+                                                    this@MainActivity,
+                                                    userId = userId,
+                                                    email = email.trim(),
+                                                    accessToken = accessToken,
+                                                    refreshToken = refreshToken
+                                                )
+                                                onAuthSuccess(email.trim())
+                                            } else {
+                                                errorMessage = "Device registration failed. Please try again."
                                             }
-                                            onAuthSuccess(email.trim())
-                                        } else {
+                                        }
+                                    } else {
+                                        withContext(Dispatchers.Main) {
+                                            isLoading = false
                                             if (isSignUp) {
                                                 errorMessage = "Sign up successful! Please check your email to confirm, then sign in."
                                                 isSignUp = false
@@ -332,11 +341,14 @@ class MainActivity : ComponentActivity() {
                                                 errorMessage = "Session tokens missing in response."
                                             }
                                         }
-                                    } else {
-                                        val parsedErr = runCatching {
-                                            Json.parseToJsonElement(responseText).jsonObject["msg"]?.jsonPrimitive?.content
-                                                ?: Json.parseToJsonElement(responseText).jsonObject["error_description"]?.jsonPrimitive?.content
-                                        }.getOrNull()
+                                    }
+                                } else {
+                                    val parsedErr = runCatching {
+                                        Json.parseToJsonElement(responseText).jsonObject["msg"]?.jsonPrimitive?.content
+                                            ?: Json.parseToJsonElement(responseText).jsonObject["error_description"]?.jsonPrimitive?.content
+                                    }.getOrNull()
+                                    withContext(Dispatchers.Main) {
+                                        isLoading = false
                                         errorMessage = parsedErr ?: "Authentication failed (${response.status.value})"
                                     }
                                 }
@@ -498,8 +510,8 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private suspend fun registerDevice(token: String, userId: String) {
-        try {
+    private suspend fun registerDevice(token: String, userId: String): Boolean {
+        return try {
             val deviceName = "${Build.MANUFACTURER} ${Build.MODEL}"
             // Upsert / check existing device to avoid duplicates using query parameters
             val checkResponse = httpClient.get("${BuildConfig.SUPABASE_URL}/rest/v1/devices") {
@@ -514,10 +526,11 @@ class MainActivity : ComponentActivity() {
             if (checkResponse.status.value in 200..299) {
                 val existingBody = checkResponse.bodyAsText()
                 if (existingBody.contains("\"id\"")) {
-                    return
+                    PreferenceManager.setDeviceRegistered(this, true)
+                    return true
                 }
             } else {
-                return
+                return false
             }
 
             val devicePayload = buildJsonObject {
@@ -526,14 +539,19 @@ class MainActivity : ComponentActivity() {
                 put("device_name", deviceName)
             }.toString()
 
-            httpClient.post("${BuildConfig.SUPABASE_URL}/rest/v1/devices") {
+            val insertResponse = httpClient.post("${BuildConfig.SUPABASE_URL}/rest/v1/devices") {
                 header("apikey", BuildConfig.SUPABASE_ANON_KEY)
                 header("Authorization", "Bearer $token")
                 contentType(ContentType.Application.Json)
                 setBody(devicePayload)
             }
+            val success = insertResponse.status.value in 200..299
+            if (success) {
+                PreferenceManager.setDeviceRegistered(this, true)
+            }
+            success
         } catch (e: Exception) {
-            // Non-critical device registration error
+            false
         }
     }
 }

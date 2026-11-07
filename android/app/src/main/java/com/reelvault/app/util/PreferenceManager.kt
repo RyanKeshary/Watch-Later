@@ -10,6 +10,7 @@ object PreferenceManager {
     private const val KEY_REFRESH_TOKEN = "refresh_token"
     private const val KEY_USER_ID = "user_id"
     private const val KEY_USER_EMAIL = "user_email"
+    private const val KEY_DEVICE_REGISTERED = "device_registered"
 
     private fun getPrefs(context: Context) = EncryptedSharedPreferences.create(
         context,
@@ -26,6 +27,14 @@ object PreferenceManager {
             .putString(KEY_ACCESS_TOKEN, accessToken)
             .putString(KEY_REFRESH_TOKEN, refreshToken)
             .apply()
+    }
+
+    fun setDeviceRegistered(context: Context, registered: Boolean) {
+        getPrefs(context).edit().putBoolean(KEY_DEVICE_REGISTERED, registered).apply()
+    }
+
+    fun isDeviceRegistered(context: Context): Boolean {
+        return getPrefs(context).getBoolean(KEY_DEVICE_REGISTERED, false)
     }
 
     fun clearSession(context: Context) {

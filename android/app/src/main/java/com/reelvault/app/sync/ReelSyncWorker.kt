@@ -134,7 +134,7 @@ class ReelSyncWorker(
                             if (body == "[]") {
                                 Log.w("ReelSyncWorker", "Device deregistered on web dashboard. Clearing local session.")
                                 PreferenceManager.clearSession(context)
-                                return@withLock false
+                                return@withLock true
                             }
                         }
                     } catch (e: Exception) {
