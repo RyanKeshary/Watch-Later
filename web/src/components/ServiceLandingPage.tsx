@@ -292,16 +292,18 @@ export default function ServiceLandingPage({
     <div className="relative min-h-screen bg-fabric text-[#D9D9D9] font-sans antialiased selection:bg-[#333333] selection:text-white">
       {/* Interactive Fluid SplashCursor background effect */}
       <SplashCursor
-        rainbow
+        colors={['#ffffff', '#9b9b9b', '#d9d9d9']}
+        rainbow={false}
         size={0.65}
         force={0.3}
         swirl={13.5}
         trail={2.8}
         clickSplash
         colorSpeed={0.45}
-        intensity={0.5}
+        intensity={0.6}
         momentum={0.7}
-        glow={0.15}
+        glow={0.35}
+        shading={0.8}
         quality="low"
         intro={false}
       />
