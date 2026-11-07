@@ -21,6 +21,7 @@ import {
   X
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { NumberTicker } from '@/components/NumberTicker';
 
 interface ServicePageProps {
   onSignInSuccess?: () => void;
@@ -126,10 +127,10 @@ export default function ServiceLandingPage({
   ];
 
   const proofMetrics = [
-    { value: '< 2.4s', label: 'End-to-End Extraction', sub: 'Average time from mobile share to vault availability' },
-    { value: '100%', label: 'Private & Isolated', sub: 'PostgreSQL Row Level Security bound strictly to your user ID' },
-    { value: '0 Clicks', label: 'Manual Tagging', sub: 'Fully autonomous categorization into logical pillars' },
-    { value: '60 FPS', label: 'Native Performance', sub: 'Fluid spring animations with minimal bundle overhead' }
+    { valueNum: 2, prefix: '< ', suffix: '.4s', label: 'End-to-End Extraction', sub: 'Average time from mobile share to vault availability' },
+    { valueNum: 100, suffix: '%', label: 'Private & Isolated', sub: 'PostgreSQL Row Level Security bound strictly to your user ID' },
+    { valueNum: 0, suffix: ' Clicks', label: 'Manual Tagging', sub: 'Fully autonomous categorization into logical pillars' },
+    { valueNum: 60, suffix: ' FPS', label: 'Native Performance', sub: 'Fluid spring animations with minimal bundle overhead' }
   ];
 
   const faqs = [
@@ -398,7 +399,11 @@ export default function ServiceLandingPage({
             {proofMetrics.map((metric, i) => (
               <div key={i} className="rounded-2xl border border-[#333333] bg-[#1A1A1A]/80 p-6 text-center">
                 <div className="font-zolo text-4xl sm:text-5xl font-bold text-white tracking-tight mb-2">
-                  {metric.value}
+                  <NumberTicker
+                    value={metric.valueNum}
+                    prefix={metric.prefix || ''}
+                    suffix={metric.suffix || ''}
+                  />
                 </div>
                 <div className="text-xs font-semibold text-[#D9D9D9] mb-1">{metric.label}</div>
                 <p className="text-[11px] text-[#6B6B6B] leading-tight">{metric.sub}</p>

@@ -58,6 +58,7 @@ class MainActivity : ComponentActivity() {
 
     private val httpClient = HttpClient(Android)
     private var isFirstResume = true
+    private var isLoggedInState: MutableState<Boolean>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -75,10 +76,11 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = DarkBg
                 ) {
-                    var isLoggedIn by remember { mutableStateOf(PreferenceManager.isLoggedIn(this)) }
+                    val isLoggedIn = remember { mutableStateOf(PreferenceManager.isLoggedIn(this)) }
+                    isLoggedInState = isLoggedIn
                     var userEmail by remember { mutableStateOf(PreferenceManager.getUserEmail(this) ?: "") }
 
-                    if (isLoggedIn) {
+                    if (isLoggedIn.value) {
                         LaunchedEffect(Unit) {
                             lifecycleScope.launch(Dispatchers.IO) {
                                 // 1. Verify remote device registration in Supabase
@@ -86,7 +88,7 @@ class MainActivity : ComponentActivity() {
                                 if (!isStillRegistered) {
                                     withContext(Dispatchers.Main) {
                                         PreferenceManager.clearSession(this@MainActivity)
-                                        isLoggedIn = false
+                                        isLoggedIn.value = false
                                         Toast.makeText(this@MainActivity, "Device removed from dashboard. Signed out.", Toast.LENGTH_LONG).show()
                                     }
                                     return@launch
@@ -102,14 +104,14 @@ class MainActivity : ComponentActivity() {
                             email = userEmail,
                             onLogout = {
                                 PreferenceManager.clearSession(this)
-                                isLoggedIn = false
+                                isLoggedIn.value = false
                             }
                         )
                     } else {
                         AuthScreen(
                             onAuthSuccess = { email ->
                                 userEmail = email
-                                isLoggedIn = true
+                                isLoggedIn.value = true
                                 lifecycleScope.launch(Dispatchers.IO) {
                                     val db = AppDatabase.getDatabase(applicationContext)
                                     db.reelDao().markPendingAuthAsPendingSync()
@@ -135,6 +137,7 @@ class MainActivity : ComponentActivity() {
                 if (!isStillRegistered) {
                     withContext(Dispatchers.Main) {
                         PreferenceManager.clearSession(this@MainActivity)
+                        isLoggedInState?.value = false
                         Toast.makeText(this@MainActivity, "Device removed from dashboard. Signed out.", Toast.LENGTH_LONG).show()
                     }
                 }
@@ -143,7 +146,6 @@ class MainActivity : ComponentActivity() {
     }
 
     private suspend fun checkDeviceRegistration(): Boolean {
-        if (!PreferenceManager.isDeviceRegistered(this)) return true
         val token = PreferenceManager.getAccessToken(this) ?: return false
         val userId = PreferenceManager.getUserId(this) ?: return false
         val deviceName = "${Build.MANUFACTURER} ${Build.MODEL}"
@@ -159,8 +161,17 @@ class MainActivity : ComponentActivity() {
             }
             if (response.status.value in 200..299) {
                 val body = response.bodyAsText().trim()
-                // If empty JSON array, device row was deleted from dashboard
-                body != "[]"
+                if (body != "[]") {
+                    PreferenceManager.setDeviceRegistered(this, true)
+                    true
+                } else {
+                    // Only treat empty array as removed if previously registered
+                    if (PreferenceManager.isDeviceRegistered(this)) {
+                        false
+                    } else {
+                        true
+                    }
+                }
             } else {
                 // Network error or 401: don't boot user immediately on flaky network
                 true

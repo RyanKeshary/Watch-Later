@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { Reel, Category, Device } from '@/types/database';
 import { Morph, Loading } from 'loading-dev';
 import ServiceLandingPage from '@/components/ServiceLandingPage';
+import { NumberTicker } from '@/components/NumberTicker';
 import {
   Home,
   Film,
@@ -50,7 +51,20 @@ import {
   Compass,
   Star,
   Sparkles,
-  BookOpen
+  BookOpen,
+  Code,
+  Music,
+  Camera,
+  Coffee,
+  Heart,
+  Briefcase,
+  Flame,
+  Globe,
+  Dumbbell,
+  Lightbulb,
+  Cpu,
+  GraduationCap,
+  Menu
 } from 'lucide-react';
 
 type NavPage = 'home' | 'all' | 'categories' | 'watched' | 'inbox' | 'failed' | 'archived' | 'settings';
@@ -92,6 +106,7 @@ export default function App() {
 
   // UI customization states
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [pinnedFolderIds, setPinnedFolderIds] = useState<string[]>([]);
 
   // Settings & Preferences
@@ -702,7 +717,7 @@ export default function App() {
       // Page Filters
       switch (currentPage) {
         case 'all':
-          return reel.completion_status !== 'archived';
+          return reel.completion_status !== 'archived' && !reel.is_failed && reel.processing_status !== 'extraction_failed';
         case 'watched':
           return reel.completion_status === 'completed';
         case 'inbox':
@@ -765,6 +780,18 @@ export default function App() {
       case 'Compass': return <Compass className={className} />;
       case 'BookOpen': return <BookOpen className={className} />;
       case 'Tag': return <Tag className={className} />;
+      case 'Code': return <Code className={className} />;
+      case 'Music': return <Music className={className} />;
+      case 'Camera': return <Camera className={className} />;
+      case 'Coffee': return <Coffee className={className} />;
+      case 'Heart': return <Heart className={className} />;
+      case 'Briefcase': return <Briefcase className={className} />;
+      case 'Flame': return <Flame className={className} />;
+      case 'Globe': return <Globe className={className} />;
+      case 'Dumbbell': return <Dumbbell className={className} />;
+      case 'Lightbulb': return <Lightbulb className={className} />;
+      case 'Cpu': return <Cpu className={className} />;
+      case 'GraduationCap': return <GraduationCap className={className} />;
       default: return <Folder className={className} />;
     }
   };
@@ -774,7 +801,7 @@ export default function App() {
   }, [categories, pinnedFolderIds]);
 
   const counts = useMemo(() => ({
-    all: reels.filter(r => r.completion_status !== 'archived').length,
+    all: reels.filter(r => r.completion_status !== 'archived' && !r.is_failed && r.processing_status !== 'extraction_failed').length,
     inbox: reels.filter(r => r.processing_status === 'pending' || r.processing_status === 'resolving').length,
     failed: reels.filter(r => r.is_failed || r.processing_status === 'extraction_failed').length,
     watched: reels.filter(r => r.completion_status === 'completed').length,
@@ -817,10 +844,17 @@ export default function App() {
         </div>
       )}
 
-      {/* Navigation Sidebar */}
+      {/* Navigation Sidebar (Desktop + Mobile Drawer) */}
+      <div
+        className={`fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden transition-opacity ${mobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+          }`}
+        onClick={() => setMobileMenuOpen(false)}
+      />
+
       <aside
         className={`${sidebarCollapsed ? 'w-16' : 'w-64'
-          } transition-all duration-200 border-r border-[#333333] bg-[#0B0B0B]/80 backdrop-blur p-3 flex flex-col justify-between select-none shrink-0`}
+          } ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+          } fixed md:static inset-y-0 left-0 z-40 transition-all duration-200 border-r border-[#333333] bg-[#0B0B0B]/95 md:bg-[#0B0B0B]/80 backdrop-blur p-3 flex flex-col justify-between select-none shrink-0`}
       >
         <div className="overflow-y-auto overflow-x-hidden">
           {/* Logo & Toggle */}
@@ -834,13 +868,21 @@ export default function App() {
                 </div>
               </div>
             )}
-            <button
-              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="p-1 rounded hover:bg-zinc-800/80 text-zinc-400 hover:text-white transition"
-              title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            >
-              {sidebarCollapsed ? <PanelLeft className="h-5 w-5" /> : <PanelLeftClose className="h-4 w-4" />}
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                className="hidden md:inline-flex p-1 rounded hover:bg-zinc-800/80 text-zinc-400 hover:text-white transition"
+                title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              >
+                {sidebarCollapsed ? <PanelLeft className="h-5 w-5" /> : <PanelLeftClose className="h-4 w-4" />}
+              </button>
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="md:hidden p-1 rounded hover:bg-zinc-800/80 text-zinc-400 hover:text-white transition"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
           </div>
 
           {/* Navigation Items */}
@@ -957,7 +999,7 @@ export default function App() {
                   title={cat.name}
                 >
                   <div className="flex items-center gap-2 truncate">
-                    <Tag className="h-3.5 w-3.5 shrink-0 text-[#D9D9D9]" />
+                    {renderCategoryIcon(categoryMetaMap[cat.id]?.icon || 'Tag', "h-3.5 w-3.5 shrink-0 text-[#D9D9D9]")}
                     {!sidebarCollapsed && <span className="truncate">{cat.name}</span>}
                   </div>
                   {!sidebarCollapsed && (
@@ -994,9 +1036,16 @@ export default function App() {
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col overflow-hidden bg-fabric">
         {/* Top Header */}
-        <header className="flex flex-wrap items-center justify-between border-b border-[#333333] bg-[#0B0B0B]/60 backdrop-blur px-6 py-3 gap-3">
-          <div className="flex items-center gap-4 flex-wrap">
-            <h2 className="font-zolo text-base font-bold text-white tracking-tight">
+        <header className="flex flex-wrap items-center justify-between border-b border-[#333333] bg-[#0B0B0B]/60 backdrop-blur px-4 sm:px-6 py-3 gap-3">
+          <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="md:hidden p-1.5 rounded-lg border border-[#333333] bg-[#1A1A1A] text-[#D9D9D9] hover:text-white"
+              title="Open Navigation"
+            >
+              <Menu className="h-4 w-4" />
+            </button>
+            <h2 className="font-zolo text-sm sm:text-base font-bold text-white tracking-tight">
               {currentPage === 'home' && 'Analytics & Intelligence'}
               {currentPage === 'all' && 'All Saved Content'}
               {currentPage === 'categories' && (selectedCategoryId ? categories.find(c => c.id === selectedCategoryId)?.name || 'Category' : 'Categories Directory')}
@@ -1068,9 +1117,11 @@ export default function App() {
                     <span className="font-mono-micro text-[#6B6B6B]">01 // TOTAL ARCHIVE</span>
                     <Film className="h-4 w-4 text-[#D9D9D9]" />
                   </div>
-                  <div className="font-zolo text-3xl font-bold text-white tracking-tight">{reels.length}</div>
+                  <div className="font-zolo text-3xl font-bold text-white tracking-tight">
+                    <NumberTicker value={reels.length} />
+                  </div>
                   <span className="font-mono-micro text-[#6B6B6B] mt-2 block">
-                    {counts.watched} completed ({reels.length > 0 ? Math.round((counts.watched / reels.length) * 100) : 0}%)
+                    <NumberTicker value={counts.watched} /> completed ({reels.length > 0 ? Math.round((counts.watched / reels.length) * 100) : 0}%)
                   </span>
                 </div>
 
@@ -1079,9 +1130,11 @@ export default function App() {
                     <span className="font-mono-micro text-[#6B6B6B]">02 // TAXONOMY</span>
                     <FolderTree className="h-4 w-4 text-[#D9D9D9]" />
                   </div>
-                  <div className="font-zolo text-3xl font-bold text-white tracking-tight">{categories.length}</div>
+                  <div className="font-zolo text-3xl font-bold text-white tracking-tight">
+                    <NumberTicker value={categories.length} />
+                  </div>
                   <span className="font-mono-micro text-[#6B6B6B] mt-2 block">
-                    {rootCategories.length} primary, {categories.length - rootCategories.length} sub-niches
+                    <NumberTicker value={rootCategories.length} /> primary, <NumberTicker value={categories.length - rootCategories.length} /> sub-niches
                   </span>
                 </div>
 
@@ -1090,7 +1143,9 @@ export default function App() {
                     <span className="font-mono-micro text-[#6B6B6B]">03 // CONNECTED DEVICES</span>
                     <Smartphone className="h-4 w-4 text-[#D9D9D9]" />
                   </div>
-                  <div className="font-zolo text-3xl font-bold text-white tracking-tight">{devices.length}</div>
+                  <div className="font-zolo text-3xl font-bold text-white tracking-tight">
+                    <NumberTicker value={devices.length} />
+                  </div>
                   <span className="font-mono-micro text-[#6B6B6B] mt-2 block">
                     {devices.length > 0 ? (devices[0]?.device_name || 'Active Android / iOS') : 'No devices synced'}
                   </span>
@@ -1134,7 +1189,9 @@ export default function App() {
                       <div key={cat.id} className="p-3.5 rounded-xl border border-[#333333] bg-[#0B0B0B]/80">
                         <div className="flex items-center justify-between text-xs text-[#D9D9D9] mb-1.5">
                           <span className="font-semibold">{cat.name}</span>
-                          <span className="font-mono-micro text-[#6B6B6B]">{count} posts ({pct}%)</span>
+                          <span className="font-mono-micro text-[#6B6B6B]">
+                            <NumberTicker value={count} /> posts (<NumberTicker value={pct} />%)
+                          </span>
                         </div>
                         <div className="h-1.5 w-full rounded-full bg-[#1A1A1A] overflow-hidden border border-[#333333]/50">
                           <div className="h-full bg-[#D9D9D9] rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
@@ -2285,7 +2342,7 @@ export default function App() {
 
               <div>
                 <label className="text-xs text-zinc-400 block mb-1">Icon Style</label>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-48 overflow-y-auto pr-1">
                   {[
                     { label: 'Folder', icon: 'Folder' },
                     { label: 'Star', icon: 'Star' },
@@ -2294,19 +2351,31 @@ export default function App() {
                     { label: 'Check', icon: 'BookmarkCheck' },
                     { label: 'Compass', icon: 'Compass' },
                     { label: 'Book', icon: 'BookOpen' },
-                    { label: 'Tag', icon: 'Tag' }
+                    { label: 'Tag', icon: 'Tag' },
+                    { label: 'Code', icon: 'Code' },
+                    { label: 'Music', icon: 'Music' },
+                    { label: 'Camera', icon: 'Camera' },
+                    { label: 'Coffee', icon: 'Coffee' },
+                    { label: 'Heart', icon: 'Heart' },
+                    { label: 'Briefcase', icon: 'Briefcase' },
+                    { label: 'Flame', icon: 'Flame' },
+                    { label: 'Globe', icon: 'Globe' },
+                    { label: 'Fitness', icon: 'Dumbbell' },
+                    { label: 'Idea', icon: 'Lightbulb' },
+                    { label: 'Tech', icon: 'Cpu' },
+                    { label: 'Learn', icon: 'GraduationCap' }
                   ].map(item => (
                     <button
                       key={item.icon}
                       type="button"
                       onClick={() => setEditCategoryIcon(item.icon)}
                       className={`flex flex-col items-center justify-center p-2 rounded-xl border text-xs transition ${editCategoryIcon === item.icon
-                        ? 'border-indigo-500 bg-indigo-950/40 text-indigo-300'
-                        : 'border-zinc-800 bg-zinc-950/40 text-zinc-400 hover:bg-zinc-800'
+                        ? 'border-white bg-[#333333] text-white shadow-sm'
+                        : 'border-[#333333] bg-[#0B0B0B] text-[#999999] hover:bg-[#1A1A1A] hover:text-white'
                         }`}
                     >
-                      {renderCategoryIcon(item.icon, "h-5 w-5 mb-1")}
-                      <span className="text-[10px]">{item.label}</span>
+                      {renderCategoryIcon(item.icon, "h-4 w-4 mb-1")}
+                      <span className="text-[10px] truncate max-w-full">{item.label}</span>
                     </button>
                   ))}
                 </div>
