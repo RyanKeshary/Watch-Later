@@ -345,25 +345,28 @@ export default function App() {
       if (latestSession?.user?.id === requestUserId) {
         if (reelsRes.data) {
           const fetchedReels = reelsRes.data as Reel[];
-          // Compute merged reels using the latest reels state to prevent losing items captured during fetch
-          const currentReels = reelsRef.current;
           const fetchedIds = new Set(fetchedReels.map(r => r.id));
-          const recentNewReels = currentReels.filter(r => !fetchedIds.has(r.id));
-          const merged = [...recentNewReels, ...fetchedReels];
 
-          setReels(merged);
+          // Functional update for setReels to preserve concurrent realtime updates
+          setReels(prevReels => {
+            const recentNewReels = prevReels.filter(r => !fetchedIds.has(r.id));
+            return [...recentNewReels, ...fetchedReels];
+          });
 
-          // Reconcile saved-later IDs outside the setReels updater, only after an error-free fetch
+          // Reconcile saved-later IDs using functional update only after an error-free fetch
           if (!reelsRes.error) {
-            const authoritativeIds = new Set(merged.map(r => r.id));
-            const currentSaved = savedLaterIdsRef.current;
-            const pruned = currentSaved.filter(id => typeof id === 'string' && authoritativeIds.has(id));
-
-            setSavedLaterIds(pruned);
-
-            if (pruned.length !== currentSaved.length) {
+            let nextPrunedToPersist: string[] | null = null;
+            setSavedLaterIds(prevSaved => {
+              const pruned = prevSaved.filter(id => typeof id === 'string' && fetchedIds.has(id));
+              if (pruned.length !== prevSaved.length) {
+                nextPrunedToPersist = pruned;
+              }
+              return pruned;
+            });
+            // Keep localStorage writes outside state updaters, using the value produced by the update
+            if (nextPrunedToPersist !== null) {
               try {
-                localStorage.setItem(`watchlater_saved_later_ids_${requestUserId}`, JSON.stringify(pruned));
+                localStorage.setItem(`watchlater_saved_later_ids_${requestUserId}`, JSON.stringify(nextPrunedToPersist));
               } catch (e) { }
             }
           }
