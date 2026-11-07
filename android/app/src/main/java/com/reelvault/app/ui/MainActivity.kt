@@ -98,6 +98,20 @@ class MainActivity : ComponentActivity() {
                                 val db = AppDatabase.getDatabase(applicationContext)
                                 db.reelDao().markPendingAuthAsPendingSync()
                                 ReelSyncWorker.enqueue(applicationContext)
+
+                                // 3. Periodic fast polling (every 4s) while app is open to detect remote de-registration instantly
+                                while (PreferenceManager.isLoggedIn(this@MainActivity)) {
+                                    kotlinx.coroutines.delay(4000)
+                                    val stillValid = checkDeviceRegistration()
+                                    if (!stillValid) {
+                                        withContext(Dispatchers.Main) {
+                                            PreferenceManager.clearSession(this@MainActivity)
+                                            isLoggedIn.value = false
+                                            Toast.makeText(this@MainActivity, "Device removed from dashboard. Signed out.", Toast.LENGTH_LONG).show()
+                                        }
+                                        break
+                                    }
+                                }
                             }
                         }
                         SettingsScreen(
@@ -197,25 +211,6 @@ class MainActivity : ComponentActivity() {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Subtle brand badge
-            Box(
-                modifier = Modifier
-                    .border(1.dp, DarkBorder, RoundedCornerShape(100.dp))
-                    .background(DarkSurface, RoundedCornerShape(100.dp))
-                    .padding(horizontal = 14.dp, vertical = 6.dp)
-            ) {
-                Text(
-                    text = "VAULT PROTOCOL // v2.0",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    fontFamily = FontFamily.Monospace,
-                    color = DarkMuted,
-                    letterSpacing = 1.sp
-                )
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
             Text(
                 text = "Watch Later",
                 fontSize = 34.sp,

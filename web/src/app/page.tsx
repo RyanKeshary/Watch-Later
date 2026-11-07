@@ -383,6 +383,25 @@ export default function App() {
             }
           }
         )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'devices' },
+          (payload) => {
+            if (payload.eventType === 'INSERT') {
+              const newDev = payload.new as Device;
+              setDevices((prev) => {
+                if (prev.some(d => d.id === newDev.id)) return prev;
+                return [...prev, newDev];
+              });
+            } else if (payload.eventType === 'DELETE') {
+              const deletedId = (payload.old as any).id;
+              setDevices((prev) => prev.filter(d => d.id !== deletedId));
+            } else if (payload.eventType === 'UPDATE') {
+              const updated = payload.new as Device;
+              setDevices((prev) => prev.map(d => d.id === updated.id ? updated : d));
+            }
+          }
+        )
         .subscribe();
 
       return () => {
