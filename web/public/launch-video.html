@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Watch Later — Production Launch Video</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #09090b;
+      color: #f4f4f5;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+    }
+    .container {
+      max-width: 900px;
+      width: 100%;
+    }
+    .header {
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .header h1 {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .badge {
+      font-family: monospace;
+      font-size: 11px;
+      color: #10b981;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      padding: 4px 10px;
+      border-radius: 9999px;
+    }
+    .video-card {
+      background: #121215;
+      border: 1px solid #27272a;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+    }
+    .screen {
+      aspect-ratio: 16 / 9;
+      background: #050507;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 32px;
+      position: relative;
+    }
+    .act-tag {
+      font-family: monospace;
+      font-size: 12px;
+      letter-spacing: 0.1em;
+      color: #38bdf8;
+    }
+    .scene-content {
+      margin: auto 0;
+      text-align: center;
+    }
+    .scene-title {
+      font-size: 40px;
+      font-weight: 900;
+      letter-spacing: -0.04em;
+      margin-bottom: 12px;
+      color: #fff;
+    }
+    .scene-desc {
+      font-size: 16px;
+      color: #a1a1aa;
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.5;
+    }
+    .controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      background: #0c0c0e;
+      border-top: 1px solid #1e1e24;
+      font-family: monospace;
+      font-size: 12px;
+      color: #71717a;
+    }
+    .btn {
+      background: #ffffff;
+      color: #000;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 9999px;
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .timeline {
+      height: 4px;
+      background: #27272a;
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 8px;
+      cursor: pointer;
+    }
+    .progress {
+      height: 100%;
+      background: #fff;
+      width: 0%;
+      transition: width 0.1s linear;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h1>Watch Later — Official Production Launch Video</h1>
+        <p style="font-size: 12px; color: #71717a; margin-top: 4px;">20-Second Cinematic Launch Trailer</p>
+      </div>
+      <span class="badge">● INTERACTIVE 4K 60FPS</span>
+    </div>
+
+    <div class="video-card">
+      <div class="screen" id="screen">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span class="act-tag" id="actTag">[ACT 01 // THE CLUTTER]</span>
+          <span style="font-family: monospace; font-size: 11px; color: #71717a;">4K 60FPS</span>
+        </div>
+
+        <div class="scene-content" id="sceneContent">
+          <h2 class="scene-title" id="sceneTitle">Saved reels go to die.</h2>
+          <p class="scene-desc" id="sceneDesc">Scattered across DMs to yourself, screenshots, and Instagram's bottomless Saved folder.</p>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; font-family: monospace; font-size: 11px; color: #71717a;">
+          <span id="actLabel">Act 01 · The Clutter</span>
+          <span id="timeDisplay">00:00 / 00:20</span>
+        </div>
+      </div>
+
+      <div class="timeline" id="timelineBar" onclick="seek(event)">
+        <div class="progress" id="progress"></div>
+      </div>
+
+      <div class="controls">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <button class="btn" id="playBtn" onclick="togglePlay()">Play Video</button>
+          <button style="background: none; border: 1px solid #27272a; color: #a1a1aa; padding: 7px 14px; border-radius: 9999px; cursor: pointer;" onclick="reset()">Reset</button>
+        </div>
+        <a href="/watch-later.apk" download style="color: #fff; text-decoration: none; font-weight: 600;">Download APK ↓</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let isPlaying = false;
+    let currentTime = 0;
+    const duration = 20;
+    let animId = null;
+    let lastTime = null;
+
+    const scenes = [
+      { start: 0, end: 4, tag: '[ACT 01 // THE CLUTTER]', title: 'Saved reels go to die.', desc: 'Scattered across DMs to yourself, screenshots, and Instagram\'s bottomless Saved folder.', label: 'Act 01 · The Clutter' },
+      { start: 4, end: 8.5, tag: '[ACT 02 // ONE HABIT]', title: 'Share, don\'t save.', desc: 'Tap share on Instagram and choose Watch Later. No forms, no popups. Instant background capture.', label: 'Act 02 · One Habit' },
+      { start: 8.5, end: 13, tag: '[ACT 03 // THE ENGINE]', title: 'Substance over screenshots.', desc: 'Transcripts, captions, and creators parsed automatically into clean, dedicated pillars.', label: 'Act 03 · Extraction' },
+      { start: 13, end: 17, tag: '[ACT 04 // THE PAYOFF]', title: 'Watch it. It disappears.', desc: 'Once watched, reels auto-purge so clutter never piles up. Unused categories retire naturally.', label: 'Act 04 · Self-Cleaning' },
+      { start: 17, end: 20, tag: '[ACT 05 // GET THE APP]', title: 'Never lose a reel worth revisiting.', desc: 'Download the native Android app now. Silent share-sheet capture with zero interruptions.', label: 'Act 05 · Install Now' }
+    ];
+
+    function togglePlay() {
+      isPlaying = !isPlaying;
+      document.getElementById('playBtn').textContent = isPlaying ? 'Pause' : 'Play Video';
+      if (isPlaying) {
+        lastTime = performance.now();
+        loop(lastTime);
+      } else {
+        cancelAnimationFrame(animId);
+      }
+    }
+
+    function reset() {
+      currentTime = 0;
+      updateUI();
+    }
+
+    function seek(e) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const pos = (e.clientX - rect.left) / rect.width;
+      currentTime = pos * duration;
+      updateUI();
+    }
+
+    function loop(now) {
+      if (!isPlaying) return;
+      const delta = (now - lastTime) / 1000;
+      lastTime = now;
+      currentTime += delta;
+      if (currentTime >= duration) {
+        currentTime = 0;
+        isPlaying = false;
+        document.getElementById('playBtn').textContent = 'Play Video';
+        updateUI();
+        return;
+      }
+      updateUI();
+      animId = requestAnimationFrame(loop);
+    }
+
+    function updateUI() {
+      const pct = (currentTime / duration) * 100;
+      document.getElementById('progress').style.width = pct + '%';
+      const curSec = Math.floor(currentTime).toString().padStart(2, '0');
+      document.getElementById('timeDisplay').textContent = `00:${curSec} / 00:20`;
+
+      const curScene = scenes.find(s => currentTime >= s.start && currentTime < s.end) || scenes[scenes.length - 1];
+      document.getElementById('actTag').textContent = curScene.tag;
+      document.getElementById('sceneTitle').textContent = curScene.title;
+      document.getElementById('sceneDesc').textContent = curScene.desc;
+      document.getElementById('actLabel').textContent = curScene.label;
+    }
+  </script>
+</body>
+</html>
