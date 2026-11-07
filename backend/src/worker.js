@@ -166,32 +166,24 @@ async function extractInstagramData(url) {
 async function categorizeWithGroq(metadata, existingCategoryTree) {
   if (!GROQ_API_KEY) return null;
 
-  const categoriesContext = (existingCategoryTree || []).map(cat => ({
-    name: cat.name,
-    subcategories: (cat.subcategories || []).map(s => s.name)
-  }));
+  const categoriesContext = (existingCategoryTree || []).map(cat => cat.name);
 
   const systemPrompt = `You are an expert AI content classifier and taxonomist.
-Your task is to organize user social saves into a clean, intuitive hierarchical taxonomy with high-quality subcategories.
+Your task is to organize user social saves into a clean, intuitive flat taxonomy with high-quality, strict parent categories.
+Do NOT generate or use subcategories.
 
 STRUCTURING RULES:
-1. ALWAYS inspect the existing category hierarchy first:
+1. ALWAYS inspect existing categories first:
 ${JSON.stringify(categoriesContext, null, 2)}
-2. PARENT CATEGORIES:
-- If this post fits into an existing parent category, ALWAYS reuse that parent category name (e.g. if "Food & Cooking" exists, do not create "Cooking" or "Recipes").
-- If no existing parent category fits, create ONE high-level parent category name (e.g. "Food & Cooking", "Tech & AI", "Fitness", "Animals & Nature").
-3. SUBCATEGORIES (IMPORTANT):
-- Every post should ideally be classified into a relevant subcategory (e.g. within "Food & Cooking": "Desserts & Baking", "Italian Cuisine", "Quick Dinners", "Cocktails & Drinks"; within "Fitness": "Strength Training", "Cardio", "Nutrition").
-- If an existing subcategory fits this reel, reuse it.
-- If no existing subcategory fits, create a concise, descriptive subcategory (2-4 words) that captures the reel's specific niche.
-- Never make the subcategory name identical to the parent category name.
-- Only leave subcategory as "" if the post is truly broad and cannot be classified into a specific sub-niche.
-4. DO NOT create duplicate or synonymous parent categories.
+2. CATEGORIES:
+- If this post fits into an existing category, ALWAYS reuse that category name (e.g. if "Food & Cooking" exists, do not create "Cooking" or "Recipes").
+- If no existing category fits, create ONE high-level category name (e.g. "Food & Cooking", "Tech & AI", "Fitness", "Design & Art", "Comedy").
+3. DO NOT create subcategories under any circumstances. Keep categories clean, focused, and distinct.
+4. DO NOT create duplicate or synonymous categories.
 
 Return strictly a valid JSON object matching this schema:
 {
-  "category": string (domain parent category name - reuse existing whenever possible),
-  "subcategory": string (specific niche subcategory name),
+  "category": string (domain category name - reuse existing whenever possible),
   "topic": string (laser-focused topic),
   "tags": string[] (3-6 precise keywords),
   "ai_title": string (engaging, informative headline, max 65 chars),
@@ -293,20 +285,15 @@ async function processReel(reel) {
     .eq('user_id', reel.user_id);
 
   const rootCategories = (userCategories || []).filter(c => !c.parent_id);
-  const categoryTree = rootCategories.map(parent => ({
-    name: parent.name,
-    subcategories: (userCategories || []).filter(c => c.parent_id === parent.id)
-  }));
 
-  // Deep categorization with full metadata and existing category tree
-  const aiResult = await categorizeWithGroq(extractionData, categoryTree);
+  // Deep categorization with full metadata and existing categories (strictly no subcategories)
+  const aiResult = await categorizeWithGroq(extractionData, rootCategories);
 
   let categoryId = null;
   let subcategoryId = null;
   let processingStatus = 'partially_processed';
 
   const validCategory = (typeof aiResult?.category === 'string') ? aiResult.category.trim() : '';
-  const validSubcategory = (typeof aiResult?.subcategory === 'string') ? aiResult.subcategory.trim() : '';
 
   const escapeIlike = (str) => str.replace(/[%_\\]/g, '\\$&');
 
@@ -339,41 +326,6 @@ async function processReel(reel) {
         }
       }
       categoryId = resolvedCat?.id || null;
-
-      // Subcategory
-      const isSubDistinct = validSubcategory && validSubcategory.toLowerCase() !== validCategory.toLowerCase();
-      if (isSubDistinct && categoryId) {
-        const { data: subRow, error: subSelectErr } = await supabase
-          .from('categories')
-          .select('id')
-          .eq('user_id', reel.user_id)
-          .eq('parent_id', categoryId)
-          .ilike('name', escapeIlike(validSubcategory))
-          .maybeSingle();
-
-        if (subSelectErr) {
-          console.error(`[Worker] Error selecting subcategory "${validSubcategory}":`, subSelectErr);
-        }
-
-        let resolvedSub = subRow;
-        if (!resolvedSub && !subSelectErr) {
-          const { data: newSub, error: subInsertErr } = await supabase
-            .from('categories')
-            .insert({
-              user_id: reel.user_id,
-              name: validSubcategory,
-              parent_id: categoryId
-            })
-            .select('id')
-            .single();
-          if (subInsertErr) {
-            console.error(`[Worker] Error inserting subcategory "${validSubcategory}":`, subInsertErr);
-          } else {
-            resolvedSub = newSub;
-          }
-        }
-        subcategoryId = resolvedSub?.id || null;
-      }
 
       if (categoryId) {
         processingStatus = 'processed';

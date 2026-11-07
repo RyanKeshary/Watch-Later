@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Sparkles,
   Smartphone,
@@ -18,7 +18,11 @@ import {
   ArrowRight,
   Eye,
   EyeOff,
-  X
+  X,
+  Compass,
+  Database,
+  Lock,
+  Bookmark
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { NumberTicker } from '@/components/NumberTicker';
@@ -27,6 +31,69 @@ interface ServicePageProps {
   onSignInSuccess?: () => void;
   onEnterDashboard?: () => void;
   hasSession?: boolean;
+}
+
+interface HeroInteractiveCardProps {
+  children: (props: {
+    tilt: { x: number; y: number };
+    isHovered: boolean;
+    heroCardRef: React.RefObject<HTMLDivElement>;
+    handleMouseMove: (e: React.MouseEvent<HTMLDivElement>) => void;
+    handleMouseEnter: () => void;
+    handleMouseLeave: () => void;
+    prefersReducedMotion: boolean;
+  }) => React.ReactNode;
+}
+
+function HeroInteractiveCard({ children }: HeroInteractiveCardProps) {
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  const [isHovered, setIsHovered] = useState(false);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const heroCardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setPrefersReducedMotion(mediaQuery.matches);
+    const handler = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
+    mediaQuery.addEventListener('change', handler);
+    return () => mediaQuery.removeEventListener('change', handler);
+  }, []);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (prefersReducedMotion || !heroCardRef.current) return;
+    const rect = heroCardRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    const rotateX = ((y - centerY) / centerY) * -9;
+    const rotateY = ((x - centerX) / centerX) * 9;
+    setTilt({ x: rotateX, y: rotateY });
+  };
+
+  const handleMouseEnter = () => {
+    if (!prefersReducedMotion) setIsHovered(true);
+  };
+
+  const handleMouseLeave = () => {
+    setTilt({ x: 0, y: 0 });
+    setIsHovered(false);
+  };
+
+  return (
+    <>
+      {children({
+        tilt: prefersReducedMotion ? { x: 0, y: 0 } : tilt,
+        isHovered: prefersReducedMotion ? false : isHovered,
+        heroCardRef,
+        handleMouseMove,
+        handleMouseEnter,
+        handleMouseLeave,
+        prefersReducedMotion
+      })}
+    </>
+  );
 }
 
 export default function ServiceLandingPage({
@@ -72,6 +139,82 @@ export default function ServiceLandingPage({
     }
   };
 
+  const horizontalFeatures = [
+    {
+      num: '01',
+      title: 'Silent Share Intercept',
+      desc: 'Native Android and iOS share sheet integration captures reels in under 200ms without switching away from Instagram.',
+      icon: Smartphone,
+      tag: 'SYSTEM HOOK'
+    },
+    {
+      num: '02',
+      title: 'Lossless Metadata Extraction',
+      desc: 'Retrieves complete transcripts, high-res posters, creator handles, and source captions even if the reel is archived.',
+      icon: Film,
+      tag: 'DEEP SCRAPE'
+    },
+    {
+      num: '03',
+      title: 'Autonomous Categorization',
+      desc: 'Groq neural classification sorts incoming media into strict, curated domain pillars with zero manual tagging.',
+      icon: FolderTree,
+      tag: 'NEURAL CLUSTERING'
+    },
+    {
+      num: '04',
+      title: 'Curated Save Later Vault',
+      desc: 'Star and bookmark reels for priority revisiting, with quick offline synchronization across all your registered devices.',
+      icon: Bookmark,
+      tag: 'OFFLINE CACHE'
+    },
+    {
+      num: '05',
+      title: 'Encrypted Row Level Security',
+      desc: 'PostgreSQL RLS ensures complete isolation. Your saved media and personal taxonomy are strictly inaccessible to anyone else.',
+      icon: ShieldCheck,
+      tag: 'PRIVACY FIRST'
+    }
+  ];
+
+  const horizontalGallery = [
+    {
+      badge: 'TECH & AI',
+      title: 'Next-Gen Agent Workflows',
+      creator: '@deeplearning_ai',
+      time: 'Captured 2m ago',
+      color: 'from-blue-600/20 to-sky-500/10'
+    },
+    {
+      badge: 'DESIGN & ARCHITECTURE',
+      title: 'Kinetic UI Physics & Shaders',
+      creator: '@designcraft',
+      time: 'Captured 14m ago',
+      color: 'from-purple-600/20 to-pink-500/10'
+    },
+    {
+      badge: 'FITNESS & HEALTH',
+      title: 'Mobility Routine for Coders',
+      creator: '@athleticlab',
+      time: 'Captured 1h ago',
+      color: 'from-emerald-600/20 to-teal-500/10'
+    },
+    {
+      badge: 'CULINARY ARTS',
+      title: 'Artisanal Sourdough Fermentation',
+      creator: '@bakersvault',
+      time: 'Captured 3h ago',
+      color: 'from-amber-600/20 to-orange-500/10'
+    },
+    {
+      badge: 'FINANCE & VENTURE',
+      title: 'SaaS Multiples & Unit Economics',
+      creator: '@foundersguide',
+      time: 'Captured 6h ago',
+      color: 'from-rose-600/20 to-red-500/10'
+    }
+  ];
+
   const deliverables = [
     {
       num: '01',
@@ -81,8 +224,8 @@ export default function ServiceLandingPage({
     },
     {
       num: '02',
-      title: 'Self-Organizing Semantic Taxonomy',
-      desc: 'No manual tagging required. Our AI scans captions, topics, and transcripts to nest content into high-level pillars and hyper-specific sub-niches automatically.',
+      title: 'Strict Semantic Taxonomy',
+      desc: 'No manual tagging required. Our AI scans captions, topics, and transcripts to organize content into clean, focused parent pillars with high fidelity.',
       tag: 'AI ENGINE'
     },
     {
@@ -129,7 +272,7 @@ export default function ServiceLandingPage({
   const proofMetrics = [
     { valueNum: 2, prefix: '< ', suffix: '.4s', label: 'End-to-End Extraction', sub: 'Average time from mobile share to vault availability' },
     { valueNum: 100, suffix: '%', label: 'Private & Isolated', sub: 'PostgreSQL Row Level Security bound strictly to your user ID' },
-    { valueNum: 0, suffix: ' Clicks', label: 'Manual Tagging', sub: 'Fully autonomous categorization into logical pillars' },
+    { valueNum: 0, suffix: ' Clicks', label: 'Manual Tagging', sub: 'Autonomous categorization into logical pillars' },
     { valueNum: 60, suffix: ' FPS', label: 'Native Performance', sub: 'Fluid spring animations with minimal bundle overhead' }
   ];
 
@@ -140,7 +283,7 @@ export default function ServiceLandingPage({
     },
     {
       q: 'Will it create duplicate categories for similar reels?',
-      a: 'No. Watch Later employs strict categorization checks that evaluate existing categories first. It nests related reels together and only generates a new primary category or sub-niche when the content represents a genuinely new domain.'
+      a: 'No. Watch Later employs strict categorization checks that evaluate existing categories first. It groups related reels together and only generates a new category when the content represents a genuinely novel domain.'
     },
     {
       q: 'What happens if an Instagram Reel gets deleted or made private later?',
@@ -158,7 +301,7 @@ export default function ServiceLandingPage({
       <header className="sticky top-0 z-40 w-full border-b border-[#333333] bg-[#0B0B0B]/85 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
-            <img src="/logo.jpg" alt="Watch Later" className="h-8 w-8 rounded-lg object-cover border border-[#333333]" />
+            <img src="/logo.jpg" alt="Watch Later" className="h-8 w-8 rounded-lg object-cover" />
             <div>
               <span className="font-zolo text-lg font-bold tracking-tight text-white block leading-none">Watch Later</span>
               <span className="font-mono-micro text-[#6B6B6B] block mt-0.5">VAULT SERVICE</span>
@@ -190,8 +333,8 @@ export default function ServiceLandingPage({
         </div>
       </header>
 
-      {/* 1. HERO SECTION: Service-Specific Value Proposition */}
-      <section className="relative overflow-hidden border-b border-[#333333] pt-20 pb-24 sm:pt-28 sm:pb-32">
+      {/* 1. HERO SECTION: 3D Spatial Interactions & Value Proposition */}
+      <section className="relative overflow-hidden border-b border-[#333333] pt-16 pb-20 sm:pt-24 sm:pb-28">
         <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 text-center animate-fade-up">
           <div className="inline-flex items-center gap-2 rounded-full border border-[#333333] bg-[#1A1A1A]/80 px-3.5 py-1 mb-6 shadow-sm">
             <Sparkles className="h-3.5 w-3.5 text-white" />
@@ -206,7 +349,7 @@ export default function ServiceLandingPage({
             The private archive service engineered to capture, scrape, and intelligently categorize Instagram media directly from your phone share sheet with zero friction.
           </p>
 
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
               onClick={() => {
                 if (hasSession) onEnterDashboard?.();
@@ -230,91 +373,168 @@ export default function ServiceLandingPage({
             </a>
           </div>
 
-          {/* Interactive Feature Hero Preview Mockup */}
-          <div className="mt-16 rounded-2xl border border-[#333333] bg-[#1A1A1A]/90 p-4 sm:p-6 shadow-2xl text-left max-w-4xl mx-auto backdrop-blur">
-            <div className="flex items-center justify-between border-b border-[#333333] pb-3 mb-4">
-              <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-[#333333]" />
-                <div className="h-3 w-3 rounded-full bg-[#333333]" />
-                <div className="h-3 w-3 rounded-full bg-[#333333]" />
-                <span className="font-mono-micro text-[#6B6B6B] ml-2">VAULT_PIPELINE // ACTIVE_SESSION</span>
+          {/* 3D Spatial Interactive Card with Perspective Tilt & Reduced Motion Support */}
+          <HeroInteractiveCard>
+            {({ tilt, isHovered, heroCardRef, handleMouseMove, handleMouseEnter, handleMouseLeave, prefersReducedMotion }) => (
+              <div
+                className={`mt-14 max-w-4xl mx-auto ${prefersReducedMotion ? '' : '[perspective:1200px]'}`}
+                onMouseMove={handleMouseMove}
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
+              >
+                <div
+                  ref={heroCardRef}
+                  style={prefersReducedMotion ? undefined : {
+                    transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
+                    transition: isHovered ? 'transform 0.12s ease-out' : 'transform 0.5s ease-out'
+                  }}
+                  className="relative rounded-2xl border border-[#333333] bg-[#1A1A1A]/95 p-5 sm:p-7 shadow-2xl text-left backdrop-blur transition-shadow hover:shadow-[0_20px_50px_rgba(0,0,0,0.8)]"
+                >
+                  {/* Subtle dynamic shine overlay */}
+                  <div
+                    className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-tr from-white/[0.04] to-transparent opacity-60"
+                    style={prefersReducedMotion ? undefined : {
+                      transform: `translate(${tilt.y * 2}px, ${tilt.x * 2}px)`
+                    }}
+                  />
+
+                  <div className="flex items-center justify-between border-b border-[#333333] pb-3 mb-4">
+                    <div className="flex items-center gap-2">
+                      <div className="h-3 w-3 rounded-full bg-[#333333]" />
+                      <div className="h-3 w-3 rounded-full bg-[#333333]" />
+                      <div className="h-3 w-3 rounded-full bg-[#333333]" />
+                      <span className="font-mono-micro text-[#6B6B6B] ml-2">VAULT_ENGINE // SPATIAL_PIPELINE</span>
+                    </div>
+                    <span className="font-mono-micro text-white bg-[#0B0B0B] px-2.5 py-0.5 rounded border border-[#333333] flex items-center gap-1.5">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      REALTIME SYNCHRONIZED
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="p-4 rounded-xl border border-[#333333] bg-[#0B0B0B] transition hover:border-[#6B6B6B]">
+                      <span className="font-mono-micro text-[#6B6B6B] block mb-1">INPUT SOURCE</span>
+                      <p className="text-xs font-semibold text-white">Instagram Share Sheet</p>
+                      <p className="text-[11px] text-[#6B6B6B] mt-1">Silent background intercept with zero UI friction</p>
+                    </div>
+
+                    <div className="p-4 rounded-xl border border-[#333333] bg-[#0B0B0B] transition hover:border-[#6B6B6B]">
+                      <span className="font-mono-micro text-[#6B6B6B] block mb-1">SCRAPER PIPELINE</span>
+                      <p className="text-xs font-semibold text-white">Captions, AI Summary, Tags</p>
+                      <p className="text-[11px] text-[#6B6B6B] mt-1">First-class entity parsing &amp; poster retention</p>
+                    </div>
+
+                    <div className="p-4 rounded-xl border border-[#333333] bg-[#0B0B0B] transition hover:border-[#6B6B6B]">
+                      <span className="font-mono-micro text-[#6B6B6B] block mb-1">STORAGE CLOUD</span>
+                      <p className="text-xs font-semibold text-white">Curated Pillars &amp; Save Later</p>
+                      <p className="text-[11px] text-[#6B6B6B] mt-1">Structured taxonomy with Postgres RLS</p>
+                    </div>
+                  </div>
+
+                  {/* Bottom active status bar */}
+                  <div className="mt-4 pt-3 border-t border-[#333333]/80 flex flex-wrap items-center justify-between text-[11px] text-[#6B6B6B] font-mono">
+                    <span className="flex items-center gap-1">
+                      <span className="text-white">●</span> Native Android Share Intent
+                    </span>
+                    <span className="text-[#999999]">
+                      {prefersReducedMotion ? 'Spatial tilt disabled (reduced motion)' : 'Hover or tilt to explore spatial layers'}
+                    </span>
+                  </div>
+                </div>
               </div>
-              <span className="font-mono-micro text-white bg-[#0B0B0B] px-2.5 py-0.5 rounded border border-[#333333]">
-                SYNCHRONIZED
+            )}
+          </HeroInteractiveCard>
+        </div>
+      </section>
+
+      {/* 2. MANDATORY HORIZONTAL SCROLL SECTION 1: ARCHITECTURE CAPABILITIES */}
+      <section className="border-b border-[#333333] py-16 bg-[#0B0B0B]/70 overflow-hidden">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mb-6 flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+          <div>
+            <span className="font-mono-micro text-[#6B6B6B] block mb-1">[INTERACTIVE CAROUSEL]</span>
+            <h2 className="font-zolo text-2xl sm:text-3xl font-bold text-white tracking-tight">
+              Vault Engine Architecture
+            </h2>
+          </div>
+          <span className="font-mono-micro text-[#6B6B6B]">Scroll horizontally →</span>
+        </div>
+
+        {/* Smooth horizontal scroll row */}
+        <div
+          role="region"
+          tabIndex={0}
+          aria-label="Vault engine architecture capabilities"
+          className="flex gap-4 overflow-x-auto px-4 sm:px-6 lg:px-8 pb-4 pt-2 no-scrollbar scroll-smooth motion-reduce:scroll-auto focus:outline-none focus:ring-1 focus:ring-zinc-700"
+        >
+          {horizontalFeatures.map((feat) => {
+            const Icon = feat.icon;
+            return (
+              <div
+                key={feat.num}
+                className="min-w-[280px] sm:min-w-[320px] max-w-[340px] shrink-0 rounded-2xl border border-[#333333] bg-[#1A1A1A]/90 p-5 flex flex-col justify-between hover:border-[#6B6B6B] transition shadow-sm hover:scale-[1.02] active:scale-[0.99]"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="font-mono-micro text-[#6B6B6B]">{feat.num}</span>
+                    <span className="font-mono-micro text-white bg-[#0B0B0B] px-2 py-0.5 rounded border border-[#333333]">
+                      {feat.tag}
+                    </span>
+                  </div>
+                  <div className="h-9 w-9 rounded-xl bg-[#0B0B0B] border border-[#333333] flex items-center justify-center text-white mb-3">
+                    <Icon className="h-4 w-4" />
+                  </div>
+                  <h3 className="font-zolo text-base font-bold text-white mb-2">{feat.title}</h3>
+                  <p className="text-xs text-[#999999] leading-relaxed">{feat.desc}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* 3. MANDATORY HORIZONTAL SCROLL SECTION 2: LIVE EXTRACTION REEL STREAM */}
+      <section className="border-b border-[#333333] py-16 overflow-hidden">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mb-6 flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+          <div>
+            <span className="font-mono-micro text-[#6B6B6B] block mb-1">[CURATED REEL STREAM]</span>
+            <h2 className="font-zolo text-2xl sm:text-3xl font-bold text-white tracking-tight">
+              Live Vault Stream &amp; Categorization
+            </h2>
+          </div>
+          <span className="font-mono-micro text-[#6B6B6B]">Swipe to inspect items →</span>
+        </div>
+
+        {/* Gallery horizontal scroll row */}
+        <div
+          role="region"
+          tabIndex={0}
+          aria-label="Live vault stream and media extraction gallery"
+          className="flex gap-4 overflow-x-auto px-4 sm:px-6 lg:px-8 pb-4 pt-2 no-scrollbar scroll-smooth motion-reduce:scroll-auto focus:outline-none focus:ring-1 focus:ring-zinc-700"
+        >
+          {horizontalGallery.map((item, idx) => (
+            <div
+              key={idx}
+              className={`min-w-[260px] sm:min-w-[300px] shrink-0 rounded-2xl border border-[#333333] bg-gradient-to-b ${item.color} to-[#1A1A1A] p-5 flex flex-col justify-between hover:border-[#D9D9D9] transition shadow-md hover:scale-[1.02]`}
+            >
+              <div>
+                <span className="font-mono-micro px-2 py-0.5 rounded bg-black/60 border border-[#333333] text-white block w-fit mb-3">
+                  {item.badge}
+                </span>
+                <div className="aspect-video w-full rounded-xl bg-black/40 border border-white/10 mb-3 flex items-center justify-center">
+                  <Play className="h-6 w-6 text-white/80 fill-white/80" />
+                </div>
+                <h4 className="font-zolo text-sm font-bold text-white mb-1 line-clamp-2">{item.title}</h4>
+                <p className="font-mono-micro text-[#999999]">{item.creator}</p>
+              </div>
+              <span className="font-mono-micro text-[9px] text-[#6B6B6B] mt-4 pt-2 border-t border-white/10 block">
+                {item.time}
               </span>
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="p-3.5 rounded-xl border border-[#333333] bg-[#0B0B0B]">
-                <span className="font-mono-micro text-[#6B6B6B] block mb-1">INPUT SOURCE</span>
-                <p className="text-xs font-semibold text-white">Instagram Share Sheet</p>
-                <p className="text-[11px] text-[#6B6B6B] mt-1">Silent background intercept</p>
-              </div>
-
-              <div className="p-3.5 rounded-xl border border-[#333333] bg-[#0B0B0B]">
-                <span className="font-mono-micro text-[#6B6B6B] block mb-1">SCRAPER PIPELINE</span>
-                <p className="text-xs font-semibold text-white">Captions, AI Summary, Tags</p>
-                <p className="text-[11px] text-[#6B6B6B] mt-1">First-class entity parsing</p>
-              </div>
-
-              <div className="p-3.5 rounded-xl border border-[#333333] bg-[#0B0B0B]">
-                <span className="font-mono-micro text-[#6B6B6B] block mb-1">DESTINATION</span>
-                <p className="text-xs font-semibold text-white">Clustered Knowledge Pillar</p>
-                <p className="text-[11px] text-[#6B6B6B] mt-1">Zero redundant categories</p>
-              </div>
-            </div>
-          </div>
+          ))}
         </div>
       </section>
 
-      {/* 2. CLEAR SERVICE EXPECTATIONS */}
-      <section className="border-b border-[#333333] py-20 bg-[#0B0B0B]/60">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-14">
-            <span className="font-mono-micro text-[#6B6B6B] block mb-2">[SPECIFICATIONS &amp; BOUNDARIES]</span>
-            <h2 className="font-zolo text-3xl sm:text-4xl font-bold text-white tracking-tight">
-              Clear Service Expectations
-            </h2>
-            <p className="mt-3 text-xs sm:text-sm text-[#999999] leading-relaxed">
-              We define exact operational commitments so you know precisely how your media is processed, stored, and protected.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="rounded-2xl border border-[#333333] bg-[#1A1A1A]/80 p-6">
-              <div className="h-10 w-10 rounded-xl bg-[#0B0B0B] border border-[#333333] flex items-center justify-center text-white mb-4">
-                <Smartphone className="h-5 w-5" />
-              </div>
-              <h3 className="font-zolo text-base font-bold text-white mb-2">Native Mobile Independence</h3>
-              <p className="text-xs text-[#999999] leading-relaxed">
-                No awkward copy-pasting into chat bots or web forms. You share directly from your device’s system share dialog without ever breaking your reading stride.
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-[#333333] bg-[#1A1A1A]/80 p-6">
-              <div className="h-10 w-10 rounded-xl bg-[#0B0B0B] border border-[#333333] flex items-center justify-center text-white mb-4">
-                <FolderTree className="h-5 w-5" />
-              </div>
-              <h3 className="font-zolo text-base font-bold text-white mb-2">Clean Taxonomy Discipline</h3>
-              <p className="text-xs text-[#999999] leading-relaxed">
-                Categories are kept coherent. The engine matches against pre-existing domain roots and only spawns new niches when reels represent entirely novel subjects.
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-[#333333] bg-[#1A1A1A]/80 p-6">
-              <div className="h-10 w-10 rounded-xl bg-[#0B0B0B] border border-[#333333] flex items-center justify-center text-white mb-4">
-                <ShieldCheck className="h-5 w-5" />
-              </div>
-              <h3 className="font-zolo text-base font-bold text-white mb-2">Zero Tracking &amp; Strict RLS</h3>
-              <p className="text-xs text-[#999999] leading-relaxed">
-                Every saved post and extracted insight is walled behind authenticated Supabase Row Level Security. We never sell, train on, or advertise with your saves.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 3. CONCRETE DELIVERABLES */}
+      {/* 4. CONCRETE DELIVERABLES */}
       <section id="deliverables" className="border-b border-[#333333] py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-14 gap-4">
@@ -353,7 +573,7 @@ export default function ServiceLandingPage({
         </div>
       </section>
 
-      {/* 4. PROCESS TRANSPARENCY: Step-by-Step Architecture */}
+      {/* 5. PROCESS TRANSPARENCY: Step-by-Step Architecture */}
       <section className="border-b border-[#333333] py-20 bg-[#0B0B0B]/70">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
@@ -385,7 +605,7 @@ export default function ServiceLandingPage({
         </div>
       </section>
 
-      {/* 5. RESULTS & PROOF */}
+      {/* 6. RESULTS & PROOF */}
       <section className="border-b border-[#333333] py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-14">
@@ -398,103 +618,64 @@ export default function ServiceLandingPage({
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {proofMetrics.map((metric, i) => (
               <div key={i} className="rounded-2xl border border-[#333333] bg-[#1A1A1A]/80 p-6 text-center">
-                <div className="font-zolo text-4xl sm:text-5xl font-bold text-white tracking-tight mb-2">
-                  <NumberTicker
-                    value={metric.valueNum}
-                    prefix={metric.prefix || ''}
-                    suffix={metric.suffix || ''}
-                  />
+                <div className="font-zolo text-3xl sm:text-4xl font-bold text-white tracking-tight mb-2">
+                  <span>{metric.prefix || ''}</span>
+                  <NumberTicker value={metric.valueNum} />
+                  <span>{metric.suffix || ''}</span>
                 </div>
-                <div className="text-xs font-semibold text-[#D9D9D9] mb-1">{metric.label}</div>
-                <p className="text-[11px] text-[#6B6B6B] leading-tight">{metric.sub}</p>
+                <h4 className="font-zolo text-xs sm:text-sm font-semibold text-white mb-1">{metric.label}</h4>
+                <p className="text-[11px] text-[#6B6B6B]">{metric.sub}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* 6. CLEAR DIFFERENTIATOR */}
-      <section className="border-b border-[#333333] py-20 bg-[#0B0B0B]/50">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 text-center">
-          <span className="font-mono-micro text-[#6B6B6B] block mb-2">[SIGNATURE DIFFERENTIATOR]</span>
-          <h2 className="font-zolo text-3xl sm:text-4xl font-bold text-white tracking-tight">
-            Built for Knowledge Workers, Not Casual Bookmarkers
-          </h2>
-          <p className="mt-4 text-xs sm:text-sm text-[#999999] max-w-2xl mx-auto leading-relaxed">
-            Standard Instagram bookmarking buries high-value tutorials and references into an unsearchable grid. Watch Later extracts the actual knowledge, summarizes key takeaways, and categorizes them automatically.
-          </p>
-
-          <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 gap-4 text-left">
-            <div className="rounded-2xl border border-red-950/40 bg-red-950/10 p-6">
-              <span className="font-mono-micro text-red-400 block mb-2">✕ DEFAULT INSTAGRAM SAVES</span>
-              <ul className="space-y-2 text-xs text-[#999999]">
-                <li>• Cluttered, unorganized chronological grid</li>
-                <li>• Lost forever if creator edits caption or removes reel</li>
-                <li>• Zero export capability or automated cleanup</li>
-                <li>• No searchable AI summaries or creator tags</li>
-              </ul>
-            </div>
-
-            <div className="rounded-2xl border border-[#333333] bg-[#1A1A1A]/90 p-6">
-              <span className="font-mono-micro text-white block mb-2">✓ WATCH LATER VAULT</span>
-              <ul className="space-y-2 text-xs text-[#D9D9D9]">
-                <li>• Hierarchical topic pillars and smart sub-niches</li>
-                <li>• Full caption, creator metadata &amp; AI breakdown preserved</li>
-                <li>• One-click CSV export and retention cap auto-cleansing</li>
-                <li>• High-performance, distraction-free desktop/mobile app</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 7. OBJECTION HANDLING & FAQ */}
-      <section className="border-b border-[#333333] py-20">
+      {/* 7. FREQUENTLY ASKED QUESTIONS */}
+      <section className="border-b border-[#333333] py-20 bg-[#0B0B0B]/70">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <span className="font-mono-micro text-[#6B6B6B] block mb-2">[OBJECTION HANDLING]</span>
+          <div className="text-center mb-14">
+            <span className="font-mono-micro text-[#6B6B6B] block mb-2">[COMMON QUESTIONS]</span>
             <h2 className="font-zolo text-3xl sm:text-4xl font-bold text-white tracking-tight">
               Frequently Asked Questions
             </h2>
           </div>
 
           <div className="space-y-3">
-            {faqs.map((faq, index) => {
-              const isOpen = openFaq === index;
-              return (
-                <div
-                  key={index}
-                  className="rounded-2xl border border-[#333333] bg-[#1A1A1A]/80 overflow-hidden transition"
+            {faqs.map((faq, idx) => (
+              <div
+                key={idx}
+                className="rounded-2xl border border-[#333333] bg-[#1A1A1A]/80 overflow-hidden transition"
+              >
+                <button
+                  onClick={() => toggleFaq(idx)}
+                  className="w-full flex items-center justify-between p-5 text-left text-sm font-semibold text-white transition hover:text-white"
                 >
-                  <button
-                    onClick={() => toggleFaq(index)}
-                    className="w-full flex items-center justify-between p-5 text-left transition hover:bg-[#1A1A1A]"
-                  >
-                    <span className="font-zolo text-sm font-semibold text-white pr-4">{faq.q}</span>
-                    <ChevronDown className={`h-4 w-4 text-[#6B6B6B] shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180 text-white' : ''}`} />
-                  </button>
-                  {isOpen && (
-                    <div className="px-5 pb-5 pt-1 text-xs text-[#999999] leading-relaxed border-t border-[#333333]/40">
-                      {faq.a}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                  <span>{faq.q}</span>
+                  <ChevronDown className={`h-4 w-4 text-[#6B6B6B] transition-transform ${openFaq === idx ? 'rotate-180 text-white' : ''}`} />
+                </button>
+                {openFaq === idx && (
+                  <div className="px-5 pb-5 pt-1 text-xs text-[#999999] leading-relaxed border-t border-[#333333]/50">
+                    {faq.a}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* 8. BOTTOM CTA CALL-TO-ACTION */}
-      <section className="py-24 bg-[#0B0B0B] text-center">
-        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-          <h2 className="font-zolo text-3xl sm:text-5xl font-bold text-white tracking-tight">
-            Stop losing valuable content today.
+      {/* 8. CALL TO ACTION */}
+      <section className="py-24 relative overflow-hidden text-center">
+        <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 relative z-10">
+          <span className="font-mono-micro text-[#6B6B6B] block mb-3">[GET STARTED]</span>
+          <h2 className="font-zolo text-3xl sm:text-5xl font-bold text-white tracking-tight mb-6">
+            Build your private media brain today.
           </h2>
-          <p className="mt-4 text-xs sm:text-sm text-[#999999] max-w-xl mx-auto">
-            Create your private vault in less than 30 seconds and connect your devices.
+          <p className="text-sm sm:text-base text-[#999999] max-w-xl mx-auto mb-10 leading-relaxed">
+            Stop losing valuable recipes, technical guides, architectural inspo, and workouts to Instagram&apos;s bottomless algorithm.
           </p>
-          <div className="mt-8 flex justify-center">
+          <div className="flex items-center justify-center">
             <button
               onClick={() => {
                 if (hasSession) onEnterDashboard?.();

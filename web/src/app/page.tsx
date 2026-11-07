@@ -67,7 +67,7 @@ import {
   Menu
 } from 'lucide-react';
 
-type NavPage = 'home' | 'all' | 'categories' | 'watched' | 'inbox' | 'failed' | 'archived' | 'settings';
+type NavPage = 'home' | 'all' | 'categories' | 'savelater' | 'watched' | 'inbox' | 'failed' | 'archived' | 'settings';
 type PostTypeFilter = 'all' | 'reels' | 'posts' | 'carousels';
 
 export default function App() {
@@ -108,6 +108,8 @@ export default function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [pinnedFolderIds, setPinnedFolderIds] = useState<string[]>([]);
+  const [savedLaterIds, setSavedLaterIds] = useState<string[]>([]);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   // Settings & Preferences
   const [maxGenerations, setMaxGenerations] = useState(3);
@@ -225,6 +227,20 @@ export default function App() {
     });
   };
 
+  const toggleSaveLater = (reelId: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const userId = session?.user?.id;
+    setSavedLaterIds(prev => {
+      const next = prev.includes(reelId) ? prev.filter(id => id !== reelId) : [reelId, ...prev];
+      if (userId) {
+        try {
+          localStorage.setItem(`watchlater_saved_later_ids_${userId}`, JSON.stringify(next));
+        } catch (err) { }
+      }
+      return next;
+    });
+  };
+
   const updateViewLayout = (val: 'grid' | 'list') => {
     setViewLayout(val);
     try {
@@ -242,56 +258,98 @@ export default function App() {
       }
       const requestUserId = currentSession.user.id;
 
-      const pageSize = 1000;
-      let allReels: Reel[] = [];
-      let from = 0;
-      let hasMore = true;
+      // Fetch all reels across pages to prevent silent truncation under Supabase max-rows limits
+      const fetchAllReels = async (): Promise<{ data: Reel[] | null; error: any }> => {
+        const pageSize = 1000;
+        let all: Reel[] = [];
+        let from = 0;
+        let hasMore = true;
 
-      while (hasMore) {
-        const { data: pageData, error: pageErr } = await supabase
-          .from('reels')
-          .select(`
-            *,
-            extracted_content (
-              extraction_error,
-              raw_scraper_output
-            )
-          `)
-          .order('created_at', { ascending: false })
-          .range(from, from + pageSize - 1);
+        while (hasMore) {
+          const { data, error } = await supabase
+            .from('reels')
+            .select(`
+              *,
+              extracted_content (
+                extraction_error,
+                raw_scraper_output
+              )
+            `)
+            .order('created_at', { ascending: false })
+            .range(from, from + pageSize - 1);
 
-        if (pageErr) {
-          console.error('Error fetching reels page:', pageErr);
-          break;
-        }
-
-        if (pageData && pageData.length > 0) {
-          allReels = allReels.concat(pageData as Reel[]);
-          if (pageData.length < pageSize) {
-            hasMore = false;
-          } else {
-            from += pageSize;
+          if (error) {
+            return { data: all.length > 0 ? all : null, error };
           }
-        } else {
-          hasMore = false;
-        }
-      }
 
-      const { data: catsData } = await supabase
+          if (data && data.length > 0) {
+            all = all.concat(data as Reel[]);
+            if (data.length < pageSize) {
+              hasMore = false;
+            } else {
+              from += pageSize;
+            }
+          } else {
+            hasMore = false;
+          }
+        }
+
+        return { data: all, error: null };
+      };
+
+      const reelsPromise = fetchAllReels();
+
+      const catsPromise = supabase
         .from('categories')
         .select('*')
         .order('name');
 
-      const { data: devsData } = await supabase
+      const devsPromise = supabase
         .from('devices')
         .select('*')
         .order('last_synced_at', { ascending: false });
 
+      const [reelsRes, catsRes, devsRes] = await Promise.all([reelsPromise, catsPromise, devsPromise]);
+
+      if (reelsRes.error) {
+        console.error('Error fetching reels:', reelsRes.error);
+      }
+      if (catsRes.error) {
+        console.error('Error fetching categories:', catsRes.error);
+      }
+      if (devsRes.error) {
+        console.error('Error fetching devices:', devsRes.error);
+      }
+
       const { data: { session: latestSession } } = await supabase.auth.getSession();
       if (latestSession?.user?.id === requestUserId) {
-        setReels(allReels);
-        if (catsData) setCategories(catsData as Category[]);
-        if (devsData) setDevices(devsData as Device[]);
+        if (reelsRes.data) {
+          const fetchedReels = reelsRes.data as Reel[];
+          // Merge fetchedReels with any active realtime reels to prevent losing items captured during fetch
+          setReels(prev => {
+            const fetchedIds = new Set(fetchedReels.map(r => r.id));
+            const recentNewReels = prev.filter(r => !fetchedIds.has(r.id));
+            const merged = [...recentNewReels, ...fetchedReels];
+
+            // Reconcile saved-later IDs only when the fetch completed error-free
+            if (!reelsRes.error) {
+              setSavedLaterIds(currentSaved => {
+                const authoritativeIds = new Set(merged.map(r => r.id));
+                const pruned = currentSaved.filter(id => typeof id === 'string' && authoritativeIds.has(id));
+                if (pruned.length !== currentSaved.length) {
+                  try {
+                    localStorage.setItem(`watchlater_saved_later_ids_${requestUserId}`, JSON.stringify(pruned));
+                  } catch (e) { }
+                }
+                return pruned;
+              });
+            }
+
+            return merged;
+          });
+        }
+        if (catsRes.data) setCategories(catsRes.data as Category[]);
+        if (devsRes.data) setDevices(devsRes.data as Device[]);
       }
     } catch (err) {
       console.error('Error fetching data:', err);
@@ -303,6 +361,25 @@ export default function App() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
+      if (session?.user?.id) {
+        try {
+          const userSaved = localStorage.getItem(`watchlater_saved_later_ids_${session.user.id}`);
+          if (userSaved) {
+            const parsed = JSON.parse(userSaved);
+            if (Array.isArray(parsed)) {
+              setSavedLaterIds(parsed.filter((id): id is string => typeof id === 'string'));
+            } else {
+              setSavedLaterIds([]);
+            }
+          } else {
+            setSavedLaterIds([]);
+          }
+        } catch (e) {
+          setSavedLaterIds([]);
+        }
+      } else {
+        setSavedLaterIds([]);
+      }
       setLoading(false);
     });
 
@@ -312,10 +389,26 @@ export default function App() {
           setReels([]);
           setCategories([]);
           setDevices([]);
+          setSavedLaterIds([]);
         } else if (prevSession?.user?.id && newSession?.user?.id !== prevSession.user.id) {
           setReels([]);
           setCategories([]);
           setDevices([]);
+          try {
+            const userSaved = localStorage.getItem(`watchlater_saved_later_ids_${newSession.user.id}`);
+            if (userSaved) {
+              const parsed = JSON.parse(userSaved);
+              if (Array.isArray(parsed)) {
+                setSavedLaterIds(parsed.filter((id): id is string => typeof id === 'string'));
+              } else {
+                setSavedLaterIds([]);
+              }
+            } else {
+              setSavedLaterIds([]);
+            }
+          } catch (e) {
+            setSavedLaterIds([]);
+          }
         }
         return newSession;
       });
@@ -737,6 +830,8 @@ export default function App() {
       switch (currentPage) {
         case 'all':
           return reel.completion_status !== 'archived' && !reel.is_failed && reel.processing_status !== 'extraction_failed';
+        case 'savelater':
+          return savedLaterIds.includes(reel.id);
         case 'watched':
           return reel.completion_status === 'completed';
         case 'inbox':
@@ -752,7 +847,7 @@ export default function App() {
           return true;
       }
     });
-  }, [reels, currentPage, selectedCategoryId, searchQuery, postTypeFilter]);
+  }, [reels, currentPage, selectedCategoryId, searchQuery, postTypeFilter, savedLaterIds]);
 
   // Persona insights (requires at least 20 items to unlock, updates every 100 saves)
   const userPersonaInsight = useMemo(() => {
@@ -787,6 +882,32 @@ export default function App() {
     return 'Your vault captures a diverse set of topics with active curiosity.';
   }, [reels, categories]);
 
+  const categoryColorMap: Record<string, { bg: string; text: string; border: string }> = {
+    Star: { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/30' },
+    Sparkles: { bg: 'bg-purple-500/10', text: 'text-purple-400', border: 'border-purple-500/30' },
+    Bookmark: { bg: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/30' },
+    BookmarkCheck: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/30' },
+    Compass: { bg: 'bg-cyan-500/10', text: 'text-cyan-400', border: 'border-cyan-500/30' },
+    BookOpen: { bg: 'bg-indigo-500/10', text: 'text-indigo-400', border: 'border-indigo-500/30' },
+    Tag: { bg: 'bg-teal-500/10', text: 'text-teal-400', border: 'border-teal-500/30' },
+    Code: { bg: 'bg-sky-500/10', text: 'text-sky-400', border: 'border-sky-500/30' },
+    Music: { bg: 'bg-rose-500/10', text: 'text-rose-400', border: 'border-rose-500/30' },
+    Camera: { bg: 'bg-violet-500/10', text: 'text-violet-400', border: 'border-violet-500/30' },
+    Coffee: { bg: 'bg-orange-500/10', text: 'text-orange-400', border: 'border-orange-500/30' },
+    Heart: { bg: 'bg-red-500/10', text: 'text-red-400', border: 'border-red-500/30' },
+    Briefcase: { bg: 'bg-yellow-500/10', text: 'text-yellow-400', border: 'border-yellow-500/30' },
+    Flame: { bg: 'bg-orange-600/10', text: 'text-orange-500', border: 'border-orange-500/30' },
+    Globe: { bg: 'bg-emerald-600/10', text: 'text-emerald-400', border: 'border-emerald-500/30' },
+    Dumbbell: { bg: 'bg-lime-500/10', text: 'text-lime-400', border: 'border-lime-500/30' },
+    Lightbulb: { bg: 'bg-amber-400/10', text: 'text-amber-300', border: 'border-amber-400/30' },
+    Cpu: { bg: 'bg-fuchsia-500/10', text: 'text-fuchsia-400', border: 'border-fuchsia-500/30' },
+    GraduationCap: { bg: 'bg-blue-600/10', text: 'text-blue-400', border: 'border-blue-500/30' },
+    Folder: { bg: 'bg-zinc-500/10', text: 'text-zinc-400', border: 'border-zinc-500/30' }
+  };
+
+  const getCategoryTheme = (iconName?: string) => {
+    return categoryColorMap[iconName || 'Folder'] || categoryColorMap.Folder;
+  };
   const rootCategories = useMemo(() => categories.filter(c => !c.parent_id), [categories]);
   const getSubcategories = (parentId: string) => categories.filter(c => c.parent_id === parentId);
 
@@ -821,19 +942,19 @@ export default function App() {
 
   const counts = useMemo(() => ({
     all: reels.filter(r => r.completion_status !== 'archived' && !r.is_failed && r.processing_status !== 'extraction_failed').length,
+    savelater: reels.filter(r => savedLaterIds.includes(r.id)).length,
     inbox: reels.filter(r => r.processing_status === 'pending' || r.processing_status === 'resolving').length,
     failed: reels.filter(r => r.is_failed || r.processing_status === 'extraction_failed').length,
     watched: reels.filter(r => r.completion_status === 'completed').length,
     archived: reels.filter(r => r.completion_status === 'archived').length,
     categories: categories.length
-  }), [reels, categories]);
+  }), [reels, categories, savedLaterIds]);
 
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-fabric text-[#D9D9D9]">
         <div className="flex flex-col items-center gap-4">
           <Loading size={48} />
-          <span className="font-mono-micro text-[#6B6B6B] tracking-widest">[00 // INITIALIZING VAULT]</span>
         </div>
       </div>
     );
@@ -878,13 +999,17 @@ export default function App() {
         <div className="overflow-y-auto overflow-x-hidden">
           {/* Logo & Toggle */}
           <div className="flex items-center justify-between px-2 py-3 mb-2">
-            <div className={`flex items-center gap-2.5 ${sidebarCollapsed ? 'flex md:hidden' : 'flex'}`}>
-              <img src="/logo.jpg" alt="Watch Later" className="h-7 w-7 rounded-lg object-cover border border-[#333333]" />
+            <a
+              href="/"
+              className={`flex items-center gap-2.5 cursor-pointer hover:opacity-85 transition ${sidebarCollapsed ? 'flex md:hidden' : 'flex'}`}
+              title="Return to Landing Page"
+            >
+              <img src="/logo.jpg" alt="Watch Later" className="h-7 w-7 rounded-lg object-cover" />
               <div>
                 <span className="font-zolo text-base font-bold tracking-tight text-white block leading-none">Watch Later</span>
                 <span className="text-[9px] text-[#6B6B6B] block leading-tight mt-0.5">Never lose a reel worth revisiting.</span>
               </div>
-            </div>
+            </a>
             <div className="flex items-center gap-1">
               <button
                 onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
@@ -942,6 +1067,20 @@ export default function App() {
               <span className={`font-mono-micro text-[#6B6B6B] ${sidebarCollapsed ? 'inline md:hidden' : 'inline'}`}>{counts.categories}</span>
             </button>
 
+            {/* Save Later Page */}
+            <button
+              onClick={() => { setCurrentPage('savelater'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
+              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-between md:justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'savelater' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
+                }`}
+              title="Save Later (Bookmarks)"
+            >
+              <div className="flex items-center gap-2.5">
+                <Bookmark className="h-4 w-4 shrink-0 text-amber-400" />
+                <span className={sidebarCollapsed ? 'inline md:hidden' : 'inline'}>Save Later</span>
+              </div>
+              <span className={`font-mono-micro text-amber-400 font-semibold ${sidebarCollapsed ? 'inline md:hidden' : 'inline'}`}>{counts.savelater}</span>
+            </button>
+
             <button
               onClick={() => { setCurrentPage('watched'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
               className={`flex w-full items-center ${sidebarCollapsed ? 'justify-between md:justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'watched' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
@@ -967,32 +1106,6 @@ export default function App() {
               </div>
               <span className={`font-mono-micro text-[#6B6B6B] ${sidebarCollapsed ? 'inline md:hidden' : 'inline'}`}>{counts.inbox}</span>
             </button>
-
-            <button
-              onClick={() => { setCurrentPage('failed'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
-              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-between md:justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'failed' ? 'bg-red-950/30 text-red-400 font-semibold border border-red-900/40' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-red-400'
-                }`}
-              title="Failed Extractions"
-            >
-              <div className="flex items-center gap-2.5">
-                <AlertTriangle className="h-4 w-4 shrink-0 text-red-400" />
-                <span className={sidebarCollapsed ? 'inline md:hidden' : 'inline'}>Failed</span>
-              </div>
-              <span className={`font-mono-micro text-red-400 font-semibold ${sidebarCollapsed ? 'inline md:hidden' : 'inline'}`}>{counts.failed}</span>
-            </button>
-
-            <button
-              onClick={() => { setCurrentPage('archived'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
-              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-between md:justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'archived' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
-                }`}
-              title="Archived"
-            >
-              <div className="flex items-center gap-2.5">
-                <Archive className="h-4 w-4 shrink-0" />
-                <span className={sidebarCollapsed ? 'inline md:hidden' : 'inline'}>Archived</span>
-              </div>
-              <span className={`font-mono-micro text-[#6B6B6B] ${sidebarCollapsed ? 'inline md:hidden' : 'inline'}`}>{counts.archived}</span>
-            </button>
           </div>
 
           {/* Pinned Folders */}
@@ -1003,6 +1116,8 @@ export default function App() {
             </div>
             {pinnedCategories.map((cat) => {
               const count = reels.filter(r => r.category_id === cat.id || r.subcategory_id === cat.id).length;
+              const catIcon = categoryMetaMap[cat.id]?.icon || 'Tag';
+              const theme = getCategoryTheme(catIcon);
               return (
                 <button
                   key={cat.id}
@@ -1016,7 +1131,9 @@ export default function App() {
                   title={cat.name}
                 >
                   <div className="flex items-center gap-2 truncate">
-                    {renderCategoryIcon(categoryMetaMap[cat.id]?.icon || 'Tag', "h-3.5 w-3.5 shrink-0 text-[#D9D9D9]")}
+                    <span className={`p-1 rounded-md ${theme.bg} ${theme.text} ${theme.border} border shrink-0`}>
+                      {renderCategoryIcon(catIcon, `h-3 w-3 ${theme.text}`)}
+                    </span>
                     <span className={`truncate ${sidebarCollapsed ? 'inline md:hidden' : 'inline'}`}>{cat.name}</span>
                   </div>
                   <div className={`items-center gap-1.5 ${sidebarCollapsed ? 'flex md:hidden' : 'flex'}`}>
@@ -1051,19 +1168,20 @@ export default function App() {
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col overflow-hidden bg-fabric">
         {/* Top Header */}
-        <header className="flex flex-wrap items-center justify-between border-b border-[#333333] bg-[#0B0B0B]/60 backdrop-blur px-4 sm:px-6 py-3 gap-3">
-          <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+        <header className="flex items-center justify-between border-b border-[#333333] bg-[#0B0B0B]/60 backdrop-blur px-4 sm:px-6 py-3 gap-3">
+          <div className="flex items-center gap-3 sm:gap-4 flex-1 max-w-full">
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="md:hidden p-1.5 rounded-lg border border-[#333333] bg-[#1A1A1A] text-[#D9D9D9] hover:text-white"
+              className="md:hidden p-1.5 rounded-lg border border-[#333333] bg-[#1A1A1A] text-[#D9D9D9] hover:text-white shrink-0"
               title="Open Navigation"
             >
               <Menu className="h-4 w-4" />
             </button>
-            <h2 className="font-zolo text-sm sm:text-base font-bold text-white tracking-tight">
+            <h2 className="font-zolo text-sm sm:text-base font-bold text-white tracking-tight shrink-0">
               {currentPage === 'home' && 'Analytics & Intelligence'}
               {currentPage === 'all' && 'All Saved Content'}
               {currentPage === 'categories' && (selectedCategoryId ? categories.find(c => c.id === selectedCategoryId)?.name || 'Category' : 'Categories Directory')}
+              {currentPage === 'savelater' && 'Save Later'}
               {currentPage === 'watched' && 'Watched Collection'}
               {currentPage === 'inbox' && 'Processing Inbox'}
               {currentPage === 'failed' && 'Extraction Issues'}
@@ -1071,53 +1189,50 @@ export default function App() {
               {currentPage === 'settings' && 'Settings'}
             </h2>
 
-            {/* Dynamic, Reactive Search Bar */}
+            {/* Dynamic, Expanding Search Bar & View Layout Row */}
             {currentPage !== 'home' && currentPage !== 'settings' && !(currentPage === 'categories' && !selectedCategoryId) && (
-              <div className="flex items-center gap-2 w-80 bg-[#1A1A1A] px-3 py-1.5 rounded-lg border border-[#333333] focus-within:border-[#D9D9D9] transition">
-                <Search className="h-3.5 w-3.5 text-[#6B6B6B] shrink-0" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Instant search by title, summary, or user..."
-                  className="w-full bg-transparent text-xs text-[#D9D9D9] placeholder-[#6B6B6B] focus:outline-none"
-                />
-                {searchQuery && (
-                  <button onClick={() => setSearchQuery('')} className="text-[#6B6B6B] hover:text-white text-xs">✕</button>
-                )}
+              <div className="flex items-center gap-2 flex-1 max-w-md ml-auto">
+                <div className="relative flex-1">
+                  <div className={`flex items-center gap-2 bg-[#1A1A1A] px-3 py-1.5 rounded-lg border transition-all duration-300 ease-out ${
+                    isSearchFocused ? 'border-[#D9D9D9] shadow-[0_0_15px_rgba(255,255,255,0.06)]' : 'border-[#333333]'
+                  }`}>
+                    <Search className="h-3.5 w-3.5 text-[#6B6B6B] shrink-0" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onFocus={() => setIsSearchFocused(true)}
+                      onBlur={() => setIsSearchFocused(false)}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Instant search by title, summary, or user..."
+                      className="w-full bg-transparent text-xs text-[#D9D9D9] placeholder-[#6B6B6B] focus:outline-none"
+                    />
+                    {searchQuery && (
+                      <button onClick={() => setSearchQuery('')} className="text-[#6B6B6B] hover:text-white text-xs">✕</button>
+                    )}
+                  </div>
+                </div>
+
+                {/* View Layout Toggle Beside Search Bar (Fades out when search focused) */}
+                <div className={`flex items-center bg-[#1A1A1A] p-0.5 rounded-lg border border-[#333333] transition-all duration-200 shrink-0 ${
+                  isSearchFocused ? 'opacity-0 pointer-events-none scale-90 w-0 p-0 overflow-hidden border-0' : 'opacity-100 scale-100'
+                }`}>
+                  <button
+                    onClick={() => updateViewLayout('grid')}
+                    className={`p-1.5 rounded transition ${viewLayout === 'grid' ? 'bg-[#333333] text-white' : 'text-[#6B6B6B] hover:text-white'}`}
+                    title="Grid View"
+                  >
+                    <LayoutGrid className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    onClick={() => updateViewLayout('list')}
+                    className={`p-1.5 rounded transition ${viewLayout === 'list' ? 'bg-[#333333] text-white' : 'text-[#6B6B6B] hover:text-white'}`}
+                    title="List View"
+                  >
+                    <ListIcon className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </div>
             )}
-          </div>
-
-          <div className="flex items-center gap-2.5">
-            {/* View Layout Toggle */}
-            {currentPage !== 'home' && currentPage !== 'settings' && (currentPage !== 'categories' || selectedCategoryId) && (
-              <div className="flex items-center bg-[#1A1A1A] p-0.5 rounded-lg border border-[#333333]">
-                <button
-                  onClick={() => updateViewLayout('grid')}
-                  className={`p-1.5 rounded transition ${viewLayout === 'grid' ? 'bg-[#333333] text-white' : 'text-[#6B6B6B] hover:text-white'}`}
-                  title="Grid View"
-                >
-                  <LayoutGrid className="h-3.5 w-3.5" />
-                </button>
-                <button
-                  onClick={() => updateViewLayout('list')}
-                  className={`p-1.5 rounded transition ${viewLayout === 'list' ? 'bg-[#333333] text-white' : 'text-[#6B6B6B] hover:text-white'}`}
-                  title="List View"
-                >
-                  <ListIcon className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            )}
-
-            <button
-              onClick={() => loadData()}
-              disabled={refreshing}
-              className="flex items-center gap-1.5 rounded-lg border border-[#333333] bg-[#1A1A1A] px-3 py-1.5 text-xs font-medium text-[#D9D9D9] hover:bg-[#333333] active:scale-95 transition"
-            >
-              <RefreshCw className={`h-3 w-3 ${refreshing ? 'animate-spin text-white' : ''}`} />
-              <span>{refreshing ? 'Refreshing...' : 'Refresh'}</span>
-            </button>
           </div>
         </header>
 
@@ -1221,15 +1336,15 @@ export default function App() {
 
           {/* CATEGORIES DIRECTORY: INTERACTIVE FOLDER TILES */}
           {currentPage === 'categories' && !selectedCategoryId && (
-            <div className="space-y-6">
+            <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-zolo text-base font-bold text-white tracking-tight">Categories Directory</h3>
-                  <p className="text-xs text-[#6B6B6B]">Click any folder icon to inspect subcategories or view saved posts.</p>
+                  <h3 className="font-zolo text-sm sm:text-base font-bold text-white tracking-tight">Categories Directory</h3>
+                  <p className="text-[11px] sm:text-xs text-[#6B6B6B]">Click any category to open and explore saved posts directly.</p>
                 </div>
                 <button
                   onClick={() => setIsCreatingCategory(!isCreatingCategory)}
-                  className="flex items-center gap-1.5 rounded-lg bg-[#D9D9D9] hover:bg-white text-[#0B0B0B] px-3.5 py-1.5 text-xs font-semibold active:scale-95 transition"
+                  className="flex items-center gap-1.5 rounded-lg bg-[#D9D9D9] hover:bg-white text-[#0B0B0B] px-3 py-1.5 text-xs font-semibold active:scale-95 transition"
                 >
                   <Plus className="h-3.5 w-3.5" />
                   <span>New Category</span>
@@ -1237,94 +1352,94 @@ export default function App() {
               </div>
 
               {isCreatingCategory && (
-                <form onSubmit={handleCreateCategory} className="p-4 rounded-2xl border border-[#333333] bg-[#1A1A1A]/90 flex flex-wrap gap-2 animate-fade-up">
+                <form onSubmit={handleCreateCategory} className="p-3.5 rounded-xl border border-[#333333] bg-[#1A1A1A]/95 flex flex-wrap gap-2 animate-fade-up">
                   <input
                     type="text"
                     required
                     value={newCategoryName}
                     onChange={(e) => setNewCategoryName(e.target.value)}
                     placeholder="Category name..."
-                    className="flex-1 min-w-[200px] rounded-lg border border-[#333333] bg-[#0B0B0B] px-3 py-1.5 text-xs text-white placeholder-[#6B6B6B] focus:border-[#D9D9D9] focus:outline-none"
+                    className="flex-1 min-w-[180px] rounded-lg border border-[#333333] bg-[#0B0B0B] px-3 py-1.5 text-xs text-white placeholder-[#6B6B6B] focus:border-[#D9D9D9] focus:outline-none"
                   />
-                  <select
-                    value={categoryParentId || ''}
-                    onChange={(e) => setCategoryParentId(e.target.value || null)}
-                    className="rounded-lg border border-[#333333] bg-[#0B0B0B] px-3 py-1.5 text-xs text-[#D9D9D9] focus:outline-none"
-                  >
-                    <option value="">Top-Level</option>
-                    {rootCategories.map(rc => (
-                      <option key={rc.id} value={rc.id}>↳ {rc.name}</option>
-                    ))}
-                  </select>
                   <button type="submit" className="rounded-lg bg-[#D9D9D9] hover:bg-white text-[#0B0B0B] px-3.5 py-1.5 text-xs font-semibold">
                     Create
                   </button>
                 </form>
               )}
 
-              {/* Folder-Type Tiles */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-4">
+              {/* Minimalist, Responsive Folder-Type Tiles */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-3.5">
                 {rootCategories.map(cat => {
-                  const subcats = getSubcategories(cat.id);
                   const count = reels.filter(r => r.category_id === cat.id).length;
                   const isPinned = pinnedFolderIds.includes(cat.id);
 
                   return (
                     <div
                       key={cat.id}
-                      onClick={() => setCategoryLightbox(cat)}
-                      className="group relative flex flex-col items-center justify-center p-5 rounded-2xl border border-[#333333] bg-[#1A1A1A]/80 hover:bg-[#1A1A1A] hover:border-[#6B6B6B] cursor-pointer transition text-center shadow-sm"
+                      className="group relative rounded-xl border border-[#333333] bg-[#1A1A1A]/80 hover:bg-[#1A1A1A] hover:border-[#6B6B6B] transition shadow-sm overflow-hidden"
                     >
-                      {/* Top Action Buttons (Pin, Edit & Delete) */}
-                      <div className="absolute top-2 right-2 flex items-center gap-1 opacity-100 [@media(hover:hover)]:opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition z-10">
+                      {/* Top Action Buttons (Pin, Edit & Delete) as Sibling Interactive Elements */}
+                      <div className="absolute top-1.5 right-1.5 flex items-center gap-0.5 opacity-100 [@media(hover:hover)]:opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition z-20">
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
+                          onClick={() => {
                             setEditingCategory(cat);
                             setEditCategoryName(cat.name);
                             setEditCategoryIcon(categoryMetaMap[cat.id]?.icon || 'Folder');
                             setEditCategoryDesc(categoryMetaMap[cat.id]?.description || '');
                           }}
                           title="Edit name, icon & description"
+                          aria-label={`Edit ${cat.name}`}
                           className="p-1 rounded-md text-[#6B6B6B] hover:text-white hover:bg-[#333333] text-xs transition"
                         >
-                          <Edit2 className="h-3.5 w-3.5" />
+                          <Edit2 className="h-3 w-3" />
                         </button>
                         <button
                           onClick={(e) => togglePin(cat.id, e)}
                           title={isPinned ? 'Unpin category' : 'Pin category'}
+                          aria-label={isPinned ? `Unpin ${cat.name}` : `Pin ${cat.name}`}
                           className={`p-1 rounded-md text-xs transition ${isPinned ? 'text-white bg-[#333333]' : 'text-[#6B6B6B] hover:text-white hover:bg-[#333333]'}`}
                         >
-                          <Pin className={`h-3.5 w-3.5 ${isPinned ? 'fill-white' : ''}`} />
+                          <Pin className={`h-3 w-3 ${isPinned ? 'fill-white' : ''}`} />
                         </button>
                         <button
                           onClick={(e) => handleDeleteCategory(cat.id, e)}
                           title="Delete category"
+                          aria-label={`Delete ${cat.name}`}
                           className="p-1 rounded-md text-[#6B6B6B] hover:text-red-400 hover:bg-[#333333] text-xs transition"
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          <Trash2 className="h-3 w-3" />
                         </button>
                       </div>
 
-                      <div className="relative mb-3">
-                        {renderCategoryIcon(categoryMetaMap[cat.id]?.icon, "h-12 w-12 text-[#D9D9D9] group-hover:scale-105 transition")}
-                        {subcats.length > 0 && (
-                          <span className="absolute -bottom-1 -right-1 bg-[#0B0B0B] text-[9px] font-mono text-[#D9D9D9] rounded px-1 border border-[#333333]">
-                            +{subcats.length}
+                      {/* Main Category Opening Control */}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedCategoryId(cat.id)}
+                        className="w-full h-full flex flex-col items-center justify-center p-3.5 sm:p-4 focus:outline-none focus:ring-1 focus:ring-[#D9D9D9] text-center"
+                      >
+                        <div className="relative mb-2">
+                          {(() => {
+                            const iconName = categoryMetaMap[cat.id]?.icon || 'Folder';
+                            const theme = getCategoryTheme(iconName);
+                            return (
+                              <div className={`p-2.5 rounded-xl ${theme.bg} ${theme.border} border group-hover:scale-105 transition shadow-sm`}>
+                                {renderCategoryIcon(iconName, `h-7 w-7 ${theme.text}`)}
+                              </div>
+                            );
+                          })()}
+                        </div>
+                        <span className="text-xs font-semibold text-white truncate w-full mb-0.5">
+                          {cat.name}
+                        </span>
+                        {categoryMetaMap[cat.id]?.description && (
+                          <span className="text-[10px] text-[#6B6B6B] line-clamp-1 w-full mb-0.5">
+                            {categoryMetaMap[cat.id]?.description}
                           </span>
                         )}
-                      </div>
-                      <span className="text-xs font-semibold text-white truncate w-full mb-0.5">
-                        {cat.name}
-                      </span>
-                      {categoryMetaMap[cat.id]?.description && (
-                        <span className="text-[10px] text-[#6B6B6B] line-clamp-1 w-full mb-1">
-                          {categoryMetaMap[cat.id]?.description}
+                        <span className="font-mono-micro text-[#6B6B6B]">
+                          {count} items
                         </span>
-                      )}
-                      <span className="font-mono-micro text-[#6B6B6B]">
-                        {count} items
-                      </span>
+                      </button>
                     </div>
                   );
                 })}
@@ -1469,16 +1584,27 @@ export default function App() {
                         {/* Card Footer Actions */}
                         <div className="border-t border-[#333333] pt-3 mt-2" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center justify-between mb-2">
-                            <a
-                              href={reel.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-1 text-xs font-medium text-[#D9D9D9] hover:text-white transition"
-                            >
-                              <Play className="h-3 w-3 fill-[#D9D9D9]" />
-                              <span>Play Reel</span>
-                              <ExternalLink className="h-2.5 w-2.5" />
-                            </a>
+                            <div className="flex items-center gap-2">
+                              <a
+                                href={reel.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1 text-xs font-medium text-[#D9D9D9] hover:text-white transition"
+                              >
+                                <Play className="h-3 w-3 fill-[#D9D9D9]" />
+                                <span>Play Reel</span>
+                                <ExternalLink className="h-2.5 w-2.5" />
+                              </a>
+                              <button
+                                onClick={(e) => toggleSaveLater(reel.id, e)}
+                                title="Save for Later"
+                                aria-label="Save for Later"
+                                aria-pressed={savedLaterIds.includes(reel.id)}
+                                className={`p-1 rounded-md transition ${savedLaterIds.includes(reel.id) ? 'text-amber-400 bg-amber-500/10' : 'text-[#6B6B6B] hover:text-white'}`}
+                              >
+                                <Bookmark className={`h-3.5 w-3.5 ${savedLaterIds.includes(reel.id) ? 'fill-amber-400' : ''}`} />
+                              </button>
+                            </div>
 
                             <span className="font-mono-micro text-[#6B6B6B]">
                               {new Date(reel.created_at).toLocaleDateString()}
@@ -1604,6 +1730,16 @@ export default function App() {
                           className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#333333]"
                           onClick={(e) => e.stopPropagation()}
                         >
+                          <button
+                            onClick={(e) => toggleSaveLater(reel.id, e)}
+                            title="Save for Later"
+                            aria-label="Save for Later"
+                            aria-pressed={savedLaterIds.includes(reel.id)}
+                            className={`p-1.5 rounded-lg transition ${savedLaterIds.includes(reel.id) ? 'text-amber-400 bg-amber-500/10' : 'text-[#6B6B6B] hover:text-white'}`}
+                          >
+                            <Bookmark className={`h-3.5 w-3.5 ${savedLaterIds.includes(reel.id) ? 'fill-amber-400' : ''}`} />
+                          </button>
+
                           <a
                             href={reel.url}
                             target="_blank"
@@ -1653,269 +1789,320 @@ export default function App() {
 
           {/* SETTINGS VIEW */}
           {currentPage === 'settings' && (
-            <div className="w-full max-w-5xl space-y-6">
-              {/* Account Settings with Password Preview */}
-              <div className="rounded-2xl border border-[#333333] bg-[#1A1A1A]/90 p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-zolo text-sm font-bold text-white tracking-tight flex items-center gap-2">
-                    <User className="h-4 w-4 text-[#D9D9D9]" />
-                    <span>01 // Account Settings</span>
-                  </h3>
-                  <span className="font-mono-micro text-[#6B6B6B]">[SECURITY &amp; IDENTITY]</span>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-xs text-[#6B6B6B] block mb-1">Email Address</label>
-                    <input
-                      type="text"
-                      disabled
-                      value={session?.user?.email || ''}
-                      className="w-full max-w-md rounded-lg border border-[#333333] bg-[#0B0B0B] px-3 py-1.5 text-xs text-[#D9D9D9] font-mono"
-                    />
+            <div className="w-full space-y-6">
+              {/* Top 2-Column Responsive Bento Layout */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                {/* Account Settings */}
+                <div className="rounded-2xl border border-[#333333] bg-[#1A1A1A]/90 p-6 shadow-sm">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-zolo text-sm font-bold text-white tracking-tight flex items-center gap-2">
+                      <User className="h-4 w-4 text-[#D9D9D9]" />
+                      <span>01 // Account Settings</span>
+                    </h3>
+                    <span className="font-mono-micro text-[#6B6B6B]">[SECURITY &amp; IDENTITY]</span>
                   </div>
 
-                  <div>
-                    <label className="text-xs text-[#6B6B6B] block mb-1">Account Created At</label>
-                    <span className="text-xs text-[#D9D9D9] font-mono">
-                      {new Date(session?.user?.created_at || Date.now()).toLocaleDateString()}
-                    </span>
-                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-xs text-[#9E9E9E] block mb-1">Email Address</label>
+                      <input
+                        type="text"
+                        disabled
+                        value={session?.user?.email || ''}
+                        className="w-full rounded-lg border border-[#333333] bg-[#0B0B0B] px-3 py-2 text-xs text-[#D9D9D9] font-mono"
+                      />
+                    </div>
 
-                  <form onSubmit={handleChangePassword} className="pt-2">
-                    <label className="text-xs text-[#6B6B6B] block mb-1">Change Password</label>
-                    <div className="flex gap-2 max-w-md">
-                      <div className="relative flex-1">
-                        <input
-                          type={showNewPassword ? 'text' : 'password'}
-                          placeholder="New password (min 6 chars)..."
-                          value={newPassword}
-                          onChange={(e) => setNewPassword(e.target.value)}
-                          className="w-full rounded-lg border border-[#333333] bg-[#0B0B0B] px-3 py-1.5 pr-9 text-xs text-white placeholder-[#6B6B6B] focus:border-[#D9D9D9] focus:outline-none"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowNewPassword(!showNewPassword)}
-                          className="absolute right-2.5 top-2 text-[#6B6B6B] hover:text-white"
-                        >
-                          {showNewPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                    <div>
+                      <label className="text-xs text-[#9E9E9E] block mb-1">Account Created At</label>
+                      <span className="text-xs text-[#D9D9D9] font-mono">
+                        {new Date(session?.user?.created_at || Date.now()).toLocaleDateString()}
+                      </span>
+                    </div>
+
+                    <form onSubmit={handleChangePassword} className="pt-2">
+                      <label className="text-xs text-[#9E9E9E] block mb-1">Change Password</label>
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <input
+                            type={showNewPassword ? 'text' : 'password'}
+                            placeholder="New password (min 6 chars)..."
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            className="w-full rounded-lg border border-[#333333] bg-[#0B0B0B] px-3 py-2 pr-9 text-xs text-white placeholder-[#6B6B6B] focus:border-[#D9D9D9] focus:outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowNewPassword(!showNewPassword)}
+                            className="absolute right-2.5 top-2.5 text-[#6B6B6B] hover:text-white"
+                          >
+                            {showNewPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                          </button>
+                        </div>
+                        <button type="submit" className="rounded-lg bg-[#D9D9D9] hover:bg-white text-[#0B0B0B] px-4 py-2 text-xs font-semibold transition active:scale-95">
+                          Update
                         </button>
                       </div>
-                      <button type="submit" className="rounded-lg bg-[#D9D9D9] hover:bg-white text-[#0B0B0B] px-3.5 py-1.5 text-xs font-semibold transition">
-                        Update
-                      </button>
-                    </div>
-                    {passwordMsg && <p className="text-xs text-white mt-1 font-mono-micro">{passwordMsg}</p>}
-                  </form>
-                </div>
-              </div>
-
-              {/* Appearance & Density */}
-              <div className="rounded-2xl border border-[#333333] bg-[#1A1A1A]/90 p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-zolo text-sm font-bold text-white tracking-tight flex items-center gap-2">
-                    <Palette className="h-4 w-4 text-[#D9D9D9]" />
-                    <span>02 // Appearance &amp; Layout</span>
-                  </h3>
-                  <span className="font-mono-micro text-[#6B6B6B]">[INTERFACE CONTROLS]</span>
+                      {passwordMsg && <p className="text-xs text-white mt-1.5 font-mono-micro">{passwordMsg}</p>}
+                    </form>
+                  </div>
                 </div>
 
-                <div className="space-y-4 max-w-xl">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-xs text-[#D9D9D9] block">Card Density</span>
-                      <span className="text-[11px] text-[#6B6B6B]">Adjust grid columns and content spacing</span>
-                    </div>
-                    <select
-                      value={density}
-                      onChange={(e) => {
-                        const val = e.target.value as any;
-                        setDensity(val);
-                        localStorage.setItem('watchlater_density', val);
-                      }}
-                      className="bg-[#0B0B0B] border border-[#333333] text-xs rounded-lg px-2.5 py-1 text-[#D9D9D9] focus:outline-none"
-                    >
-                      <option value="compact">Compact (Dense / High volume)</option>
-                      <option value="comfortable">Comfortable (Balanced)</option>
-                      <option value="spacious">Spacious (Large cards)</option>
-                    </select>
+                {/* Appearance & Density */}
+                <div className="rounded-2xl border border-[#333333] bg-[#1A1A1A]/90 p-6 shadow-sm">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-zolo text-sm font-bold text-white tracking-tight flex items-center gap-2">
+                      <Palette className="h-4 w-4 text-[#D9D9D9]" />
+                      <span>02 // Appearance &amp; Layout</span>
+                    </h3>
+                    <span className="font-mono-micro text-[#6B6B6B]">[INTERFACE CONTROLS]</span>
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-xs text-[#D9D9D9] block">Display Thumbnails</span>
-                      <span className="text-[11px] text-[#6B6B6B]">Show reel cover pictures on cards</span>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-xs text-[#D9D9D9] block">Card Density</span>
+                        <span className="text-[11px] text-[#6B6B6B]">Adjust grid columns and content spacing</span>
+                      </div>
+                      <select
+                        value={density}
+                        onChange={(e) => {
+                          const val = e.target.value as any;
+                          setDensity(val);
+                          localStorage.setItem('watchlater_density', val);
+                        }}
+                        className="bg-[#0B0B0B] border border-[#333333] text-xs rounded-lg px-2.5 py-1.5 text-[#D9D9D9] focus:outline-none"
+                      >
+                        <option value="compact">Compact (Dense / High volume)</option>
+                        <option value="comfortable">Comfortable (Balanced)</option>
+                        <option value="spacious">Spacious (Large cards)</option>
+                      </select>
                     </div>
-                    <input
-                      type="checkbox"
-                      checked={showThumbnails}
-                      onChange={(e) => {
-                        setShowThumbnails(e.target.checked);
-                        localStorage.setItem('watchlater_show_thumbnails', String(e.target.checked));
-                      }}
-                      className="rounded accent-white"
-                    />
-                  </div>
 
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <label htmlFor="show-persona-insights" className="text-xs text-[#D9D9D9] block cursor-pointer">Show Persona Insights</label>
-                      <span className="text-[11px] text-[#6B6B6B]">Display &quot;Vault Intelligence Persona&quot; panel</span>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-xs text-[#D9D9D9] block">Display Thumbnails</span>
+                        <span className="text-[11px] text-[#6B6B6B]">Show reel cover pictures on cards</span>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={showThumbnails}
+                        onChange={(e) => {
+                          setShowThumbnails(e.target.checked);
+                          localStorage.setItem('watchlater_show_thumbnails', String(e.target.checked));
+                        }}
+                        className="rounded accent-white cursor-pointer h-4 w-4"
+                      />
                     </div>
-                    <input
-                      id="show-persona-insights"
-                      aria-label="Show Persona Insights"
-                      type="checkbox"
-                      checked={showPersonaInsights}
-                      onChange={(e) => {
-                        setShowPersonaInsights(e.target.checked);
-                        localStorage.setItem('watchlater_show_persona', String(e.target.checked));
-                      }}
-                      className="rounded accent-white cursor-pointer"
-                    />
-                  </div>
 
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-xs text-[#D9D9D9] block">Sidebar Collapsed by Default</span>
-                      <span className="text-[11px] text-[#6B6B6B]">Keep navigation sidebar minimized</span>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label htmlFor="show-persona-insights" className="text-xs text-[#D9D9D9] block cursor-pointer">Show Persona Insights</label>
+                        <span className="text-[11px] text-[#6B6B6B]">Display &quot;Vault Intelligence Persona&quot; panel</span>
+                      </div>
+                      <input
+                        id="show-persona-insights"
+                        aria-label="Show Persona Insights"
+                        type="checkbox"
+                        checked={showPersonaInsights}
+                        onChange={(e) => {
+                          setShowPersonaInsights(e.target.checked);
+                          localStorage.setItem('watchlater_show_persona', String(e.target.checked));
+                        }}
+                        className="rounded accent-white cursor-pointer h-4 w-4"
+                      />
                     </div>
-                    <input
-                      type="checkbox"
-                      checked={sidebarCollapsed}
-                      onChange={(e) => {
-                        setSidebarCollapsed(e.target.checked);
-                        localStorage.setItem('watchlater_sidebar_collapsed', String(e.target.checked));
-                      }}
-                      className="rounded accent-white"
-                    />
+
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-xs text-[#D9D9D9] block">Sidebar Collapsed by Default</span>
+                        <span className="text-[11px] text-[#6B6B6B]">Keep navigation sidebar minimized</span>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={sidebarCollapsed}
+                        onChange={(e) => {
+                          setSidebarCollapsed(e.target.checked);
+                          localStorage.setItem('watchlater_sidebar_collapsed', String(e.target.checked));
+                        }}
+                        className="rounded accent-white cursor-pointer h-4 w-4"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Archive Auto-Delete */}
-              <div className="rounded-2xl border border-[#333333] bg-[#1A1A1A]/90 p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-zolo text-sm font-bold text-white tracking-tight flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-[#D9D9D9]" />
-                    <span>03 // Archive Auto-Delete &amp; Retention Cap</span>
-                  </h3>
-                  <span className="font-mono-micro text-[#6B6B6B]">[PURGE POLICY]</span>
-                </div>
-                <p className="text-xs text-[#6B6B6B] mb-4">
-                  Archiving a post marks it for automatic deletion after your chosen retention period. Cap is 1 month.
-                </p>
-
-                <div className="grid grid-cols-3 gap-2 max-w-md bg-[#0B0B0B] p-1.5 rounded-xl border border-[#333333]">
-                  <button
-                    onClick={() => {
-                      setRetentionPeriod('day');
-                      localStorage.setItem('watchlater_archive_retention', 'day');
-                    }}
-                    className={`py-1.5 text-xs font-semibold rounded-lg transition ${retentionPeriod === 'day' ? 'bg-[#D9D9D9] text-[#0B0B0B]' : 'text-[#6B6B6B] hover:text-[#D9D9D9]'
-                      }`}
-                  >
-                    1 Day
-                  </button>
-                  <button
-                    onClick={() => {
-                      setRetentionPeriod('week');
-                      localStorage.setItem('watchlater_archive_retention', 'week');
-                    }}
-                    className={`py-1.5 text-xs font-semibold rounded-lg transition ${retentionPeriod === 'week' ? 'bg-[#D9D9D9] text-[#0B0B0B]' : 'text-[#6B6B6B] hover:text-[#D9D9D9]'
-                      }`}
-                  >
-                    1 Week
-                  </button>
-                  <button
-                    onClick={() => {
-                      setRetentionPeriod('month');
-                      localStorage.setItem('watchlater_archive_retention', 'month');
-                    }}
-                    className={`py-1.5 text-xs font-semibold rounded-lg transition ${retentionPeriod === 'month' ? 'bg-[#D9D9D9] text-[#0B0B0B]' : 'text-[#6B6B6B] hover:text-[#D9D9D9]'
-                      }`}
-                  >
-                    1 Month (Cap)
-                  </button>
-                </div>
-              </div>
-
-              {/* Data Management & Export */}
-              <div className="rounded-2xl border border-[#333333] bg-[#1A1A1A]/90 p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-zolo text-sm font-bold text-white tracking-tight flex items-center gap-2">
-                    <Download className="h-4 w-4 text-[#D9D9D9]" />
-                    <span>04 // Data Management &amp; Export</span>
-                  </h3>
-                  <span className="font-mono-micro text-[#6B6B6B]">[DATA OPERATIONS]</span>
-                </div>
-
-                <div className="space-y-3">
-                  <p className="text-xs text-[#6B6B6B]">
-                    Export your curated library or clean completed items.
+              {/* Data Management & Vault Archives Bento Layout */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+                {/* Archive Auto-Delete */}
+                <div className="rounded-xl border border-[#333333] bg-[#1A1A1A]/90 p-4 sm:p-5 shadow-sm">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-zolo text-xs sm:text-sm font-bold text-white tracking-tight flex items-center gap-2">
+                      <Clock className="h-3.5 w-3.5 text-[#D9D9D9]" />
+                      <span>03 // Archive Auto-Delete &amp; Retention Cap</span>
+                    </h3>
+                    <span className="font-mono-micro text-[#6B6B6B]">[PURGE POLICY]</span>
+                  </div>
+                  <p className="text-[11px] text-[#6B6B6B] mb-3">
+                    Archiving a post marks it for automatic deletion after your chosen retention period. Cap is 1 month.
                   </p>
 
-                  <div className="flex flex-wrap gap-2.5">
+                  <div className="grid grid-cols-3 gap-2 bg-[#0B0B0B] p-1.5 rounded-xl border border-[#333333]">
                     <button
-                      onClick={() => exportData()}
-                      className="flex items-center gap-1.5 rounded-lg border border-[#333333] bg-[#0B0B0B] hover:bg-[#333333] px-3.5 py-2 text-xs font-medium text-white transition"
+                      onClick={() => {
+                        setRetentionPeriod('day');
+                        localStorage.setItem('watchlater_archive_retention', 'day');
+                      }}
+                      className={`py-1.5 text-xs font-semibold rounded-lg transition ${retentionPeriod === 'day' ? 'bg-[#D9D9D9] text-[#0B0B0B]' : 'text-[#6B6B6B] hover:text-[#D9D9D9]'
+                        }`}
                     >
-                      <Download className="h-3.5 w-3.5" />
-                      <span>Export CSV ({reels.length} items)</span>
+                      1 Day
                     </button>
                     <button
                       onClick={() => {
-                        setClearCategoriesAlso(false);
-                        setShowClearHistoryLightbox(true);
+                        setRetentionPeriod('week');
+                        localStorage.setItem('watchlater_archive_retention', 'week');
                       }}
-                      className="flex items-center gap-1.5 rounded-lg border border-red-900/40 bg-red-950/20 hover:bg-red-950/40 hover:border-red-800/60 text-red-300 px-3.5 py-2 text-xs font-medium transition"
+                      className={`py-1.5 text-xs font-semibold rounded-lg transition ${retentionPeriod === 'week' ? 'bg-[#D9D9D9] text-[#0B0B0B]' : 'text-[#6B6B6B] hover:text-[#D9D9D9]'
+                        }`}
                     >
-                      <Trash2 className="h-3.5 w-3.5 text-red-400" />
-                      <span>Delete All Saved Items</span>
+                      1 Week
                     </button>
                     <button
-                      onClick={async () => {
-                        const completedReels = reels.filter(r => r.completion_status === 'completed');
-                        if (completedReels.length === 0) {
-                          alert('No completed items to delete.');
-                          return;
-                        }
-                        if (!confirm(`Permanently delete ${completedReels.length} completed item(s)?`)) return;
-                        const ids = completedReels.map(r => r.id);
-                        setReels(prev => prev.filter(r => r.completion_status !== 'completed'));
-                        const { error } = await supabase.from('reels').delete().in('id', ids);
-                        if (error) {
-                          alert(`Failed: ${error.message}`);
-                          await loadData();
-                        }
+                      onClick={() => {
+                        setRetentionPeriod('month');
+                        localStorage.setItem('watchlater_archive_retention', 'month');
                       }}
-                      className="flex items-center gap-1.5 rounded-lg border border-[#333333] bg-[#0B0B0B] hover:bg-red-950/40 hover:border-red-800/50 hover:text-red-400 px-3.5 py-2 text-xs font-medium text-[#6B6B6B] transition"
+                      className={`py-1.5 text-xs font-semibold rounded-lg transition ${retentionPeriod === 'month' ? 'bg-[#D9D9D9] text-[#0B0B0B]' : 'text-[#6B6B6B] hover:text-[#D9D9D9]'
+                        }`}
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
-                      <span>Delete Watched Content</span>
+                      1 Month (Cap)
                     </button>
                   </div>
+                </div>
+
+                {/* Vault Queues: Failed & Archived (Moved into Settings) */}
+                <div className="rounded-xl border border-[#333333] bg-[#1A1A1A]/90 p-4 sm:p-5 shadow-sm">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-zolo text-xs sm:text-sm font-bold text-white tracking-tight flex items-center gap-2">
+                      <Archive className="h-3.5 w-3.5 text-[#D9D9D9]" />
+                      <span>04 // Vault Status Queues</span>
+                    </h3>
+                    <span className="font-mono-micro text-[#6B6B6B]">[QUEUES]</span>
+                  </div>
+                  <p className="text-[11px] text-[#6B6B6B] mb-3">
+                    Navigate to inspected issues or expired archived items.
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => { setCurrentPage('failed'); setSelectedCategoryId(null); }}
+                      className="flex items-center justify-between p-3 rounded-xl border border-red-900/30 bg-red-950/20 hover:bg-red-950/40 text-left transition group active:scale-95"
+                    >
+                      <div>
+                        <div className="flex items-center gap-1.5 text-red-400 font-semibold text-xs mb-0.5">
+                          <AlertTriangle className="h-3.5 w-3.5" />
+                          <span>Failed Items</span>
+                        </div>
+                        <span className="text-[10px] text-red-300/70">Extraction errors</span>
+                      </div>
+                      <span className="font-mono-micro px-2 py-0.5 rounded bg-red-900/40 text-red-300 font-bold border border-red-800/40">
+                        {counts.failed}
+                      </span>
+                    </button>
+
+                    <button
+                      onClick={() => { setCurrentPage('archived'); setSelectedCategoryId(null); }}
+                      className="flex items-center justify-between p-3 rounded-xl border border-[#333333] bg-[#0B0B0B] hover:bg-[#1A1A1A] text-left transition group active:scale-95"
+                    >
+                      <div>
+                        <div className="flex items-center gap-1.5 text-white font-semibold text-xs mb-0.5">
+                          <Archive className="h-3.5 w-3.5 text-[#999999]" />
+                          <span>Archived Items</span>
+                        </div>
+                        <span className="text-[10px] text-[#6B6B6B]">Purge queue</span>
+                      </div>
+                      <span className="font-mono-micro px-2 py-0.5 rounded bg-[#1A1A1A] text-[#D9D9D9] font-bold border border-[#333333]">
+                        {counts.archived}
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Data Operations */}
+              <div className="rounded-xl border border-[#333333] bg-[#1A1A1A]/90 p-4 sm:p-5 shadow-sm">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-zolo text-xs sm:text-sm font-bold text-white tracking-tight flex items-center gap-2">
+                    <Download className="h-3.5 w-3.5 text-[#D9D9D9]" />
+                    <span>05 // Data Management &amp; Export</span>
+                  </h3>
+                  <span className="font-mono-micro text-[#6B6B6B]">[DATA OPERATIONS]</span>
+                </div>
+                <p className="text-[11px] text-[#6B6B6B] mb-3">
+                  Export your curated library or clean completed items.
+                </p>
+
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => exportData()}
+                    className="flex items-center gap-1.5 rounded-lg border border-[#333333] bg-[#0B0B0B] hover:bg-[#333333] px-3.5 py-2 text-xs font-medium text-white transition active:scale-95"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    <span>Export CSV ({reels.length} items)</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setClearCategoriesAlso(false);
+                      setShowClearHistoryLightbox(true);
+                    }}
+                    className="flex items-center gap-1.5 rounded-lg border border-red-900/40 bg-red-950/20 hover:bg-red-950/40 hover:border-red-800/60 text-red-300 px-3.5 py-2 text-xs font-medium transition active:scale-95"
+                  >
+                    <Trash2 className="h-3.5 w-3.5 text-red-400" />
+                    <span>Delete All Saved Items</span>
+                  </button>
+                  <button
+                    onClick={async () => {
+                      const completedReels = reels.filter(r => r.completion_status === 'completed');
+                      if (completedReels.length === 0) {
+                        alert('No completed items to delete.');
+                        return;
+                      }
+                      if (!confirm(`Permanently delete ${completedReels.length} completed item(s)?`)) return;
+                      const ids = completedReels.map(r => r.id);
+                      setReels(prev => prev.filter(r => r.completion_status !== 'completed'));
+                      const { error } = await supabase.from('reels').delete().in('id', ids);
+                      if (error) {
+                        alert(`Failed: ${error.message}`);
+                        await loadData();
+                      }
+                    }}
+                    className="flex items-center gap-1.5 rounded-lg border border-[#333333] bg-[#0B0B0B] hover:bg-red-950/40 hover:border-red-800/50 hover:text-red-400 px-3.5 py-2 text-xs font-medium text-[#6B6B6B] transition active:scale-95"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    <span>Delete Watched Content</span>
+                  </button>
                 </div>
               </div>
 
               {/* Registered Devices */}
               <div className="rounded-2xl border border-[#333333] bg-[#1A1A1A]/90 p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-zolo text-sm font-bold text-white tracking-tight flex items-center gap-2">
-                    <Smartphone className="h-4 w-4 text-[#D9D9D9]" />
-                    <span>05 // Registered Devices &amp; Synchronization</span>
+                  <h3 className="font-zolo text-xs sm:text-sm font-bold text-white tracking-tight flex items-center gap-2">
+                    <Smartphone className="h-3.5 w-3.5 text-[#D9D9D9]" />
+                    <span>06 // Registered Devices &amp; Synchronization</span>
                   </h3>
                   <span className="font-mono-micro text-[#6B6B6B]">[SYNC NODES]</span>
                 </div>
 
-                <div className="space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                   {devices.length === 0 ? (
-                    <p className="text-xs text-[#6B6B6B] italic">No mobile devices registered yet.</p>
+                    <p className="text-xs text-[#6B6B6B] italic col-span-full">No mobile devices registered yet.</p>
                   ) : (
                     devices.map(dev => {
                       const isApple = dev.platform === 'ios' || dev.device_name?.toLowerCase().includes('iphone') || dev.device_name?.toLowerCase().includes('ipad');
                       return (
-                        <div key={dev.id} className="flex items-center justify-between p-3.5 rounded-xl border border-[#333333] bg-[#0B0B0B] max-w-xl">
+                        <div key={dev.id} className="flex items-center justify-between p-3.5 rounded-xl border border-[#333333] bg-[#0B0B0B]">
                           <div className="flex items-center gap-3">
                             <div className="h-8 w-8 rounded-lg bg-[#1A1A1A] border border-[#333333] flex items-center justify-center text-white">
                               <Smartphone className="h-4 w-4 text-[#D9D9D9]" />
@@ -1953,7 +2140,7 @@ export default function App() {
                 </div>
                 <button
                   onClick={() => supabase.auth.signOut({ scope: 'local' })}
-                  className="flex items-center gap-2 rounded-lg border border-red-800/50 bg-red-950/40 hover:bg-red-900/60 text-red-300 px-4 py-2 text-xs font-semibold transition"
+                  className="flex items-center gap-2 rounded-lg border border-red-800/50 bg-red-950/40 hover:bg-red-900/60 text-red-300 px-4 py-2 text-xs font-semibold transition active:scale-95"
                 >
                   <LogOut className="h-4 w-4" />
                   <span>Sign Out</span>
@@ -2098,6 +2285,20 @@ export default function App() {
 
               <div className="flex items-center gap-2.5">
                 <button
+                  onClick={(e) => toggleSaveLater(detailReel.id, e)}
+                  title="Save for Later"
+                  aria-label="Save for Later"
+                  aria-pressed={savedLaterIds.includes(detailReel.id)}
+                  className={`rounded-lg border px-3.5 py-1.5 text-xs font-semibold transition active:scale-95 flex items-center gap-1.5 ${
+                    savedLaterIds.includes(detailReel.id)
+                      ? 'border-amber-500/40 bg-amber-500/10 text-amber-400'
+                      : 'border-[#333333] bg-[#1A1A1A] hover:bg-[#333333] text-[#D9D9D9]'
+                  }`}
+                >
+                  <Bookmark className={`h-3.5 w-3.5 ${savedLaterIds.includes(detailReel.id) ? 'fill-amber-400' : ''}`} />
+                  <span>Save for Later</span>
+                </button>
+                <button
                   onClick={() => handleStatusChange(detailReel.id, 'completed')}
                   className="rounded-lg bg-[#1A1A1A] hover:bg-[#333333] border border-[#333333] px-3.5 py-1.5 text-xs font-semibold text-white transition active:scale-95"
                 >
@@ -2115,117 +2316,7 @@ export default function App() {
         </div>
       )}
 
-      {/* CATEGORY EXPLORER LIGHTBOX (FOLDER-TYPE DRILL-DOWN) */}
-      {categoryLightbox && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-fade-up"
-          onClick={() => setCategoryLightbox(null)}
-        >
-          <div
-            className="w-full max-w-3xl max-h-[88vh] flex flex-col rounded-2xl border border-[#333333] bg-[#1A1A1A] shadow-2xl overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between border-b border-[#333333] px-6 py-4 bg-[#0B0B0B]/60">
-              <div className="flex items-center gap-3">
-                <div className="h-8 w-8 rounded-lg bg-[#0B0B0B] border border-[#333333] flex items-center justify-center text-white shrink-0">
-                  <Folder className="h-4 w-4 text-[#D9D9D9]" />
-                </div>
-                <div>
-                  <h3 className="font-zolo text-lg font-bold text-white leading-tight">{categoryLightbox.name}</h3>
-                  <span className="font-mono-micro text-[#6B6B6B]">
-                    {reels.filter(r => r.category_id === categoryLightbox.id || r.subcategory_id === categoryLightbox.id).length} SAVED POSTS
-                  </span>
-                </div>
-              </div>
-              <button
-                onClick={() => setCategoryLightbox(null)}
-                className="p-1.5 rounded-lg text-[#6B6B6B] hover:bg-[#333333] hover:text-white transition"
-                title="Close (Esc)"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
 
-            <div className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-6">
-              {/* Direct View Posts Button */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-xl bg-[#0B0B0B] border border-[#333333] gap-3">
-                <div>
-                  <span className="text-sm font-semibold text-white block">View Folder Collection</span>
-                  <span className="text-xs text-[#6B6B6B]">Filter and browse all posts inside {categoryLightbox.name}</span>
-                </div>
-                <button
-                  onClick={() => {
-                    setSelectedCategoryId(categoryLightbox.id);
-                    setCategoryLightbox(null);
-                  }}
-                  className="rounded-lg bg-white hover:bg-[#D9D9D9] text-black px-4 py-2 text-xs font-bold transition active:scale-95 shrink-0"
-                >
-                  Open {categoryLightbox.name} Posts →
-                </button>
-              </div>
-
-              {/* Subcategory Folders */}
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <span className="font-mono-micro text-[#6B6B6B]">
-                    SUB-FOLDERS &amp; NICHES
-                  </span>
-                  <button
-                    onClick={() => {
-                      setCategoryParentId(categoryLightbox.id);
-                      setIsCreatingCategory(true);
-                      setCategoryLightbox(null);
-                    }}
-                    className="flex items-center gap-1.5 text-xs font-semibold text-white hover:text-[#D9D9D9] transition"
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                    <span>Add Sub-Folder</span>
-                  </button>
-                </div>
-                {getSubcategories(categoryLightbox.id).length === 0 ? (
-                  <div className="p-8 rounded-xl border border-dashed border-[#333333] text-center bg-[#0B0B0B]/50">
-                    <p className="text-xs text-[#6B6B6B]">No nested sub-folders yet.</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5">
-                    {getSubcategories(categoryLightbox.id).map(sub => {
-                      const count = reels.filter(r => r.subcategory_id === sub.id).length;
-                      return (
-                        <div
-                          key={sub.id}
-                          onClick={() => {
-                            setSelectedCategoryId(sub.id);
-                            setCategoryLightbox(null);
-                          }}
-                          className="group/sub relative flex flex-col items-center justify-center p-4 rounded-xl border border-[#333333] bg-[#0B0B0B] hover:border-[#6B6B6B] hover:bg-[#1A1A1A] cursor-pointer transition text-center shadow-sm"
-                        >
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setCategoryLightbox(null);
-                              setEditingCategory(sub);
-                              setEditCategoryName(sub.name);
-                              setEditCategoryIcon(categoryMetaMap[sub.id]?.icon || 'Tag');
-                              setEditCategoryDesc(categoryMetaMap[sub.id]?.description || '');
-                            }}
-                            className="absolute top-2 right-2 p-1 text-[#6B6B6B] hover:text-white opacity-0 group-hover/sub:opacity-100 transition rounded"
-                            title="Edit Subcategory"
-                          >
-                            <Edit2 className="h-3.5 w-3.5" />
-                          </button>
-                          {renderCategoryIcon(categoryMetaMap[sub.id]?.icon || 'Tag', "h-8 w-8 text-[#D9D9D9] mb-2")}
-                          <span className="text-xs font-semibold text-white truncate w-full">{sub.name}</span>
-                          <span className="font-mono-micro text-[#6B6B6B] mt-1">{count} posts</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Delete All Saved Items Lightbox */}
       {showClearHistoryLightbox && (

@@ -5,11 +5,13 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
+import com.reelvault.app.util.NetworkMonitor
 
 class ReelVaultApp : Application() {
     override fun onCreate() {
         super.onCreate()
         createNotificationChannels()
+        NetworkMonitor.start(this)
     }
 
     private fun createNotificationChannels() {

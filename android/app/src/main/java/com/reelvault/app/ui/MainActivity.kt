@@ -17,9 +17,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -199,6 +202,7 @@ class MainActivity : ComponentActivity() {
     fun AuthScreen(onAuthSuccess: (String) -> Unit) {
         var email by remember { mutableStateOf("") }
         var password by remember { mutableStateOf("") }
+        var showPassword by remember { mutableStateOf(false) }
         var isSignUp by remember { mutableStateOf(false) }
         var isLoading by remember { mutableStateOf(false) }
         var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -240,6 +244,21 @@ class MainActivity : ComponentActivity() {
                     onValueChange = { email = it; errorMessage = null },
                     label = { Text("Email", color = DarkMuted) },
                     singleLine = true,
+                    trailingIcon = {
+                        if (email.isNotEmpty()) {
+                            IconButton(
+                                onClick = { email = "" },
+                                modifier = Modifier.semantics { contentDescription = "Clear email" }
+                            ) {
+                                Text(
+                                    text = "✕",
+                                    color = DarkMuted,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    },
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = PureWhite,
                         unfocusedTextColor = LightText,
@@ -259,7 +278,35 @@ class MainActivity : ComponentActivity() {
                     onValueChange = { password = it; errorMessage = null },
                     label = { Text("Password", color = DarkMuted) },
                     singleLine = true,
-                    visualTransformation = PasswordVisualTransformation(),
+                    visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
+                    trailingIcon = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(end = 4.dp)
+                        ) {
+                            if (password.isNotEmpty()) {
+                                IconButton(
+                                    onClick = { password = "" },
+                                    modifier = Modifier.semantics { contentDescription = "Clear password" }
+                                ) {
+                                    Text(
+                                        text = "✕",
+                                        color = DarkMuted,
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                            IconButton(onClick = { showPassword = !showPassword }) {
+                                Text(
+                                    text = if (showPassword) "Hide" else "Show",
+                                    color = LightText,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+                    },
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = PureWhite,
                         unfocusedTextColor = LightText,
@@ -292,7 +339,9 @@ class MainActivity : ComponentActivity() {
 
                 Button(
                     onClick = {
-                        if (email.isBlank() || password.isBlank()) {
+                        val submittedEmail = email.trim()
+                        val submittedPassword = password
+                        if (submittedEmail.isBlank() || submittedPassword.isBlank()) {
                             errorMessage = "Please enter both email and password"
                             return@Button
                         }
@@ -301,8 +350,8 @@ class MainActivity : ComponentActivity() {
                             try {
                                 val endpoint = if (isSignUp) "signup" else "token?grant_type=password"
                                 val payload = buildJsonObject {
-                                    put("email", email.trim())
-                                    put("password", password)
+                                    put("email", submittedEmail)
+                                    put("password", submittedPassword)
                                 }.toString()
 
                                 val response = httpClient.post("${BuildConfig.SUPABASE_URL}/auth/v1/$endpoint") {
@@ -328,11 +377,11 @@ class MainActivity : ComponentActivity() {
                                                 PreferenceManager.saveSession(
                                                     this@MainActivity,
                                                     userId = userId,
-                                                    email = email.trim(),
+                                                    email = submittedEmail,
                                                     accessToken = accessToken,
                                                     refreshToken = refreshToken
                                                 )
-                                                onAuthSuccess(email.trim())
+                                                onAuthSuccess(submittedEmail)
                                             } else {
                                                 errorMessage = "Device registration failed. Please try again."
                                             }
@@ -418,24 +467,6 @@ class MainActivity : ComponentActivity() {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Box(
-                modifier = Modifier
-                    .border(1.dp, DarkBorder, RoundedCornerShape(100.dp))
-                    .background(DarkSurface, RoundedCornerShape(100.dp))
-                    .padding(horizontal = 14.dp, vertical = 6.dp)
-            ) {
-                Text(
-                    text = "ACTIVE DEVICE // CONNECTED",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    fontFamily = FontFamily.Monospace,
-                    color = PureWhite,
-                    letterSpacing = 1.sp
-                )
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
             Text(
                 text = "Watch Later",
                 fontSize = 32.sp,

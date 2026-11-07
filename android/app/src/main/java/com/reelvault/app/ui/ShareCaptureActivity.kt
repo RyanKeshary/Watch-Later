@@ -117,6 +117,7 @@ class ShareCaptureActivity : Activity() {
 
                     // Execute synchronously on IO to guarantee persistence before finishing activity
                     kotlinx.coroutines.runBlocking(Dispatchers.IO) {
+                        var wasPersisted = false
                         try {
                             val existing = db.reelDao().getReelByUrl(normalizedUrl)
                             val isAlreadySynced = existing != null && (existing.syncStatus == "synced" || existing.remoteId != null)
@@ -145,6 +146,7 @@ class ShareCaptureActivity : Activity() {
                                 val resetStatus = if (isLoggedIn) "local_pending_sync" else "pending_auth"
                                 db.reelDao().updateReel(existing.copy(syncStatus = resetStatus))
                             }
+                            wasPersisted = true
 
                             val pendingList = db.reelDao().getPendingReels()
                             showProgressNotification("Uploading (${pendingList.size} in queue)...", 60, pendingList.size)
@@ -159,12 +161,35 @@ class ShareCaptureActivity : Activity() {
                             if (remaining == 0) {
                                 showProgressNotification("Saved to Watch Later", 100, 0)
                             } else {
-                                showProgressNotification("Saved locally ($remaining waiting to upload)", 100, remaining)
+                                val isConnected = com.reelvault.app.util.NetworkMonitor.isOnline(applicationContext)
+                                if (isConnected) {
+                                    showProgressNotification("Saved locally ($remaining queued for sync)", 100, remaining)
+                                } else {
+                                    showProgressNotification("Saved locally (offline)", 100, remaining)
+                                    com.reelvault.app.util.NetworkMonitor.showOfflineNotification(applicationContext, remaining)
+                                }
                             }
                         } catch (e: Exception) {
                             Log.e("ShareCaptureActivity", "Error queuing reel", e)
-                            ReelSyncWorker.enqueue(applicationContext)
-                            showProgressNotification("Saved locally (offline)", 100, 0)
+                            if (wasPersisted) {
+                                ReelSyncWorker.enqueue(applicationContext)
+                                val remaining = try {
+                                    db.reelDao().getPendingReels().size
+                                } catch (dbErr: Exception) {
+                                    Log.w("ShareCaptureActivity", "Failed to query pending count after error", dbErr)
+                                    1
+                                }
+                                val isConnected = com.reelvault.app.util.NetworkMonitor.isOnline(applicationContext)
+                                if (isConnected) {
+                                    showProgressNotification("Saved locally ($remaining queued)", 100, remaining)
+                                } else {
+                                    showProgressNotification("Saved locally (offline)", 100, remaining)
+                                    com.reelvault.app.util.NetworkMonitor.showOfflineNotification(applicationContext, remaining)
+                                }
+                            } else {
+                                // Capture/save failed to persist to local database
+                                showProgressNotification("Failed to save reel locally", 100, 0)
+                            }
                         }
                     }
 
