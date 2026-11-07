@@ -404,90 +404,32 @@ export default function ServiceLandingPage({
               </p>
             </div>
 
-            {/* Standalone Video Player Stage */}
-            <div className="relative rounded-3xl border border-white/15 bg-[#0e0e11] p-3 sm:p-4 shadow-2xl overflow-hidden">
-              <div className="relative aspect-video w-full rounded-2xl bg-[#050507] border border-white/10 overflow-hidden flex flex-col justify-between">
-                {!isVideoPlaying ? (
-                  <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-gradient-to-b from-white/[0.04] to-transparent">
-                    <button
-                      type="button"
-                      onClick={() => setIsVideoPlaying(true)}
-                      aria-label="Play Product Launch Video"
-                      className="group relative flex h-20 w-20 items-center justify-center rounded-full bg-white text-black transition-transform duration-300 hover:scale-110 active:scale-95 shadow-[0_0_50px_rgba(255,255,255,0.3)] mb-4 cursor-pointer"
-                    >
-                      <Play className="h-8 w-8 fill-black text-black ml-1 transition-transform group-hover:scale-110" />
-                    </button>
-                    <span className="font-mono text-[11px] text-[#71717a] tracking-wider block mb-1">INTERACTIVE WALKTHROUGH</span>
-                    <h3 className="font-zolo text-xl font-bold text-white mb-1">The 4-Stage Reel Pipeline</h3>
-                    <p className="text-xs text-[#a1a1aa] max-w-md">
-                      Share Sheet → Background Worker → Automatic Pillar Sort → Auto-Clean
-                    </p>
-                  </div>
-                ) : (
-                  <div className="w-full h-full p-6 sm:p-8 flex flex-col justify-between bg-black/95 text-left">
-                    <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                      <div className="flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                        <span className="font-mono text-xs text-white">INTERACTIVE SIMULATION</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsVideoPlaying(false);
-                          setVideoTimeline(0);
-                        }}
-                        className="flex items-center gap-1.5 text-xs font-mono text-[#a1a1aa] hover:text-white transition"
-                      >
-                        <RotateCcw className="h-3 w-3" />
-                        <span>Reset Walkthrough</span>
-                      </button>
-                    </div>
+            {/* Real MP4 Video Player Stage */}
+            <div className="relative rounded-3xl border border-white/15 bg-[#0e0e11] p-3 sm:p-4 shadow-2xl overflow-hidden group">
+              <div className="relative aspect-video w-full rounded-2xl bg-black border border-white/10 overflow-hidden">
+                <video
+                  src="/watch-later-launch.mp4"
+                  controls
+                  playsInline
+                  preload="metadata"
+                  className="w-full h-full object-cover"
+                />
+              </div>
 
-                    <div className="my-auto py-4">
-                      {videoTimeline === 0 && (
-                        <div className="animate-fade-up max-w-lg">
-                          <span className="font-mono text-xs text-sky-400 block mb-1">STAGE 01 // INSTAGRAM SHARE SHEET</span>
-                          <h4 className="font-zolo text-2xl sm:text-3xl font-bold text-white mb-2">User taps &quot;Share to Watch Later&quot;</h4>
-                          <p className="text-sm text-[#a1a1aa] leading-relaxed">No dialogs or folder pickers open. You stay right where you were in your Instagram feed.</p>
-                        </div>
-                      )}
-                      {videoTimeline === 1 && (
-                        <div className="animate-fade-up max-w-lg">
-                          <span className="font-mono text-xs text-purple-400 block mb-1">STAGE 02 // BACKGROUND CAPTURE</span>
-                          <h4 className="font-zolo text-2xl sm:text-3xl font-bold text-white mb-2">Silent Metadata &amp; Transcript Parse</h4>
-                          <p className="text-sm text-[#a1a1aa] leading-relaxed">Extracts captions, author details, and spoken speech into searchable text silently.</p>
-                        </div>
-                      )}
-                      {videoTimeline === 2 && (
-                        <div className="animate-fade-up max-w-lg">
-                          <span className="font-mono text-xs text-emerald-400 block mb-1">STAGE 03 // AUTOMATIC TAXONOMY</span>
-                          <h4 className="font-zolo text-2xl sm:text-3xl font-bold text-white mb-2">Assigned to &quot;Systems Architecture&quot;</h4>
-                          <p className="text-sm text-[#a1a1aa] leading-relaxed">AI assigns existing parent pillars without creating duplicate or hallucinated folders.</p>
-                        </div>
-                      )}
-                      {videoTimeline === 3 && (
-                        <div className="animate-fade-up max-w-lg">
-                          <span className="font-mono text-xs text-amber-400 block mb-1">STAGE 04 // AUTO-CLEANUP ON COMPLETION</span>
-                          <h4 className="font-zolo text-2xl sm:text-3xl font-bold text-white mb-2">Watched reel cleared from queue</h4>
-                          <p className="text-sm text-[#a1a1aa] leading-relaxed">No backlog accumulates to haunt you. Categories that fall out of use retire automatically.</p>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-2 pt-3 border-t border-white/10">
-                      {[0, 1, 2, 3].map((step) => (
-                        <button
-                          key={step}
-                          type="button"
-                          onClick={() => setVideoTimeline(step)}
-                          aria-label={`Demo step ${step + 1} of 4`}
-                          aria-current={videoTimeline === step ? 'step' : undefined}
-                          className={`h-1.5 flex-1 rounded-full transition-colors ${videoTimeline === step ? 'bg-white' : 'bg-white/20'}`}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
+              {/* Download MP4 file direct link */}
+              <div className="flex items-center justify-between pt-3 px-2 font-mono text-xs text-[#71717a]">
+                <div className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="text-white">watch-later-launch.mp4 (1080p H.264)</span>
+                </div>
+                <a
+                  href="/watch-later-launch.mp4"
+                  download="watch-later-launch.mp4"
+                  className="flex items-center gap-1.5 text-white hover:underline font-semibold"
+                >
+                  <span>Download MP4 File</span>
+                  <Download className="h-3.5 w-3.5" />
+                </a>
               </div>
             </div>
           </div>
