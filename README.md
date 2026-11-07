@@ -1,7 +1,23 @@
-# ⚡ Watch Later — The Autonomous Instagram Reel Knowledge Vault
+<p align="center">
+  <img src="web/public/logo.jpg" alt="Watch Later Logo" width="128" height="128" style="border-radius: 28px; box-shadow: 0 12px 36px rgba(0,0,0,0.35);" />
+</p>
 
-> **Turn transient saves and forgotten DMs into a structured, searchable personal knowledge library.**  
-> Silently captured on Android. Enriched by AI at the edge. Visualized in a kinetic Next.js dashboard.
+<h1 align="center">Watch Later</h1>
+
+<p align="center">
+  <strong>The Autonomous Instagram Reel Knowledge Vault</strong><br>
+  Turn transient saves and forgotten DMs into a structured, searchable personal knowledge library.<br>
+  Silently captured on Android • Enriched by AI at the edge • Visualized in a kinetic Next.js dashboard.
+</p>
+
+<p align="center">
+  <a href="#-license--credits"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square" alt="License: MIT"></a>
+  <img src="https://img.shields.io/badge/Android-SDK_34-3DDC84.svg?style=flat-square&logo=android&logoColor=white" alt="Android SDK 34">
+  <img src="https://img.shields.io/badge/Next.js-14-black.svg?style=flat-square&logo=next.js" alt="Next.js 14">
+  <img src="https://img.shields.io/badge/Cloudflare-Workers-F38020.svg?style=flat-square&logo=cloudflare&logoColor=white" alt="Cloudflare Workers">
+  <img src="https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E.svg?style=flat-square&logo=supabase&logoColor=white" alt="Supabase">
+  <img src="https://img.shields.io/badge/Groq-Llama--3-F55036.svg?style=flat-square" alt="Groq AI">
+</p>
 
 ---
 
@@ -394,6 +410,7 @@ To launch the interactive 3D/2D visual graph visualizer, run:
 ---
 
 ## 📄 License & Credits
-- **License**: MIT License © 2026 Ryan Keshary.
-- **Built with**: Kotlin, Jetpack Compose, Next.js, Cloudflare Workers, Supabase, Groq, Tailwind CSS, and WebGL.
+- **License**: Released under the **[MIT License](LICENSE)**. See the [LICENSE](LICENSE) file for the full legal text.
+- **Copyright**: © 2026 Ryan Keshary.
+- **Built with**: Kotlin, Jetpack Compose, Next.js 14, Cloudflare Workers, Supabase, Groq (Llama-3), Tailwind CSS, and WebGL.
 - **Crafted with**: Passion for high-craft UI/UX and zero-friction personal productivity.
