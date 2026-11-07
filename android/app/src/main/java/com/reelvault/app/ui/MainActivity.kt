@@ -22,6 +22,7 @@ import com.reelvault.app.util.PreferenceManager
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.android.Android
 import io.ktor.client.request.header
+import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
@@ -282,10 +283,22 @@ class MainActivity : ComponentActivity() {
 
     private suspend fun registerDevice(token: String, userId: String) {
         try {
+            val deviceName = "${Build.MANUFACTURER} ${Build.MODEL}"
+            // Upsert / check existing device to avoid duplicates
+            val checkUrl = "${BuildConfig.SUPABASE_URL}/rest/v1/devices?user_id=eq.$userId&device_name=eq.${java.net.URLEncoder.encode(deviceName, "UTF-8")}&select=id"
+            val checkResponse: io.ktor.client.statement.HttpResponse = httpClient.get(checkUrl) {
+                header("apikey", BuildConfig.SUPABASE_ANON_KEY)
+                header("Authorization", "Bearer $token")
+            }
+            val existingBody = checkResponse.bodyAsText()
+            if (existingBody.contains("\"id\"")) {
+                return
+            }
+
             val devicePayload = buildJsonObject {
                 put("user_id", userId)
                 put("platform", "android")
-                put("device_name", "${Build.MANUFACTURER} ${Build.MODEL}")
+                put("device_name", deviceName)
             }.toString()
 
             httpClient.post("${BuildConfig.SUPABASE_URL}/rest/v1/devices") {

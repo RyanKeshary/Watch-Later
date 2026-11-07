@@ -57,15 +57,21 @@ async function extractViaOpenGraph(url) {
   function extractMetaProperty(htmlContent, propertyName) {
     const metaTagRegex = /<meta\s+(?:[^>"']|"[^"]*"|'[^']*')*>/gi;
     let match;
+    let firstFoundContent = null;
     while ((match = metaTagRegex.exec(htmlContent)) !== null) {
       const tag = match[0];
       const propMatch = tag.match(new RegExp(`(?:property|name)=(["'])${propertyName}\\1`, 'i'));
       if (propMatch) {
         const contentMatch = tag.match(/content=(["'])([\s\S]*?)\1/i);
-        if (contentMatch) return contentMatch[2];
+        if (contentMatch && contentMatch[2] && contentMatch[2].trim().length > 0) {
+          return contentMatch[2];
+        }
+        if (contentMatch && firstFoundContent === null) {
+          firstFoundContent = contentMatch[2];
+        }
       }
     }
-    return null;
+    return firstFoundContent;
   }
 
   const rawTitle = decodeHtmlEntities(extractMetaProperty(html, 'og:title') || '');

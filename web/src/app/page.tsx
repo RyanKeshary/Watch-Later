@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Reel, Category, Device } from '@/types/database';
+import { Morph, Loading } from 'loading-dev';
 import {
   Home,
   Film,
@@ -768,51 +769,54 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-zinc-950 text-zinc-100">
-        <RefreshCw className="h-6 w-6 animate-spin text-zinc-400" />
+      <div className="flex h-screen items-center justify-center bg-fabric text-[#D9D9D9]">
+        <div className="flex flex-col items-center gap-4">
+          <Loading size={48} />
+          <span className="font-mono-micro text-[#6B6B6B] tracking-widest">[00 // INITIALIZING VAULT]</span>
+        </div>
       </div>
     );
   }
 
   if (!session) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-950 p-4 text-zinc-100">
-        <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-900/50 p-8 backdrop-blur">
+      <div className="flex min-h-screen items-center justify-center bg-fabric p-4 text-[#D9D9D9]">
+        <div className="w-full max-w-md rounded-2xl border border-[#333333] bg-[#1A1A1A]/90 p-8 backdrop-blur shadow-2xl animate-fade-up">
           <div className="mb-8 text-center">
-            <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-indigo-600/10 border border-indigo-500/20 mb-3">
-              <Bookmark className="h-7 w-7 text-indigo-400" />
+            <div className="inline-flex items-center justify-center p-2 rounded-2xl bg-[#0B0B0B] border border-[#333333] mb-4">
+              <img src="/logo.jpg" alt="Watch Later" className="h-12 w-12 rounded-xl object-cover" />
             </div>
-            <h1 className="text-3xl font-bold tracking-tight text-white">Watch Later</h1>
-            <p className="mt-2 text-sm text-zinc-400">Capture effortlessly. Organize intelligently.</p>
+            <h1 className="font-zolo text-3xl font-bold tracking-tight text-white">Watch Later</h1>
+            <p className="mt-2 text-xs font-medium text-[#6B6B6B]">Never lose a reel worth revisiting.</p>
           </div>
 
           <form onSubmit={handleAuth} className="space-y-4">
             <div>
-              <label className="text-xs font-semibold text-zinc-400">Email Address</label>
+              <label className="text-xs font-semibold text-[#6B6B6B]">Email Address</label>
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-800/80 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-indigo-500 focus:outline-none"
+                className="mt-1 w-full rounded-lg border border-[#333333] bg-[#0B0B0B] px-3 py-2 text-sm text-white placeholder-[#6B6B6B] focus:border-[#D9D9D9] focus:outline-none transition"
                 placeholder="name@example.com"
               />
             </div>
             <div>
-              <label className="text-xs font-semibold text-zinc-400">Password</label>
+              <label className="text-xs font-semibold text-[#6B6B6B]">Password</label>
               <div className="relative mt-1">
                 <input
                   type={showAuthPassword ? 'text' : 'password'}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-lg border border-zinc-700 bg-zinc-800/80 px-3 py-2 pr-10 text-sm text-white placeholder-zinc-500 focus:border-indigo-500 focus:outline-none"
+                  className="w-full rounded-lg border border-[#333333] bg-[#0B0B0B] px-3 py-2 pr-10 text-sm text-white placeholder-[#6B6B6B] focus:border-[#D9D9D9] focus:outline-none transition"
                   placeholder="••••••••"
                 />
                 <button
                   type="button"
                   onClick={() => setShowAuthPassword(!showAuthPassword)}
-                  className="absolute right-3 top-2.5 text-zinc-400 hover:text-white transition"
+                  className="absolute right-3 top-2.5 text-[#6B6B6B] hover:text-white transition"
                 >
                   {showAuthPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -820,14 +824,14 @@ export default function App() {
             </div>
 
             {authError && (
-              <div className="rounded-lg bg-red-950/50 p-3 text-xs text-red-400 border border-red-800/50">
+              <div className="rounded-lg bg-red-950/40 p-3 text-xs text-red-400 border border-red-800/40">
                 {authError}
               </div>
             )}
 
             <button
               type="submit"
-              className="w-full rounded-lg bg-indigo-600 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-500"
+              className="w-full rounded-lg bg-[#D9D9D9] text-[#0B0B0B] py-2.5 text-sm font-semibold transition hover:bg-white active:scale-[0.99]"
             >
               {authMode === 'signin' ? 'Sign In' : 'Sign Up'}
             </button>
@@ -839,7 +843,7 @@ export default function App() {
                 setAuthMode(authMode === 'signin' ? 'signup' : 'signin');
                 setAuthError(null);
               }}
-              className="text-xs text-zinc-400 hover:text-white transition"
+              className="text-xs text-[#6B6B6B] hover:text-white transition"
             >
               {authMode === 'signin' ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
             </button>
@@ -850,31 +854,34 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen bg-zinc-950 text-zinc-100 font-sans">
+    <div className="flex h-screen bg-fabric text-[#D9D9D9] font-sans antialiased">
       {/* Toast Alert for Incoming Reels */}
       {incomingAlert && (
-        <div className="fixed top-4 right-4 z-50 flex items-center gap-3 rounded-xl border border-indigo-500/40 bg-zinc-900/90 p-4 shadow-2xl backdrop-blur animate-in slide-in-from-top-2">
-          <Bell className="h-5 w-5 text-indigo-400 animate-bounce" />
+        <div className="fixed top-4 right-4 z-50 flex items-center gap-3 rounded-xl border border-[#333333] bg-[#1A1A1A]/95 p-4 shadow-2xl backdrop-blur animate-fade-up">
+          <Bell className="h-5 w-5 text-white animate-bounce" />
           <div>
             <p className="text-xs font-semibold text-white">New Content Captured!</p>
-            <p className="text-[11px] text-zinc-400 truncate max-w-xs">{incomingAlert}</p>
+            <p className="text-[11px] text-[#6B6B6B] truncate max-w-xs">{incomingAlert}</p>
           </div>
-          <button onClick={() => setIncomingAlert(null)} className="text-zinc-500 hover:text-white">✕</button>
+          <button onClick={() => setIncomingAlert(null)} className="text-[#6B6B6B] hover:text-white">✕</button>
         </div>
       )}
 
       {/* Navigation Sidebar */}
       <aside
         className={`${sidebarCollapsed ? 'w-16' : 'w-64'
-          } transition-all duration-200 border-r border-zinc-800 bg-zinc-900/40 p-3 flex flex-col justify-between select-none`}
+          } transition-all duration-200 border-r border-[#333333] bg-[#0B0B0B]/80 backdrop-blur p-3 flex flex-col justify-between select-none shrink-0`}
       >
         <div className="overflow-y-auto overflow-x-hidden">
           {/* Logo & Toggle */}
           <div className="flex items-center justify-between px-2 py-3 mb-2">
             {!sidebarCollapsed && (
-              <div className="flex items-center gap-2">
-                <Bookmark className="h-5 w-5 text-indigo-400" />
-                <span className="text-lg font-bold tracking-tight text-white">Watch Later</span>
+              <div className="flex items-center gap-2.5">
+                <img src="/logo.jpg" alt="Watch Later" className="h-7 w-7 rounded-lg object-cover border border-[#333333]" />
+                <div>
+                  <span className="font-zolo text-base font-bold tracking-tight text-white block leading-none">Watch Later</span>
+                  <span className="text-[9px] text-[#6B6B6B] block leading-tight mt-0.5">Never lose a reel worth revisiting.</span>
+                </div>
               </div>
             )}
             <button
@@ -890,17 +897,17 @@ export default function App() {
           <div className="space-y-1">
             <button
               onClick={() => { setCurrentPage('home'); setSelectedCategoryId(null); }}
-              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'gap-2.5'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'home' ? 'bg-indigo-600/15 text-indigo-400 font-semibold' : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
+              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'gap-2.5'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'home' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
                 }`}
               title="Home (Stats & Insights)"
             >
-              <Home className="h-4 w-4 shrink-0 text-indigo-400" />
+              <Home className="h-4 w-4 shrink-0 text-white" />
               {!sidebarCollapsed && <span>Home</span>}
             </button>
 
             <button
               onClick={() => { setCurrentPage('all'); setSelectedCategoryId(null); }}
-              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'all' && !selectedCategoryId ? 'bg-indigo-600/15 text-indigo-400 font-semibold' : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
+              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'all' && !selectedCategoryId ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
                 }`}
               title="All Content"
             >
@@ -908,39 +915,39 @@ export default function App() {
                 <Film className="h-4 w-4 shrink-0" />
                 {!sidebarCollapsed && <span>All Content</span>}
               </div>
-              {!sidebarCollapsed && <span className="text-[11px] text-zinc-500">{counts.all}</span>}
+              {!sidebarCollapsed && <span className="font-mono-micro text-[#6B6B6B]">{counts.all}</span>}
             </button>
 
             {/* Renamed from Sorted Saves to Categories */}
             <button
               onClick={() => { setCurrentPage('categories'); setSelectedCategoryId(null); }}
-              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'categories' && !selectedCategoryId ? 'bg-indigo-600/15 text-indigo-400 font-semibold' : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
+              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'categories' && !selectedCategoryId ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
                 }`}
               title="Categories"
             >
               <div className="flex items-center gap-2.5">
-                <FolderTree className="h-4 w-4 shrink-0 text-indigo-400" />
+                <FolderTree className="h-4 w-4 shrink-0 text-white" />
                 {!sidebarCollapsed && <span>Categories</span>}
               </div>
-              {!sidebarCollapsed && <span className="text-[11px] text-zinc-500">{counts.categories}</span>}
+              {!sidebarCollapsed && <span className="font-mono-micro text-[#6B6B6B]">{counts.categories}</span>}
             </button>
 
             <button
               onClick={() => { setCurrentPage('watched'); setSelectedCategoryId(null); }}
-              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'watched' ? 'bg-indigo-600/15 text-indigo-400 font-semibold' : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
+              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'watched' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
                 }`}
               title="Watched"
             >
               <div className="flex items-center gap-2.5">
-                <CheckCircle className="h-4 w-4 shrink-0 text-emerald-400" />
+                <CheckCircle className="h-4 w-4 shrink-0 text-[#D9D9D9]" />
                 {!sidebarCollapsed && <span>Watched</span>}
               </div>
-              {!sidebarCollapsed && <span className="text-[11px] text-zinc-500">{counts.watched}</span>}
+              {!sidebarCollapsed && <span className="font-mono-micro text-[#6B6B6B]">{counts.watched}</span>}
             </button>
 
             <button
               onClick={() => { setCurrentPage('inbox'); setSelectedCategoryId(null); }}
-              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'inbox' ? 'bg-indigo-600/15 text-indigo-400 font-semibold' : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
+              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'inbox' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
                 }`}
               title="Inbox"
             >
@@ -948,12 +955,12 @@ export default function App() {
                 <Inbox className="h-4 w-4 shrink-0" />
                 {!sidebarCollapsed && <span>Inbox</span>}
               </div>
-              {!sidebarCollapsed && <span className="text-[11px] text-zinc-500">{counts.inbox}</span>}
+              {!sidebarCollapsed && <span className="font-mono-micro text-[#6B6B6B]">{counts.inbox}</span>}
             </button>
 
             <button
               onClick={() => { setCurrentPage('failed'); setSelectedCategoryId(null); }}
-              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'failed' ? 'bg-red-500/15 text-red-400 font-semibold' : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
+              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'failed' ? 'bg-red-950/30 text-red-400 font-semibold border border-red-900/40' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-red-400'
                 }`}
               title="Failed Extractions"
             >
@@ -961,12 +968,12 @@ export default function App() {
                 <AlertTriangle className="h-4 w-4 shrink-0 text-red-400" />
                 {!sidebarCollapsed && <span>Failed</span>}
               </div>
-              {!sidebarCollapsed && <span className="text-[11px] text-red-400 font-semibold">{counts.failed}</span>}
+              {!sidebarCollapsed && <span className="font-mono-micro text-red-400 font-semibold">{counts.failed}</span>}
             </button>
 
             <button
               onClick={() => { setCurrentPage('archived'); setSelectedCategoryId(null); }}
-              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'archived' ? 'bg-indigo-600/15 text-indigo-400 font-semibold' : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
+              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'archived' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
                 }`}
               title="Archived"
             >
@@ -974,7 +981,7 @@ export default function App() {
                 <Archive className="h-4 w-4 shrink-0" />
                 {!sidebarCollapsed && <span>Archived</span>}
               </div>
-              {!sidebarCollapsed && <span className="text-[11px] text-zinc-500">{counts.archived}</span>}
+              {!sidebarCollapsed && <span className="font-mono-micro text-[#6B6B6B]">{counts.archived}</span>}
             </button>
           </div>
 
@@ -1021,34 +1028,25 @@ export default function App() {
         </div>
 
         {/* Footer */}
-        <div className="border-t border-zinc-800/80 pt-3 mt-2 space-y-1">
+        <div className="border-t border-[#333333] pt-3 mt-2 space-y-1">
           <button
             onClick={() => setCurrentPage('settings')}
-            className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'gap-2'} rounded-lg px-2.5 py-1.5 text-xs font-medium transition ${currentPage === 'settings' ? 'bg-indigo-600/15 text-indigo-400 font-semibold' : 'text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200'
+            className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'gap-2'} rounded-lg px-2.5 py-1.5 text-xs font-medium transition ${currentPage === 'settings' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
               }`}
             title="Settings"
           >
             <SettingsIcon className="h-3.5 w-3.5 shrink-0" />
             {!sidebarCollapsed && <span>Settings</span>}
           </button>
-
-          <button
-            onClick={() => supabase.auth.signOut()}
-            className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'gap-2'} rounded-lg px-2.5 py-1.5 text-xs font-medium text-zinc-400 hover:bg-zinc-800/60 hover:text-red-400 transition`}
-            title="Sign Out"
-          >
-            <LogOut className="h-3.5 w-3.5 shrink-0" />
-            {!sidebarCollapsed && <span>Sign Out</span>}
-          </button>
         </div>
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <main className="flex-1 flex flex-col overflow-hidden bg-fabric">
         {/* Top Header */}
-        <header className="flex flex-wrap items-center justify-between border-b border-zinc-800 px-6 py-3 gap-3">
+        <header className="flex flex-wrap items-center justify-between border-b border-[#333333] bg-[#0B0B0B]/60 backdrop-blur px-6 py-3 gap-3">
           <div className="flex items-center gap-4 flex-wrap">
-            <h2 className="text-base font-semibold text-white tracking-tight">
+            <h2 className="font-zolo text-base font-bold text-white tracking-tight">
               {currentPage === 'home' && 'Analytics & Intelligence'}
               {currentPage === 'all' && 'All Saved Content'}
               {currentPage === 'categories' && (selectedCategoryId ? categories.find(c => c.id === selectedCategoryId)?.name || 'Category' : 'Categories Directory')}
@@ -1061,45 +1059,45 @@ export default function App() {
 
             {/* Dynamic, Reactive Search Bar */}
             {currentPage !== 'home' && currentPage !== 'settings' && !(currentPage === 'categories' && !selectedCategoryId) && (
-              <div className="flex items-center gap-2 w-80 bg-zinc-900/80 px-3 py-1.5 rounded-lg border border-zinc-800 focus-within:border-indigo-500/80 transition">
-                <Search className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
+              <div className="flex items-center gap-2 w-80 bg-[#1A1A1A] px-3 py-1.5 rounded-lg border border-[#333333] focus-within:border-[#D9D9D9] transition">
+                <Search className="h-3.5 w-3.5 text-[#6B6B6B] shrink-0" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Instant search by title, summary, or user..."
-                  className="w-full bg-transparent text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none"
+                  className="w-full bg-transparent text-xs text-[#D9D9D9] placeholder-[#6B6B6B] focus:outline-none"
                 />
                 {searchQuery && (
-                  <button onClick={() => setSearchQuery('')} className="text-zinc-500 hover:text-white text-xs">✕</button>
+                  <button onClick={() => setSearchQuery('')} className="text-[#6B6B6B] hover:text-white text-xs">✕</button>
                 )}
               </div>
             )}
 
             {/* Post Type Filters (Reels vs Posts vs Carousels) */}
             {currentPage !== 'home' && currentPage !== 'settings' && (currentPage !== 'categories' || selectedCategoryId) && (
-              <div className="flex items-center bg-zinc-900 p-0.5 rounded-lg border border-zinc-800 text-[11px]">
+              <div className="flex items-center bg-[#1A1A1A] p-0.5 rounded-lg border border-[#333333] text-[11px]">
                 <button
                   onClick={() => setPostTypeFilter('all')}
-                  className={`px-2 py-1 rounded transition ${postTypeFilter === 'all' ? 'bg-indigo-600 text-white font-medium' : 'text-zinc-400 hover:text-white'}`}
+                  className={`px-2 py-1 rounded transition ${postTypeFilter === 'all' ? 'bg-[#D9D9D9] text-[#0B0B0B] font-semibold' : 'text-[#6B6B6B] hover:text-white'}`}
                 >
                   All
                 </button>
                 <button
                   onClick={() => setPostTypeFilter('reels')}
-                  className={`px-2 py-1 rounded transition ${postTypeFilter === 'reels' ? 'bg-indigo-600 text-white font-medium' : 'text-zinc-400 hover:text-white'}`}
+                  className={`px-2 py-1 rounded transition ${postTypeFilter === 'reels' ? 'bg-[#D9D9D9] text-[#0B0B0B] font-semibold' : 'text-[#6B6B6B] hover:text-white'}`}
                 >
                   Reels
                 </button>
                 <button
                   onClick={() => setPostTypeFilter('carousels')}
-                  className={`px-2 py-1 rounded transition ${postTypeFilter === 'carousels' ? 'bg-indigo-600 text-white font-medium' : 'text-zinc-400 hover:text-white'}`}
+                  className={`px-2 py-1 rounded transition ${postTypeFilter === 'carousels' ? 'bg-[#D9D9D9] text-[#0B0B0B] font-semibold' : 'text-[#6B6B6B] hover:text-white'}`}
                 >
                   Carousels
                 </button>
                 <button
                   onClick={() => setPostTypeFilter('posts')}
-                  className={`px-2 py-1 rounded transition ${postTypeFilter === 'posts' ? 'bg-indigo-600 text-white font-medium' : 'text-zinc-400 hover:text-white'}`}
+                  className={`px-2 py-1 rounded transition ${postTypeFilter === 'posts' ? 'bg-[#D9D9D9] text-[#0B0B0B] font-semibold' : 'text-[#6B6B6B] hover:text-white'}`}
                 >
                   Posts
                 </button>
@@ -1110,17 +1108,17 @@ export default function App() {
           <div className="flex items-center gap-2.5">
             {/* View Layout Toggle */}
             {currentPage !== 'home' && currentPage !== 'settings' && (currentPage !== 'categories' || selectedCategoryId) && (
-              <div className="flex items-center bg-zinc-900 p-0.5 rounded-lg border border-zinc-800">
+              <div className="flex items-center bg-[#1A1A1A] p-0.5 rounded-lg border border-[#333333]">
                 <button
                   onClick={() => updateViewLayout('grid')}
-                  className={`p-1.5 rounded transition ${viewLayout === 'grid' ? 'bg-indigo-600 text-white' : 'text-zinc-400 hover:text-white'}`}
+                  className={`p-1.5 rounded transition ${viewLayout === 'grid' ? 'bg-[#333333] text-white' : 'text-[#6B6B6B] hover:text-white'}`}
                   title="Grid View"
                 >
                   <LayoutGrid className="h-3.5 w-3.5" />
                 </button>
                 <button
                   onClick={() => updateViewLayout('list')}
-                  className={`p-1.5 rounded transition ${viewLayout === 'list' ? 'bg-indigo-600 text-white' : 'text-zinc-400 hover:text-white'}`}
+                  className={`p-1.5 rounded transition ${viewLayout === 'list' ? 'bg-[#333333] text-white' : 'text-[#6B6B6B] hover:text-white'}`}
                   title="List View"
                 >
                   <ListIcon className="h-3.5 w-3.5" />
@@ -1131,83 +1129,95 @@ export default function App() {
             <button
               onClick={() => loadData()}
               disabled={refreshing}
-              className="flex items-center gap-1.5 rounded-lg border border-zinc-700 bg-zinc-800/60 px-3 py-1.5 text-xs font-medium text-zinc-200 hover:bg-zinc-700/80 active:scale-95 transition"
+              className="flex items-center gap-1.5 rounded-lg border border-[#333333] bg-[#1A1A1A] px-3 py-1.5 text-xs font-medium text-[#D9D9D9] hover:bg-[#333333] active:scale-95 transition"
             >
-              <RefreshCw className={`h-3 w-3 ${refreshing ? 'animate-spin text-indigo-400' : ''}`} />
+              <RefreshCw className={`h-3 w-3 ${refreshing ? 'animate-spin text-white' : ''}`} />
               <span>{refreshing ? 'Refreshing...' : 'Refresh'}</span>
             </button>
           </div>
         </header>
 
         {/* Dynamic Views */}
-        <div className="flex-1 overflow-y-auto p-6">
-          {/* HOME VIEW: STATS & NICHE DISTRIBUTION */}
+        <div className="flex-1 overflow-y-auto p-6 animate-fade-up">
+          {/* HOME VIEW: BENTO STATS & NICHE DISTRIBUTION */}
           {currentPage === 'home' && (
             <div className="space-y-6 max-w-6xl">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
-                  <span className="text-xs text-zinc-500 block mb-1">Total Saved Posts</span>
-                  <div className="text-2xl font-bold text-white">{reels.length}</div>
-                  <span className="text-[11px] text-indigo-400 mt-1 block">
+                <div className="rounded-2xl border border-[#333333] bg-[#1A1A1A]/80 p-5 shadow-sm">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-mono-micro text-[#6B6B6B]">01 // TOTAL ARCHIVE</span>
+                    <Film className="h-4 w-4 text-[#D9D9D9]" />
+                  </div>
+                  <div className="font-zolo text-3xl font-bold text-white tracking-tight">{reels.length}</div>
+                  <span className="font-mono-micro text-[#6B6B6B] mt-2 block">
                     {counts.watched} completed ({reels.length > 0 ? Math.round((counts.watched / reels.length) * 100) : 0}%)
                   </span>
                 </div>
 
-                <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
-                  <span className="text-xs text-zinc-500 block mb-1">Total Categories &amp; Subfolders</span>
-                  <div className="text-2xl font-bold text-white">{categories.length}</div>
-                  <span className="text-[11px] text-zinc-400 mt-1 block">
+                <div className="rounded-2xl border border-[#333333] bg-[#1A1A1A]/80 p-5 shadow-sm">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-mono-micro text-[#6B6B6B]">02 // TAXONOMY</span>
+                    <FolderTree className="h-4 w-4 text-[#D9D9D9]" />
+                  </div>
+                  <div className="font-zolo text-3xl font-bold text-white tracking-tight">{categories.length}</div>
+                  <span className="font-mono-micro text-[#6B6B6B] mt-2 block">
                     {rootCategories.length} primary, {categories.length - rootCategories.length} sub-niches
                   </span>
                 </div>
 
-                <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
-                  <span className="text-xs text-zinc-500 block mb-1">Connected Phone</span>
-                  <div className="text-2xl font-bold text-white">{devices.length}</div>
-                  <span className="text-[11px] text-zinc-400 mt-1 block">
-                    {devices.length > 0 ? (devices[0]?.device_name || 'Active Android') : 'No devices yet'}
+                <div className="rounded-2xl border border-[#333333] bg-[#1A1A1A]/80 p-5 shadow-sm">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-mono-micro text-[#6B6B6B]">03 // CONNECTED DEVICES</span>
+                    <Smartphone className="h-4 w-4 text-[#D9D9D9]" />
+                  </div>
+                  <div className="font-zolo text-3xl font-bold text-white tracking-tight">{devices.length}</div>
+                  <span className="font-mono-micro text-[#6B6B6B] mt-2 block">
+                    {devices.length > 0 ? (devices[0]?.device_name || 'Active Android / iOS') : 'No devices synced'}
                   </span>
                 </div>
               </div>
 
               {/* Persona Insights */}
               {showPersonaInsights && (
-                <div className="rounded-xl border border-indigo-900/40 bg-gradient-to-r from-indigo-950/40 to-zinc-900/60 p-5">
-                  <div className="flex items-center justify-between mb-2">
+                <div className="rounded-2xl border border-[#333333] bg-[#1A1A1A]/90 p-6 shadow-sm">
+                  <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <Bookmark className="h-5 w-5 text-indigo-400" />
-                      <h3 className="text-sm font-semibold text-white">What Your Saves Say About You</h3>
+                      <Bookmark className="h-4 w-4 text-[#D9D9D9]" />
+                      <h3 className="font-zolo text-sm font-bold text-white tracking-tight">Vault Intelligence Persona</h3>
                     </div>
                     {reels.length < 20 && (
-                      <span className="text-[10px] font-mono text-zinc-400 bg-zinc-800/80 px-2 py-0.5 rounded-full border border-zinc-700/60">
-                        {reels.length} / 20 Saved
+                      <span className="font-mono-micro text-[#6B6B6B] bg-[#0B0B0B] px-2.5 py-1 rounded-full border border-[#333333]">
+                        {reels.length} / 20 SAVED
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-zinc-300 leading-relaxed">
+                  <p className="text-xs text-[#D9D9D9] leading-relaxed font-sans">
                     {userPersonaInsight}
                   </p>
                 </div>
               )}
 
               {/* Niche Category Distribution */}
-              <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5">
-                <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
-                  <PieChart className="h-4 w-4 text-indigo-400" />
-                  <span>Niche Category Breakdown</span>
-                </h3>
+              <div className="rounded-2xl border border-[#333333] bg-[#1A1A1A]/80 p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-zolo text-sm font-bold text-white tracking-tight flex items-center gap-2">
+                    <PieChart className="h-4 w-4 text-[#D9D9D9]" />
+                    <span>Niche Category Breakdown</span>
+                  </h3>
+                  <span className="font-mono-micro text-[#6B6B6B]">[DISTRIBUTION MATRIX]</span>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {rootCategories.map(cat => {
                     const count = reels.filter(r => r.category_id === cat.id).length;
                     const pct = reels.length > 0 ? Math.round((count / reels.length) * 100) : 0;
                     return (
-                      <div key={cat.id} className="p-3 rounded-lg border border-zinc-800 bg-zinc-950/40">
-                        <div className="flex items-center justify-between text-xs text-zinc-300 mb-1">
+                      <div key={cat.id} className="p-3.5 rounded-xl border border-[#333333] bg-[#0B0B0B]/80">
+                        <div className="flex items-center justify-between text-xs text-[#D9D9D9] mb-1.5">
                           <span className="font-semibold">{cat.name}</span>
-                          <span className="text-zinc-500">{count} posts ({pct}%)</span>
+                          <span className="font-mono-micro text-[#6B6B6B]">{count} posts ({pct}%)</span>
                         </div>
-                        <div className="h-2 w-full rounded-full bg-zinc-800 overflow-hidden">
-                          <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${pct}%` }} />
+                        <div className="h-1.5 w-full rounded-full bg-[#1A1A1A] overflow-hidden border border-[#333333]/50">
+                          <div className="h-full bg-[#D9D9D9] rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
                         </div>
                       </div>
                     );
@@ -1222,12 +1232,12 @@ export default function App() {
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-semibold text-white">Categories Directory</h3>
-                  <p className="text-xs text-zinc-400">Click any folder icon to inspect subcategories or view saved posts.</p>
+                  <h3 className="font-zolo text-base font-bold text-white tracking-tight">Categories Directory</h3>
+                  <p className="text-xs text-[#6B6B6B]">Click any folder icon to inspect subcategories or view saved posts.</p>
                 </div>
                 <button
                   onClick={() => setIsCreatingCategory(!isCreatingCategory)}
-                  className="flex items-center gap-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 text-xs font-medium text-white transition"
+                  className="flex items-center gap-1.5 rounded-lg bg-[#D9D9D9] hover:bg-white text-[#0B0B0B] px-3.5 py-1.5 text-xs font-semibold active:scale-95 transition"
                 >
                   <Plus className="h-3.5 w-3.5" />
                   <span>New Category</span>
@@ -1235,26 +1245,26 @@ export default function App() {
               </div>
 
               {isCreatingCategory && (
-                <form onSubmit={handleCreateCategory} className="p-4 rounded-xl border border-zinc-800 bg-zinc-900/80 flex flex-wrap gap-2">
+                <form onSubmit={handleCreateCategory} className="p-4 rounded-2xl border border-[#333333] bg-[#1A1A1A]/90 flex flex-wrap gap-2 animate-fade-up">
                   <input
                     type="text"
                     required
                     value={newCategoryName}
                     onChange={(e) => setNewCategoryName(e.target.value)}
                     placeholder="Category name..."
-                    className="flex-1 min-w-[200px] rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs text-white"
+                    className="flex-1 min-w-[200px] rounded-lg border border-[#333333] bg-[#0B0B0B] px-3 py-1.5 text-xs text-white placeholder-[#6B6B6B] focus:border-[#D9D9D9] focus:outline-none"
                   />
                   <select
                     value={categoryParentId || ''}
                     onChange={(e) => setCategoryParentId(e.target.value || null)}
-                    className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs text-zinc-300"
+                    className="rounded-lg border border-[#333333] bg-[#0B0B0B] px-3 py-1.5 text-xs text-[#D9D9D9] focus:outline-none"
                   >
                     <option value="">Top-Level</option>
                     {rootCategories.map(rc => (
                       <option key={rc.id} value={rc.id}>↳ {rc.name}</option>
                     ))}
                   </select>
-                  <button type="submit" className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white">
+                  <button type="submit" className="rounded-lg bg-[#D9D9D9] hover:bg-white text-[#0B0B0B] px-3.5 py-1.5 text-xs font-semibold">
                     Create
                   </button>
                 </form>
@@ -1271,7 +1281,7 @@ export default function App() {
                     <div
                       key={cat.id}
                       onClick={() => setCategoryLightbox(cat)}
-                      className="group relative flex flex-col items-center justify-center p-4 rounded-2xl border border-zinc-800 bg-zinc-900/40 hover:bg-zinc-850 hover:border-indigo-500/50 cursor-pointer transition text-center"
+                      className="group relative flex flex-col items-center justify-center p-5 rounded-2xl border border-[#333333] bg-[#1A1A1A]/80 hover:bg-[#1A1A1A] hover:border-[#6B6B6B] cursor-pointer transition text-center shadow-sm"
                     >
                       {/* Top Action Buttons (Pin, Edit & Delete) */}
                       <div className="absolute top-2 right-2 flex items-center gap-1 opacity-100 [@media(hover:hover)]:opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition z-10">
@@ -1284,43 +1294,43 @@ export default function App() {
                             setEditCategoryDesc(categoryMetaMap[cat.id]?.description || '');
                           }}
                           title="Edit name, icon & description"
-                          className="p-1 rounded-md text-zinc-400 hover:text-indigo-300 hover:bg-zinc-800 text-xs transition"
+                          className="p-1 rounded-md text-[#6B6B6B] hover:text-white hover:bg-[#333333] text-xs transition"
                         >
                           <Edit2 className="h-3.5 w-3.5" />
                         </button>
                         <button
                           onClick={(e) => togglePin(cat.id, e)}
                           title={isPinned ? 'Unpin category' : 'Pin category'}
-                          className={`p-1 rounded-md text-xs transition ${isPinned ? 'text-amber-400 bg-amber-500/10 hover:bg-amber-500/20' : 'text-zinc-400 hover:text-amber-300 hover:bg-zinc-800'}`}
+                          className={`p-1 rounded-md text-xs transition ${isPinned ? 'text-white bg-[#333333]' : 'text-[#6B6B6B] hover:text-white hover:bg-[#333333]'}`}
                         >
-                          <Pin className={`h-3.5 w-3.5 ${isPinned ? 'fill-amber-400' : ''}`} />
+                          <Pin className={`h-3.5 w-3.5 ${isPinned ? 'fill-white' : ''}`} />
                         </button>
                         <button
                           onClick={(e) => handleDeleteCategory(cat.id, e)}
                           title="Delete category"
-                          className="p-1 rounded-md text-zinc-400 hover:text-rose-400 hover:bg-zinc-800 text-xs transition"
+                          className="p-1 rounded-md text-[#6B6B6B] hover:text-red-400 hover:bg-[#333333] text-xs transition"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       </div>
 
-                      <div className="relative mb-2">
-                        {renderCategoryIcon(categoryMetaMap[cat.id]?.icon, "h-12 w-12 text-indigo-400 group-hover:scale-105 transition")}
+                      <div className="relative mb-3">
+                        <Folder className="h-12 w-12 text-[#D9D9D9] group-hover:scale-105 transition" />
                         {subcats.length > 0 && (
-                          <span className="absolute -bottom-1 -right-1 bg-zinc-800 text-[9px] font-mono text-zinc-300 rounded px-1 border border-zinc-700">
+                          <span className="absolute -bottom-1 -right-1 bg-[#0B0B0B] text-[9px] font-mono text-[#D9D9D9] rounded px-1 border border-[#333333]">
                             +{subcats.length}
                           </span>
                         )}
                       </div>
-                      <span className="text-xs font-semibold text-white group-hover:text-indigo-300 truncate w-full mb-0.5">
+                      <span className="text-xs font-semibold text-white truncate w-full mb-0.5">
                         {cat.name}
                       </span>
                       {categoryMetaMap[cat.id]?.description && (
-                        <span className="text-[10px] text-zinc-400 line-clamp-1 w-full mb-1">
+                        <span className="text-[10px] text-[#6B6B6B] line-clamp-1 w-full mb-1">
                           {categoryMetaMap[cat.id]?.description}
                         </span>
                       )}
-                      <span className="text-[10px] text-zinc-500 font-mono">
+                      <span className="font-mono-micro text-[#6B6B6B]">
                         {count} items
                       </span>
                     </div>
@@ -1335,35 +1345,35 @@ export default function App() {
             <div>
               {/* Warning Notice in Archived Folder */}
               {currentPage === 'archived' && (
-                <div className="mb-4 rounded-xl border border-amber-900/50 bg-amber-950/20 p-3 flex items-center gap-2.5 text-xs text-amber-300">
-                  <Clock className="h-4 w-4 text-amber-400 shrink-0" />
+                <div className="mb-4 rounded-xl border border-[#333333] bg-[#1A1A1A] p-3 flex items-center gap-2.5 text-xs text-[#D9D9D9]">
+                  <Clock className="h-4 w-4 text-[#D9D9D9] shrink-0" />
                   <span>
                     <strong>Automatic Deletion Notice:</strong> Posts stored in the Archived folder are permanently purged based on your retention preference ({retentionPeriod === 'day' ? '1 day' : retentionPeriod === 'week' ? '1 week' : '1 month cap'}).
                   </span>
                 </div>
               )}
 
-              {/* Live Incoming Queue & Processing Banner for Inbox */}
+              {/* Breadcrumb back button when inside a specific category */}
               {selectedCategoryId && (
                 <div className="mb-4 flex items-center gap-2">
                   <button
                     onClick={() => setSelectedCategoryId(null)}
-                    className="text-xs text-indigo-400 hover:underline"
+                    className="text-xs text-[#D9D9D9] hover:underline"
                   >
                     ← Back to Categories
                   </button>
-                  <span className="text-zinc-600">/</span>
-                  <span className="text-xs text-zinc-300 font-semibold">
+                  <span className="text-[#6B6B6B]">/</span>
+                  <span className="text-xs text-white font-semibold">
                     {categories.find(c => c.id === selectedCategoryId)?.name}
                   </span>
                 </div>
               )}
 
               {displayedReels.length === 0 ? (
-                <div className="flex h-80 flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-800 text-center">
-                  <Film className="h-10 w-10 text-zinc-600 mb-2" />
-                  <p className="text-xs font-medium text-zinc-400">No content found in this view</p>
-                  <p className="mt-1 text-[11px] text-zinc-600">
+                <div className="flex h-80 flex-col items-center justify-center rounded-2xl border border-dashed border-[#333333] text-center bg-[#1A1A1A]/40">
+                  <Film className="h-10 w-10 text-[#6B6B6B] mb-2" />
+                  <p className="text-xs font-medium text-[#D9D9D9]">No content found in this view</p>
+                  <p className="mt-1 text-[11px] text-[#6B6B6B]">
                     Share a Reel from your phone to Watch Later to see it appear here.
                   </p>
                 </div>
@@ -1379,7 +1389,8 @@ export default function App() {
                     const extractionErr = Array.isArray(reel.extracted_content)
                       ? reel.extracted_content[0]?.extraction_error
                       : reel.extracted_content?.extraction_error;
-                    const isThisRetrying = retryingId === reel.id || reel.processing_status === 'pending' || reel.processing_status === 'resolving';
+                    const isPending = reel.processing_status === 'pending' || reel.processing_status === 'resolving';
+                    const isThisRetrying = retryingId === reel.id || isPending;
 
                     const catObj = categories.find(c => c.id === reel.category_id);
                     const subObj = categories.find(c => c.id === reel.subcategory_id);
@@ -1388,13 +1399,18 @@ export default function App() {
                       <div
                         key={reel.id}
                         onClick={() => setDetailReelId(reel.id)}
-                        className={`flex flex-col justify-between rounded-xl border border-zinc-800 bg-zinc-900/50 ${density === 'compact' ? 'p-3' : density === 'spacious' ? 'p-5' : 'p-4'
-                          } backdrop-blur hover:border-zinc-700 cursor-pointer transition`}
+                        className={`flex flex-col justify-between rounded-2xl border border-[#333333] bg-[#1A1A1A]/90 ${density === 'compact' ? 'p-3' : density === 'spacious' ? 'p-5' : 'p-4'
+                          } backdrop-blur hover:border-[#6B6B6B] cursor-pointer transition shadow-sm group`}
                       >
                         <div>
-                          {/* Thumbnail with direct Play / Redirect action */}
-                          {showThumbnails && reel.thumbnail_url ? (
-                            <div className="relative mb-3 aspect-video w-full overflow-hidden rounded-lg bg-zinc-800 group/thumb">
+                          {/* Inbox / Scrape Morph Animation or Thumbnail */}
+                          {isPending ? (
+                            <div className="relative mb-3 aspect-video w-full overflow-hidden rounded-xl bg-[#0B0B0B] border border-[#333333] flex flex-col items-center justify-center gap-2">
+                              <Morph duration={1360} size={48} />
+                              <span className="font-mono-micro text-[#6B6B6B] animate-pulse">PARSING REEL CONTENT...</span>
+                            </div>
+                          ) : showThumbnails && reel.thumbnail_url ? (
+                            <div className="relative mb-3 aspect-video w-full overflow-hidden rounded-xl bg-[#0B0B0B] border border-[#333333] group/thumb">
                               <img
                                 src={reel.thumbnail_url}
                                 alt="Thumbnail"
@@ -1405,11 +1421,11 @@ export default function App() {
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 onClick={(e) => e.stopPropagation()}
-                                className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover/thumb:opacity-100 transition"
+                                className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover/thumb:opacity-100 transition"
                                 title="Play Reel on Instagram (New Tab)"
                               >
-                                <div className="h-10 w-10 rounded-full bg-indigo-600 flex items-center justify-center text-white shadow-lg">
-                                  <Play className="h-4 w-4 fill-white ml-0.5" />
+                                <div className="h-10 w-10 rounded-full bg-white flex items-center justify-center text-black shadow-lg">
+                                  <Play className="h-4 w-4 fill-black ml-0.5" />
                                 </div>
                               </a>
                             </div>
@@ -1418,40 +1434,40 @@ export default function App() {
                           {/* Header badges */}
                           <div className="flex flex-wrap items-center justify-between gap-1.5 mb-2">
                             <span
-                              className={`rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider ${reel.is_failed || reel.processing_status === 'extraction_failed'
-                                ? 'bg-red-950/80 text-red-400 border border-red-800/50'
+                              className={`rounded px-1.5 py-0.5 font-mono-micro ${reel.is_failed || reel.processing_status === 'extraction_failed'
+                                ? 'bg-red-950/60 text-red-400 border border-red-800/50'
                                 : reel.processing_status === 'processed'
-                                  ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800/50'
-                                  : 'bg-zinc-800 text-zinc-400'
+                                  ? 'bg-[#0B0B0B] text-[#D9D9D9] border border-[#333333]'
+                                  : 'bg-[#0B0B0B] text-[#6B6B6B] border border-[#333333]'
                                 }`}
                             >
                               {reel.processing_status}
                             </span>
 
                             {catObj && (
-                              <span className="rounded bg-indigo-950/60 px-1.5 py-0.5 text-[9px] font-medium text-indigo-300 border border-indigo-800/40">
+                              <span className="rounded bg-[#0B0B0B] px-1.5 py-0.5 font-mono-micro text-[#D9D9D9] border border-[#333333]">
                                 {catObj.name}{subObj ? ` / ${subObj.name}` : ''}
                               </span>
                             )}
                           </div>
 
                           {/* Title & Creator */}
-                          <h3 className="font-semibold text-white leading-tight text-sm mb-1 line-clamp-2">
+                          <h3 className="font-zolo font-semibold text-white leading-snug text-sm mb-1 line-clamp-2">
                             {reel.ai_title || (reel.creator_username ? `@${reel.creator_username}'s Post` : 'Instagram Post')}
                           </h3>
 
                           {reel.creator_username && (
-                            <p className="text-[11px] font-mono text-zinc-400 mb-2">@{reel.creator_username}</p>
+                            <p className="font-mono-micro text-[#6B6B6B] mb-2">@{reel.creator_username}</p>
                           )}
 
                           {/* AI Summary */}
-                          <p className="text-xs text-zinc-400 line-clamp-2 mb-2">
+                          <p className="text-xs text-[#6B6B6B] line-clamp-2 mb-2 leading-relaxed">
                             {reel.ai_summary || reel.ai_description || reel.caption || 'No summary available'}
                           </p>
 
                           {/* Extraction Error Banner for failed reels */}
                           {(reel.is_failed || reel.processing_status === 'extraction_failed') && extractionErr && (
-                            <div className="mb-3 rounded bg-red-950/40 p-2 text-[11px] text-red-300 border border-red-900/40">
+                            <div className="mb-3 rounded-lg bg-red-950/40 p-2 text-[11px] text-red-300 border border-red-900/40">
                               <span className="font-semibold block mb-0.5">Extraction Issue:</span>
                               <span className="font-mono text-[10px] break-all line-clamp-2">{extractionErr}</span>
                             </div>
@@ -1459,20 +1475,20 @@ export default function App() {
                         </div>
 
                         {/* Card Footer Actions */}
-                        <div className="border-t border-zinc-800/80 pt-3 mt-2" onClick={(e) => e.stopPropagation()}>
+                        <div className="border-t border-[#333333] pt-3 mt-2" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center justify-between mb-2">
                             <a
                               href={reel.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex items-center gap-1 text-xs font-medium text-indigo-400 hover:text-indigo-300 transition"
+                              className="flex items-center gap-1 text-xs font-medium text-[#D9D9D9] hover:text-white transition"
                             >
-                              <Play className="h-3 w-3 fill-indigo-400" />
-                              <span>Play on Instagram</span>
+                              <Play className="h-3 w-3 fill-[#D9D9D9]" />
+                              <span>Play Reel</span>
                               <ExternalLink className="h-2.5 w-2.5" />
                             </a>
 
-                            <span className="text-[10px] text-zinc-500">
+                            <span className="font-mono-micro text-[#6B6B6B]">
                               {new Date(reel.created_at).toLocaleDateString()}
                             </span>
                           </div>
@@ -1482,9 +1498,9 @@ export default function App() {
                               <button
                                 onClick={() => handleRetryExtraction(reel.id)}
                                 disabled={isThisRetrying}
-                                className="flex-1 flex items-center justify-center gap-1 rounded bg-zinc-800 hover:bg-zinc-700 py-1 text-xs text-zinc-200"
+                                className="flex-1 flex items-center justify-center gap-1 rounded-lg border border-[#333333] bg-[#0B0B0B] hover:bg-[#333333] px-2.5 py-1 text-xs text-[#D9D9D9]"
                               >
-                                <RotateCcw className={`h-3 w-3 ${isThisRetrying ? 'animate-spin text-indigo-400' : ''}`} />
+                                <RotateCcw className={`h-3 w-3 ${isThisRetrying ? 'animate-spin text-white' : ''}`} />
                                 <span>Retry</span>
                               </button>
                             )}
@@ -1492,7 +1508,7 @@ export default function App() {
                             {reel.completion_status !== 'completed' && (
                               <button
                                 onClick={() => handleStatusChange(reel.id, 'completed')}
-                                className="flex-1 rounded bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 py-1 text-xs font-medium text-emerald-300 transition"
+                                className="flex-1 rounded-lg bg-[#0B0B0B] hover:bg-[#333333] border border-[#333333] px-2.5 py-1 text-xs font-medium text-[#D9D9D9] transition"
                               >
                                 Watched
                               </button>
@@ -1501,7 +1517,7 @@ export default function App() {
                             {reel.completion_status !== 'archived' && (
                               <button
                                 onClick={() => handleStatusChange(reel.id, 'archived')}
-                                className="flex-1 rounded bg-zinc-800 hover:bg-zinc-700 py-1 text-xs font-medium text-zinc-300 transition"
+                                className="flex-1 rounded-lg bg-[#0B0B0B] hover:bg-[#333333] border border-[#333333] px-2.5 py-1 text-xs font-medium text-[#6B6B6B] hover:text-[#D9D9D9] transition"
                               >
                                 Archive
                               </button>
@@ -1519,7 +1535,8 @@ export default function App() {
                     const extractionErr = Array.isArray(reel.extracted_content)
                       ? reel.extracted_content[0]?.extraction_error
                       : reel.extracted_content?.extraction_error;
-                    const isThisRetrying = retryingId === reel.id || reel.processing_status === 'pending' || reel.processing_status === 'resolving';
+                    const isPending = reel.processing_status === 'pending' || reel.processing_status === 'resolving';
+                    const isThisRetrying = retryingId === reel.id || isPending;
 
                     const catObj = categories.find(c => c.id === reel.category_id);
                     const subObj = categories.find(c => c.id === reel.subcategory_id);
@@ -1528,12 +1545,16 @@ export default function App() {
                       <div
                         key={reel.id}
                         onClick={() => setDetailReelId(reel.id)}
-                        className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-xl border border-zinc-800 bg-zinc-900/50 ${density === 'compact' ? 'p-2.5 sm:py-2 sm:px-3' : density === 'spacious' ? 'p-4' : 'p-3'
-                          } backdrop-blur hover:border-zinc-700 cursor-pointer transition`}
+                        className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-xl border border-[#333333] bg-[#1A1A1A]/90 ${density === 'compact' ? 'p-2.5 sm:py-2 sm:px-3' : density === 'spacious' ? 'p-4' : 'p-3'
+                          } backdrop-blur hover:border-[#6B6B6B] cursor-pointer transition shadow-sm`}
                       >
-                        <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                          {showThumbnails && reel.thumbnail_url && (
-                            <div className="relative h-16 w-16 sm:h-14 sm:w-20 shrink-0 overflow-hidden rounded-lg bg-zinc-800 group/thumb">
+                        <div className="flex items-center gap-3.5 min-w-0 flex-1 w-full sm:w-auto">
+                          {isPending ? (
+                            <div className="relative h-16 w-16 sm:h-14 sm:w-20 shrink-0 overflow-hidden rounded-lg bg-[#0B0B0B] border border-[#333333] flex items-center justify-center">
+                              <Morph duration={1360} size={32} />
+                            </div>
+                          ) : showThumbnails && reel.thumbnail_url ? (
+                            <div className="relative h-16 w-16 sm:h-14 sm:w-20 shrink-0 overflow-hidden rounded-lg bg-[#0B0B0B] border border-[#333333] group/thumb">
                               <img
                                 src={reel.thumbnail_url}
                                 alt="Thumbnail"
@@ -1544,43 +1565,43 @@ export default function App() {
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 onClick={(e) => e.stopPropagation()}
-                                className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover/thumb:opacity-100 transition"
+                                className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover/thumb:opacity-100 transition"
                                 title="Play Reel"
                               >
                                 <Play className="h-4 w-4 fill-white text-white ml-0.5" />
                               </a>
                             </div>
-                          )}
+                          ) : null}
 
                           <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2 mb-1">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
                               <span
-                                className={`rounded px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wider ${reel.is_failed || reel.processing_status === 'extraction_failed'
-                                  ? 'bg-red-950/80 text-red-400 border border-red-800/50'
+                                className={`rounded px-1.5 py-0.5 font-mono-micro ${reel.is_failed || reel.processing_status === 'extraction_failed'
+                                  ? 'bg-red-950/60 text-red-400 border border-red-800/50'
                                   : reel.processing_status === 'processed'
-                                    ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800/50'
-                                    : 'bg-zinc-800 text-zinc-400'
+                                    ? 'bg-[#0B0B0B] text-[#D9D9D9] border border-[#333333]'
+                                    : 'bg-[#0B0B0B] text-[#6B6B6B] border border-[#333333]'
                                   }`}
                               >
                                 {reel.processing_status}
                               </span>
 
                               {catObj && (
-                                <span className="rounded bg-indigo-950/60 px-1.5 py-0.5 text-[8px] font-medium text-indigo-300 border border-indigo-800/40 truncate">
+                                <span className="rounded bg-[#0B0B0B] px-1.5 py-0.5 font-mono-micro text-[#D9D9D9] border border-[#333333] truncate">
                                   {catObj.name}{subObj ? ` / ${subObj.name}` : ''}
                                 </span>
                               )}
 
                               {reel.creator_username && (
-                                <span className="text-[10px] font-mono text-zinc-400 truncate">@{reel.creator_username}</span>
+                                <span className="font-mono-micro text-[#6B6B6B] truncate">@{reel.creator_username}</span>
                               )}
                             </div>
 
-                            <h3 className="font-semibold text-white leading-tight text-xs sm:text-sm truncate">
+                            <h3 className="font-zolo font-semibold text-white leading-tight text-xs sm:text-sm truncate">
                               {reel.ai_title || (reel.creator_username ? `@${reel.creator_username}'s Post` : 'Instagram Post')}
                             </h3>
 
-                            <p className="text-[11px] text-zinc-400 truncate mt-0.5">
+                            <p className="text-[11px] text-[#6B6B6B] truncate mt-0.5">
                               {reel.ai_summary || reel.ai_description || reel.caption || 'No summary available'}
                             </p>
                           </div>
@@ -1588,14 +1609,14 @@ export default function App() {
 
                         {/* List Row Right Controls */}
                         <div
-                          className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-zinc-800/60"
+                          className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#333333]"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <a
                             href={reel.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 p-1.5 rounded-lg hover:bg-zinc-800 transition"
+                            className="flex items-center gap-1 text-xs text-[#D9D9D9] hover:text-white p-1.5 rounded-lg hover:bg-[#333333] transition"
                             title="Open on Instagram"
                           >
                             <ExternalLink className="h-3.5 w-3.5" />
@@ -1605,9 +1626,9 @@ export default function App() {
                             <button
                               onClick={() => handleRetryExtraction(reel.id)}
                               disabled={isThisRetrying}
-                              className="flex items-center gap-1 rounded bg-zinc-800 hover:bg-zinc-700 px-2.5 py-1 text-xs text-zinc-200"
+                              className="flex items-center gap-1 rounded-lg border border-[#333333] bg-[#0B0B0B] hover:bg-[#333333] px-2.5 py-1 text-xs text-[#D9D9D9]"
                             >
-                              <RotateCcw className={`h-3 w-3 ${isThisRetrying ? 'animate-spin text-indigo-400' : ''}`} />
+                              <RotateCcw className={`h-3 w-3 ${isThisRetrying ? 'animate-spin text-white' : ''}`} />
                               <span>Retry</span>
                             </button>
                           )}
@@ -1615,7 +1636,7 @@ export default function App() {
                           {reel.completion_status !== 'completed' && (
                             <button
                               onClick={() => handleStatusChange(reel.id, 'completed')}
-                              className="rounded bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 px-2.5 py-1 text-xs font-medium text-emerald-300 transition"
+                              className="rounded-lg bg-[#0B0B0B] hover:bg-[#333333] border border-[#333333] px-2.5 py-1 text-xs font-medium text-[#D9D9D9] transition"
                             >
                               Watched
                             </button>
@@ -1624,7 +1645,7 @@ export default function App() {
                           {reel.completion_status !== 'archived' && (
                             <button
                               onClick={() => handleStatusChange(reel.id, 'archived')}
-                              className="rounded bg-zinc-800 hover:bg-zinc-700 px-2.5 py-1 text-xs font-medium text-zinc-300 transition"
+                              className="rounded-lg bg-[#0B0B0B] hover:bg-[#333333] border border-[#333333] px-2.5 py-1 text-xs font-medium text-[#6B6B6B] hover:text-[#D9D9D9] transition"
                             >
                               Archive
                             </button>
@@ -1640,34 +1661,37 @@ export default function App() {
 
           {/* SETTINGS VIEW */}
           {currentPage === 'settings' && (
-            <div className="max-w-4xl space-y-8">
+            <div className="max-w-4xl space-y-6">
               {/* Account Settings with Password Preview */}
-              <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
-                <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
-                  <User className="h-4 w-4 text-indigo-400" />
-                  <span>1. Account Settings</span>
-                </h3>
+              <div className="rounded-2xl border border-[#333333] bg-[#1A1A1A]/90 p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-zolo text-sm font-bold text-white tracking-tight flex items-center gap-2">
+                    <User className="h-4 w-4 text-[#D9D9D9]" />
+                    <span>01 // Account Settings</span>
+                  </h3>
+                  <span className="font-mono-micro text-[#6B6B6B]">[SECURITY &amp; IDENTITY]</span>
+                </div>
 
                 <div className="space-y-4">
                   <div>
-                    <label className="text-xs text-zinc-400 block mb-1">Email Address</label>
+                    <label className="text-xs text-[#6B6B6B] block mb-1">Email Address</label>
                     <input
                       type="text"
                       disabled
                       value={session?.user?.email || ''}
-                      className="w-full max-w-md rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-xs text-zinc-400 font-mono"
+                      className="w-full max-w-md rounded-lg border border-[#333333] bg-[#0B0B0B] px-3 py-1.5 text-xs text-[#D9D9D9] font-mono"
                     />
                   </div>
 
                   <div>
-                    <label className="text-xs text-zinc-400 block mb-1">Account Created At</label>
-                    <span className="text-xs text-zinc-300 font-mono">
+                    <label className="text-xs text-[#6B6B6B] block mb-1">Account Created At</label>
+                    <span className="text-xs text-[#D9D9D9] font-mono">
                       {new Date(session?.user?.created_at || Date.now()).toLocaleDateString()}
                     </span>
                   </div>
 
                   <form onSubmit={handleChangePassword} className="pt-2">
-                    <label className="text-xs text-zinc-400 block mb-1">Change Password</label>
+                    <label className="text-xs text-[#6B6B6B] block mb-1">Change Password</label>
                     <div className="flex gap-2 max-w-md">
                       <div className="relative flex-1">
                         <input
@@ -1675,37 +1699,40 @@ export default function App() {
                           placeholder="New password (min 6 chars)..."
                           value={newPassword}
                           onChange={(e) => setNewPassword(e.target.value)}
-                          className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 pr-9 text-xs text-white"
+                          className="w-full rounded-lg border border-[#333333] bg-[#0B0B0B] px-3 py-1.5 pr-9 text-xs text-white placeholder-[#6B6B6B] focus:border-[#D9D9D9] focus:outline-none"
                         />
                         <button
                           type="button"
                           onClick={() => setShowNewPassword(!showNewPassword)}
-                          className="absolute right-2.5 top-2 text-zinc-400 hover:text-white"
+                          className="absolute right-2.5 top-2 text-[#6B6B6B] hover:text-white"
                         >
                           {showNewPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                         </button>
                       </div>
-                      <button type="submit" className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-500">
+                      <button type="submit" className="rounded-lg bg-[#D9D9D9] hover:bg-white text-[#0B0B0B] px-3.5 py-1.5 text-xs font-semibold transition">
                         Update
                       </button>
                     </div>
-                    {passwordMsg && <p className="text-xs text-indigo-400 mt-1">{passwordMsg}</p>}
+                    {passwordMsg && <p className="text-xs text-white mt-1 font-mono-micro">{passwordMsg}</p>}
                   </form>
                 </div>
               </div>
 
               {/* Appearance & Density */}
-              <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
-                <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
-                  <Palette className="h-4 w-4 text-indigo-400" />
-                  <span>2. Appearance &amp; Density</span>
-                </h3>
+              <div className="rounded-2xl border border-[#333333] bg-[#1A1A1A]/90 p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-zolo text-sm font-bold text-white tracking-tight flex items-center gap-2">
+                    <Palette className="h-4 w-4 text-[#D9D9D9]" />
+                    <span>02 // Appearance &amp; Layout</span>
+                  </h3>
+                  <span className="font-mono-micro text-[#6B6B6B]">[INTERFACE CONTROLS]</span>
+                </div>
 
                 <div className="space-y-4 max-w-xl">
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-xs text-zinc-300 block">Card Density</span>
-                      <span className="text-[11px] text-zinc-500">Adjust padding and grid columns</span>
+                      <span className="text-xs text-[#D9D9D9] block">Card Density</span>
+                      <span className="text-[11px] text-[#6B6B6B]">Adjust grid columns and content spacing</span>
                     </div>
                     <select
                       value={density}
@@ -1714,9 +1741,9 @@ export default function App() {
                         setDensity(val);
                         localStorage.setItem('watchlater_density', val);
                       }}
-                      className="bg-zinc-800 border border-zinc-700 text-xs rounded-lg px-2.5 py-1 text-zinc-200"
+                      className="bg-[#0B0B0B] border border-[#333333] text-xs rounded-lg px-2.5 py-1 text-[#D9D9D9] focus:outline-none"
                     >
-                      <option value="compact">Compact (Dense / More items)</option>
+                      <option value="compact">Compact (Dense / High volume)</option>
                       <option value="comfortable">Comfortable (Balanced)</option>
                       <option value="spacious">Spacious (Large cards)</option>
                     </select>
@@ -1724,8 +1751,8 @@ export default function App() {
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-xs text-zinc-300 block">Display Thumbnails</span>
-                      <span className="text-[11px] text-zinc-500">Show reel cover pictures on cards</span>
+                      <span className="text-xs text-[#D9D9D9] block">Display Thumbnails</span>
+                      <span className="text-[11px] text-[#6B6B6B]">Show reel cover pictures on cards</span>
                     </div>
                     <input
                       type="checkbox"
@@ -1734,14 +1761,14 @@ export default function App() {
                         setShowThumbnails(e.target.checked);
                         localStorage.setItem('watchlater_show_thumbnails', String(e.target.checked));
                       }}
-                      className="rounded accent-indigo-600"
+                      className="rounded accent-white"
                     />
                   </div>
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <label htmlFor="show-persona-insights" className="text-xs text-zinc-300 block cursor-pointer">Show Persona Insights</label>
-                      <span className="text-[11px] text-zinc-500">Display &quot;What Your Saves Say About You&quot; panel</span>
+                      <label htmlFor="show-persona-insights" className="text-xs text-[#D9D9D9] block cursor-pointer">Show Persona Insights</label>
+                      <span className="text-[11px] text-[#6B6B6B]">Display &quot;Vault Intelligence Persona&quot; panel</span>
                     </div>
                     <input
                       id="show-persona-insights"
@@ -1752,14 +1779,14 @@ export default function App() {
                         setShowPersonaInsights(e.target.checked);
                         localStorage.setItem('watchlater_show_persona', String(e.target.checked));
                       }}
-                      className="rounded accent-indigo-600 cursor-pointer"
+                      className="rounded accent-white cursor-pointer"
                     />
                   </div>
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-xs text-zinc-300 block">Sidebar Collapsed by Default</span>
-                      <span className="text-[11px] text-zinc-500">Keep navigation sidebar minimized</span>
+                      <span className="text-xs text-[#D9D9D9] block">Sidebar Collapsed by Default</span>
+                      <span className="text-[11px] text-[#6B6B6B]">Keep navigation sidebar minimized</span>
                     </div>
                     <input
                       type="checkbox"
@@ -1768,29 +1795,32 @@ export default function App() {
                         setSidebarCollapsed(e.target.checked);
                         localStorage.setItem('watchlater_sidebar_collapsed', String(e.target.checked));
                       }}
-                      className="rounded accent-indigo-600"
+                      className="rounded accent-white"
                     />
                   </div>
                 </div>
               </div>
 
               {/* Archive Auto-Delete */}
-              <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
-                <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-indigo-400" />
-                  <span>3. Archive Auto-Delete &amp; Retention Cap</span>
-                </h3>
-                <p className="text-xs text-zinc-400 mb-3">
+              <div className="rounded-2xl border border-[#333333] bg-[#1A1A1A]/90 p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-zolo text-sm font-bold text-white tracking-tight flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-[#D9D9D9]" />
+                    <span>03 // Archive Auto-Delete &amp; Retention Cap</span>
+                  </h3>
+                  <span className="font-mono-micro text-[#6B6B6B]">[PURGE POLICY]</span>
+                </div>
+                <p className="text-xs text-[#6B6B6B] mb-4">
                   Archiving a post marks it for automatic deletion after your chosen retention period. Cap is 1 month.
                 </p>
 
-                <div className="grid grid-cols-3 gap-2 max-w-md bg-zinc-950 p-1 rounded-xl border border-zinc-800">
+                <div className="grid grid-cols-3 gap-2 max-w-md bg-[#0B0B0B] p-1.5 rounded-xl border border-[#333333]">
                   <button
                     onClick={() => {
                       setRetentionPeriod('day');
                       localStorage.setItem('watchlater_archive_retention', 'day');
                     }}
-                    className={`py-1.5 text-xs font-medium rounded-lg transition ${retentionPeriod === 'day' ? 'bg-indigo-600 text-white' : 'text-zinc-400 hover:text-zinc-200'
+                    className={`py-1.5 text-xs font-semibold rounded-lg transition ${retentionPeriod === 'day' ? 'bg-[#D9D9D9] text-[#0B0B0B]' : 'text-[#6B6B6B] hover:text-[#D9D9D9]'
                       }`}
                   >
                     1 Day
@@ -1800,7 +1830,7 @@ export default function App() {
                       setRetentionPeriod('week');
                       localStorage.setItem('watchlater_archive_retention', 'week');
                     }}
-                    className={`py-1.5 text-xs font-medium rounded-lg transition ${retentionPeriod === 'week' ? 'bg-indigo-600 text-white' : 'text-zinc-400 hover:text-zinc-200'
+                    className={`py-1.5 text-xs font-semibold rounded-lg transition ${retentionPeriod === 'week' ? 'bg-[#D9D9D9] text-[#0B0B0B]' : 'text-[#6B6B6B] hover:text-[#D9D9D9]'
                       }`}
                   >
                     1 Week
@@ -1810,7 +1840,7 @@ export default function App() {
                       setRetentionPeriod('month');
                       localStorage.setItem('watchlater_archive_retention', 'month');
                     }}
-                    className={`py-1.5 text-xs font-medium rounded-lg transition ${retentionPeriod === 'month' ? 'bg-indigo-600 text-white' : 'text-zinc-400 hover:text-zinc-200'
+                    className={`py-1.5 text-xs font-semibold rounded-lg transition ${retentionPeriod === 'month' ? 'bg-[#D9D9D9] text-[#0B0B0B]' : 'text-[#6B6B6B] hover:text-[#D9D9D9]'
                       }`}
                   >
                     1 Month (Cap)
@@ -1819,21 +1849,24 @@ export default function App() {
               </div>
 
               {/* Data Management & Export */}
-              <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
-                <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
-                  <Download className="h-4 w-4 text-indigo-400" />
-                  <span>4. Data Management &amp; Export</span>
-                </h3>
+              <div className="rounded-2xl border border-[#333333] bg-[#1A1A1A]/90 p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-zolo text-sm font-bold text-white tracking-tight flex items-center gap-2">
+                    <Download className="h-4 w-4 text-[#D9D9D9]" />
+                    <span>04 // Data Management &amp; Export</span>
+                  </h3>
+                  <span className="font-mono-micro text-[#6B6B6B]">[DATA OPERATIONS]</span>
+                </div>
 
                 <div className="space-y-3">
-                  <p className="text-xs text-zinc-400">
+                  <p className="text-xs text-[#6B6B6B]">
                     Export your curated library or clean completed items.
                   </p>
 
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-2.5">
                     <button
                       onClick={() => exportData()}
-                      className="flex items-center gap-1.5 rounded-lg border border-zinc-700 bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 text-xs font-medium text-white transition"
+                      className="flex items-center gap-1.5 rounded-lg border border-[#333333] bg-[#0B0B0B] hover:bg-[#333333] px-3.5 py-2 text-xs font-medium text-white transition"
                     >
                       <Download className="h-3.5 w-3.5" />
                       <span>Export CSV ({reels.length} items)</span>
@@ -1843,7 +1876,7 @@ export default function App() {
                         setClearCategoriesAlso(false);
                         setShowClearHistoryLightbox(true);
                       }}
-                      className="flex items-center gap-1.5 rounded-lg border border-red-900/40 bg-red-950/20 hover:bg-red-950/40 hover:border-red-800/60 text-red-300 px-3 py-1.5 text-xs font-medium transition"
+                      className="flex items-center gap-1.5 rounded-lg border border-red-900/40 bg-red-950/20 hover:bg-red-950/40 hover:border-red-800/60 text-red-300 px-3.5 py-2 text-xs font-medium transition"
                     >
                       <Trash2 className="h-3.5 w-3.5 text-red-400" />
                       <span>Delete All Saved Items</span>
@@ -1864,7 +1897,7 @@ export default function App() {
                           await loadData();
                         }
                       }}
-                      className="flex items-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900 hover:bg-red-950/40 hover:border-red-800/50 hover:text-red-400 px-3 py-1.5 text-xs font-medium text-zinc-400 transition"
+                      className="flex items-center gap-1.5 rounded-lg border border-[#333333] bg-[#0B0B0B] hover:bg-red-950/40 hover:border-red-800/50 hover:text-red-400 px-3.5 py-2 text-xs font-medium text-[#6B6B6B] transition"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                       <span>Delete Watched Content</span>
@@ -1874,34 +1907,65 @@ export default function App() {
               </div>
 
               {/* Registered Devices */}
-              <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
-                <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
-                  <Smartphone className="h-4 w-4 text-indigo-400" />
-                  <span>5. Registered Devices &amp; Synchronization</span>
-                </h3>
+              <div className="rounded-2xl border border-[#333333] bg-[#1A1A1A]/90 p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-zolo text-sm font-bold text-white tracking-tight flex items-center gap-2">
+                    <Smartphone className="h-4 w-4 text-[#D9D9D9]" />
+                    <span>05 // Registered Devices &amp; Synchronization</span>
+                  </h3>
+                  <span className="font-mono-micro text-[#6B6B6B]">[SYNC NODES]</span>
+                </div>
 
                 <div className="space-y-3">
                   {devices.length === 0 ? (
-                    <p className="text-xs text-zinc-500 italic">No mobile devices registered yet.</p>
+                    <p className="text-xs text-[#6B6B6B] italic">No mobile devices registered yet.</p>
                   ) : (
-                    devices.map(dev => (
-                      <div key={dev.id} className="flex items-center justify-between p-3 rounded-lg border border-zinc-800 bg-zinc-950/60 max-w-xl">
-                        <div>
-                          <span className="text-xs font-semibold text-white block">{dev.device_name || 'Android Device'}</span>
-                          <span className="text-[11px] text-zinc-500 font-mono">
-                            Last synced: {new Date(dev.last_synced_at).toLocaleString()}
-                          </span>
+                    devices.map(dev => {
+                      const isApple = dev.platform === 'ios' || dev.device_name?.toLowerCase().includes('iphone') || dev.device_name?.toLowerCase().includes('ipad');
+                      return (
+                        <div key={dev.id} className="flex items-center justify-between p-3.5 rounded-xl border border-[#333333] bg-[#0B0B0B] max-w-xl">
+                          <div className="flex items-center gap-3">
+                            <div className="h-8 w-8 rounded-lg bg-[#1A1A1A] border border-[#333333] flex items-center justify-center text-white">
+                              <Smartphone className="h-4 w-4 text-[#D9D9D9]" />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-semibold text-white block">{dev.device_name || (isApple ? 'Apple iPhone' : 'Android Device')}</span>
+                                <span className="font-mono-micro px-1.5 py-0.5 rounded border border-[#333333] bg-[#1A1A1A] text-[#D9D9D9]">
+                                  {isApple ? ' iOS' : '🤖 Android'}
+                                </span>
+                              </div>
+                              <span className="text-[11px] text-[#6B6B6B] font-mono">
+                                Last synced: {new Date(dev.last_synced_at).toLocaleString()}
+                              </span>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleRemoveDevice(dev.id)}
+                            className="text-xs text-red-400 hover:text-red-300 font-medium px-2 py-1 rounded hover:bg-red-950/30 transition"
+                          >
+                            Remove
+                          </button>
                         </div>
-                        <button
-                          onClick={() => handleRemoveDevice(dev.id)}
-                          className="text-xs text-red-400 hover:text-red-300 font-medium"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
+              </div>
+
+              {/* Sign Out Section exclusively placed at bottom of Settings */}
+              <div className="rounded-2xl border border-red-900/30 bg-red-950/10 p-6 shadow-sm flex items-center justify-between">
+                <div>
+                  <h4 className="font-zolo text-sm font-bold text-white tracking-tight">Session &amp; Logout</h4>
+                  <p className="text-xs text-[#6B6B6B] mt-0.5">Sign out of your Watch Later account on this browser.</p>
+                </div>
+                <button
+                  onClick={() => supabase.auth.signOut()}
+                  className="flex items-center gap-2 rounded-lg border border-red-800/50 bg-red-950/40 hover:bg-red-900/60 text-red-300 px-4 py-2 text-xs font-semibold transition"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span>Sign Out</span>
+                </button>
               </div>
             </div>
           )}
