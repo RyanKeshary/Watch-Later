@@ -394,21 +394,25 @@ export default function ServiceLandingPage({
           <div className="mx-auto max-w-5xl px-4 sm:px-8">
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
               <div>
-                <span className="font-mono text-[11px] tracking-widest text-[#71717a] block mb-2">THE 10-SECOND DEMO</span>
-                <h2 className="font-zolo text-3xl sm:text-5xl font-black tracking-tight text-white">
+                <span className="font-mono text-[11px] tracking-widest text-[#71717a] block mb-2">OFFICIAL LAUNCH FILM // 18s 1080P</span>
+                <h2 className="font-zolo text-3xl sm:text-5xl font-black tracking-tight text-white text-balance">
                   See the mechanism in action.
                 </h2>
               </div>
-              <p className="text-xs sm:text-sm text-[#a1a1aa] max-w-sm">
-                Watch how a single tap replaces cluttered bookmark folders forever.
+              <p className="text-xs sm:text-sm text-[#a1a1aa] max-w-sm text-balance">
+                Watch how a single tap replaces cluttered bookmark folders forever. Transcribed, categorized, auto-purged.
               </p>
             </div>
 
             {/* Real MP4 Video Player Stage */}
-            <div className="relative rounded-3xl border border-white/15 bg-[#0e0e11] p-3 sm:p-4 shadow-2xl overflow-hidden group">
-              <div className="relative aspect-video w-full rounded-2xl bg-black border border-white/10 overflow-hidden">
+            <div className="relative rounded-[28px] border border-white/15 bg-[#0e0e11] p-3.5 sm:p-4 shadow-2xl overflow-hidden group transition-all duration-300 hover:border-white/30">
+              {/* Subtle Ambient Glow */}
+              <div className="pointer-events-none absolute -inset-px rounded-[28px] opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-b from-white/[0.08] to-transparent" />
+
+              <div className="relative aspect-video w-full rounded-[20px] bg-black border border-white/10 overflow-hidden shadow-inner">
                 <video
                   src="/watch-later-launch.mp4"
+                  poster="/watch-later-poster.jpg"
                   controls
                   playsInline
                   preload="metadata"
@@ -416,18 +420,24 @@ export default function ServiceLandingPage({
                 />
               </div>
 
-              {/* Download MP4 file direct link */}
-              <div className="flex items-center justify-between pt-3 px-2 font-mono text-xs text-[#71717a]">
-                <div className="flex items-center gap-2">
+              {/* Download MP4 file direct link & audio/spec metadata */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3.5 px-2 font-mono text-xs text-[#71717a]">
+                <div className="flex items-center gap-2.5 flex-wrap">
                   <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                  <span className="text-white">watch-later-launch.mp4 (1080p H.264)</span>
+                  <span className="text-white font-medium">watch-later-launch.mp4</span>
+                  <span className="text-[#52525b]">•</span>
+                  <span className="text-[#a1a1aa]">1080p 30fps H.264</span>
+                  <span className="text-[#52525b]">•</span>
+                  <span className="rounded-full bg-white/5 border border-white/10 px-2 py-0.5 text-[10px] text-[#d4d4d8] tabular-nums">
+                    00:18 STEREO
+                  </span>
                 </div>
                 <a
                   href="/watch-later-launch.mp4"
                   download="watch-later-launch.mp4"
-                  className="flex items-center gap-1.5 text-white hover:underline font-semibold"
+                  className="inline-flex items-center gap-1.5 text-white hover:text-emerald-400 font-semibold transition-colors duration-200 active:scale-[0.98]"
                 >
-                  <span>Download MP4 File</span>
+                  <span>Download MP4 Video</span>
                   <Download className="h-3.5 w-3.5" />
                 </a>
               </div>

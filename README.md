@@ -1,5 +1,9 @@
 <p align="center">
-  <img src="web/public/logo.jpg" alt="Watch Later Logo" width="128" height="128" style="border-radius: 28px; box-shadow: 0 12px 36px rgba(0,0,0,0.35);" />
+  <img src="web/public/banner.jpg" alt="Watch Later Panoramic Banner" width="100%" style="border-radius: 14px; margin-bottom: 24px;" />
+</p>
+
+<p align="center">
+  <img src="web/public/logo.jpg" alt="Watch Later Logo" width="112" height="112" style="border-radius: 26px; box-shadow: 0 12px 36px rgba(0,0,0,0.35);" />
 </p>
 
 <h1 align="center">Watch Later</h1>
