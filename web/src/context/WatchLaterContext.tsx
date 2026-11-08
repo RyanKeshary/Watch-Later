@@ -141,12 +141,44 @@ if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
   } catch (e) { }
 }
 
-const broadcastCrossTab = (message: { type: string; payload?: any }) => {
+let userRealtimeChannel: any = null;
+
+// Track recently processed message IDs to prevent double execution across BroadcastChannel and Realtime
+const processedMessageIds = new Set<string>();
+
+const broadcastCrossDevice = (type: string, payload: any) => {
+  const msgId = `${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+  processedMessageIds.add(msgId);
+  // Keep deduplication set bounded
+  if (processedMessageIds.size > 200) {
+    const firstKey = processedMessageIds.values().next().value;
+    if (firstKey) processedMessageIds.delete(firstKey);
+  }
+
+  // 1. Same-device instant tab-to-tab sync
   if (crossTabChannel) {
     try {
-      crossTabChannel.postMessage(message);
+      crossTabChannel.postMessage({ type, payload, msgId });
     } catch (e) { }
   }
+  // 2. Cross-device instant WebSocket sync via Supabase Realtime Broadcast
+  if (userRealtimeChannel) {
+    try {
+      const res = userRealtimeChannel.send({
+        type: 'broadcast',
+        event: 'USER_SYNC',
+        payload: { type, payload, msgId }
+      });
+      // Handle asynchronous send promises to prevent unhandled rejection
+      if (res && typeof res.catch === 'function') {
+        res.catch(() => { });
+      }
+    } catch (e) { }
+  }
+};
+
+const broadcastCrossTab = (message: { type: string; payload?: any }) => {
+  broadcastCrossDevice(message.type, message.payload);
 };
 
 export function WatchLaterProvider({ children }: { children: React.ReactNode }) {
@@ -448,8 +480,7 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
             .select(`
               *,
               extracted_content (
-                extraction_error,
-                raw_scraper_output
+                extraction_error
               )
             `)
             .order('created_at', { ascending: false })
@@ -619,8 +650,14 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
       try {
         bc = new BroadcastChannel(CROSS_TAB_CHANNEL_NAME);
         bc.onmessage = (event) => {
-          const { type, payload } = event.data || {};
+          const { type, payload, msgId } = event.data || {};
           if (!type) return;
+
+          // Deduplicate if already handled
+          if (msgId) {
+            if (processedMessageIds.has(msgId)) return;
+            processedMessageIds.add(msgId);
+          }
 
           const currentUserId = sessionRef.current?.user?.id;
 
@@ -738,14 +775,81 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
     };
   }, [loadData]);
 
-  // Real-time synchronization
+  // Real-time synchronization & Cross-Device Broadcast Sync
   const currentUserId = session?.user?.id;
   useEffect(() => {
     if (currentUserId) {
       loadData();
 
       const channel = supabase
-        .channel('realtime_all_changes')
+        .channel(`realtime_all_changes_${currentUserId}`, {
+          config: {
+            broadcast: { self: false }
+          }
+        })
+        .on(
+          'broadcast',
+          { event: 'USER_SYNC' },
+          (eventPayload) => {
+            const { type, payload, msgId } = eventPayload.payload || {};
+            if (!type) return;
+
+            // Deduplicate if already handled via BroadcastChannel on the same machine
+            if (msgId) {
+              if (processedMessageIds.has(msgId)) return;
+              processedMessageIds.add(msgId);
+            }
+
+            switch (type) {
+              case 'SAVES_CHANGE':
+                if (payload?.userId === currentUserId && Array.isArray(payload?.savedLaterIds)) {
+                  setSavedLaterIds(payload.savedLaterIds);
+                  try {
+                    localStorage.setItem(`watchlater_saved_later_ids_${currentUserId}`, JSON.stringify(payload.savedLaterIds));
+                  } catch (e) { }
+                }
+                break;
+              case 'SAVES_FOLDERS_CHANGE':
+                if (payload?.userId === currentUserId && Array.isArray(payload?.savesFolderIds)) {
+                  setSavesFolderIds(payload.savesFolderIds);
+                  try {
+                    localStorage.setItem(`watchlater_saves_folder_ids_${currentUserId}`, JSON.stringify(payload.savesFolderIds));
+                  } catch (e) { }
+                }
+                break;
+              case 'PINS_CHANGE':
+                if (Array.isArray(payload?.pinnedFolderIds)) {
+                  setPinnedFolderIds(payload.pinnedFolderIds);
+                  try {
+                    localStorage.setItem('watchlater_pinned_folders', JSON.stringify(payload.pinnedFolderIds));
+                  } catch (e) { }
+                }
+                break;
+              case 'CATEGORY_META_CHANGE':
+                if (payload?.meta) {
+                  setCategoryMetaMap(payload.meta);
+                  try {
+                    localStorage.setItem('watchlater_categories_meta', JSON.stringify(payload.meta));
+                  } catch (e) { }
+                }
+                break;
+              case 'REEL_UPDATE':
+                if (payload?.reelId) {
+                  setReels(prev => prev.map(r => r.id === payload.reelId ? { ...r, completion_status: payload.status } : r));
+                }
+                break;
+              case 'REEL_DELETE':
+                if (payload?.reelId) {
+                  setReels(prev => prev.filter(r => r.id !== payload.reelId));
+                  setSavedLaterIds(prev => prev.filter(id => id !== payload.reelId));
+                }
+                break;
+              case 'DATA_REFRESH':
+                loadData();
+                break;
+            }
+          }
+        )
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'reels' },
@@ -813,7 +917,10 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
         )
         .subscribe();
 
+      userRealtimeChannel = channel;
+
       return () => {
+        userRealtimeChannel = null;
         supabase.removeChannel(channel);
       };
     }

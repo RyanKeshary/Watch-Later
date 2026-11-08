@@ -923,14 +923,26 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
             <button
               onClick={() => setMobileMenuOpen(true)}
               aria-label="Open navigation menu"
-              className="md:hidden p-1.5 rounded-lg border border-[#333333] bg-[#141414] text-zinc-300 hover:text-white shrink-0"
+              className="md:hidden p-1.5 rounded-lg border border-[#333333] bg-[#141414] text-zinc-300 hover:text-white shrink-0 active:scale-95 transition"
             >
               <Menu className="h-4 w-4" />
             </button>
 
-            {/* Page title */}
+            {/* Mobile Watch Later Brand Header */}
+            <div className="flex md:hidden items-center gap-2 min-w-0">
+              <img
+                src="/logo.png"
+                alt="Watch Later"
+                className="h-6 w-6 object-contain shrink-0 drop-shadow"
+              />
+              <span className="font-oughter text-sm font-bold tracking-tight text-white truncate leading-none">
+                Watch Later
+              </span>
+            </div>
+
+            {/* Page title (Desktop only when sidebar collapsed, or secondary title) */}
             <div
-              className={`overflow-hidden transition-all duration-300 ease-in-out shrink min-w-0 ${isEffectiveExpanded
+              className={`hidden md:block overflow-hidden transition-all duration-300 ease-in-out shrink min-w-0 ${isEffectiveExpanded
                   ? 'max-w-0 opacity-0 pointer-events-none -translate-x-3'
                   : 'max-w-[180px] sm:max-w-xs opacity-100 translate-x-0 mr-1 sm:mr-2.5'
                 }`}
@@ -1446,6 +1458,20 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
           {/* DRILL-DOWN / REELS FEED VIEW */}
           {(currentPage !== 'home' && currentPage !== 'settings' && (currentPage !== 'categories' || selectedCategoryId)) && (
             <div>
+              {/* Mobile Feed Page Heading Label (Identifies active feed view even when empty or search active) */}
+              {!selectedCategoryId && (
+                <div className="md:hidden mb-3">
+                  <h1 className="text-base font-bold text-white tracking-tight">
+                    {currentPage === 'all' && 'All Saved Content'}
+                    {currentPage === 'watched' && 'Watched Collection'}
+                    {currentPage === 'inbox' && 'Processing Inbox'}
+                    {currentPage === 'failed' && 'Extraction Issues'}
+                    {currentPage === 'archived' && 'Archived Content'}
+                    {(currentPage === 'savelater' || currentPage === 'saves') && 'Saves Vault'}
+                  </h1>
+                </div>
+              )}
+
               {/* Category Breadcrumbs / Drill-Down Bar */}
               {selectedCategoryId && (
                 <div className="mb-4 flex flex-col gap-2">
