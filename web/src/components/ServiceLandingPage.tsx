@@ -133,6 +133,31 @@ export default function ServiceLandingPage({
   const horizontalSectionRef = useRef<HTMLDivElement>(null);
   const [scrollProgress, setScrollProgress] = useState(0);
 
+  // Platform Rail Drag with Inertia State
+  const railRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeftState, setScrollLeftState] = useState(0);
+
+  const handleRailMouseDown = (e: React.MouseEvent) => {
+    if (!railRef.current) return;
+    setIsDragging(true);
+    setStartX(e.pageX - railRef.current.offsetLeft);
+    setScrollLeftState(railRef.current.scrollLeft);
+  };
+
+  const handleRailMouseLeaveOrUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleRailMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !railRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - railRef.current.offsetLeft;
+    const walk = (x - startX) * 1.6; // Scroll-multiplier for natural feel
+    railRef.current.scrollLeft = scrollLeftState - walk;
+  };
+
   useEffect(() => {
     const onScroll = () => {
       if (!horizontalSectionRef.current) return;
@@ -732,8 +757,15 @@ export default function ServiceLandingPage({
           </div>
         </div>
 
-        {/* Inertia Rail */}
-        <div className="flex gap-6 overflow-x-auto px-6 sm:px-10 pb-6 pt-2 snap-x snap-mandatory scrollbar-none cursor-grab active:cursor-grabbing">
+        {/* Inertia Rail with Mouse Drag Support */}
+        <div
+          ref={railRef}
+          onMouseDown={handleRailMouseDown}
+          onMouseLeave={handleRailMouseLeaveOrUp}
+          onMouseUp={handleRailMouseLeaveOrUp}
+          onMouseMove={handleRailMouseMove}
+          className="flex gap-6 overflow-x-auto px-6 sm:px-10 pb-6 pt-2 snap-x snap-mandatory scrollbar-none cursor-grab active:cursor-grabbing select-none"
+        >
           {[
             {
               platform: 'Instagram Reels',
@@ -928,16 +960,16 @@ export default function ServiceLandingPage({
           role="dialog"
           aria-modal="true"
           aria-labelledby="auth-modal-title"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/75 backdrop-blur-2xl animate-fade-in"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-md animate-fade-in"
         >
-          <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-[32px] overflow-hidden border border-white/25 bg-gradient-to-b from-white/[0.12] via-[#141414]/95 to-[#0A0A0A]/98 backdrop-blur-3xl p-6 sm:p-8 text-left shadow-[0_32px_90px_rgba(0,0,0,0.85),inset_0_1.5px_2px_rgba(255,255,255,0.4)] text-white animate-in zoom-in-95 duration-200">
+          <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-[28px] border border-white/15 bg-panel p-6 sm:p-8 text-left text-ink shadow-2xl animate-in zoom-in-95 duration-200">
             {/* Ambient Refraction Glow */}
-            <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-tr from-cyan-400/15 via-white/10 to-purple-500/15 pointer-events-none rounded-t-[32px] blur-xl" />
+            <div className="absolute top-0 inset-x-0 h-28 bg-gradient-to-b from-cyanbrand/10 to-transparent pointer-events-none rounded-t-[28px]" />
 
             <button
               type="button"
               onClick={() => setShowAuthModal(false)}
-              className="absolute top-6 right-6 p-1.5 rounded-full bg-white/[0.1] hover:bg-white/[0.2] border border-white/20 text-white/80 hover:text-white transition active:scale-90 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3)] z-10"
+              className="absolute top-6 right-6 p-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 text-ink-subtle hover:text-ink transition-colors active:scale-95 z-10"
               aria-label="Close dialog"
             >
               <X className="h-4 w-4" />
