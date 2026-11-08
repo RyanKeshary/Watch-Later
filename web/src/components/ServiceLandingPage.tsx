@@ -17,6 +17,7 @@ import { supabase } from '@/lib/supabase';
 import SplashCursor from '@/components/SplashCursor';
 import HeroParticleMesh from '@/components/HeroParticleMesh';
 import TiltCard from '@/components/TiltCard';
+import MagneticButton from '@/components/MagneticButton';
 
 interface ServicePageProps {
   onSignInSuccess?: () => void;
@@ -307,26 +308,26 @@ export default function ServiceLandingPage({
                   <span>APK Download initiated… Check notifications.</span>
                 </div>
               ) : hasDownloaded ? (
-                <button
+                <MagneticButton
                   type="button"
                   onClick={() => {
                     setAuthMode('signin');
                     setShowAuthModal(true);
                   }}
-                  className="group relative inline-flex items-center justify-center gap-2 rounded-full bg-ink px-8 py-4 text-sm font-bold text-black transition-colors hover:bg-ink-muted active:scale-[0.98]"
+                  className="group relative inline-flex items-center justify-center gap-2 rounded-full bg-ink px-8 py-4 text-sm font-bold text-black transition-colors hover:bg-ink-muted"
                 >
                   <span>Sign In</span>
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </button>
+                </MagneticButton>
               ) : (
-                <button
+                <MagneticButton
                   type="button"
                   onClick={handleDownloadClick}
-                  className="group relative inline-flex items-center justify-center gap-2.5 rounded-full bg-ink px-8 py-4 text-sm font-bold text-black transition-colors hover:bg-ink-muted active:scale-[0.98]"
+                  className="group relative inline-flex items-center justify-center gap-2.5 rounded-full bg-ink px-8 py-4 text-sm font-bold text-black transition-colors hover:bg-ink-muted"
                 >
                   <Download className="h-4 w-4 text-cyanbrand" />
                   <span>Download APK (Android)</span>
-                </button>
+                </MagneticButton>
               )}
             </div>
 
@@ -918,17 +919,17 @@ export default function ServiceLandingPage({
             Create an account to activate your personal library before sharing your next clip.
           </p>
 
-          <button
+          <MagneticButton
             type="button"
             onClick={() => {
               setAuthMode('signup');
               setShowAuthModal(true);
             }}
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-ink px-8 py-4 text-sm font-bold text-black transition-colors hover:bg-ink-muted active:scale-[0.98]"
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-ink px-8 py-4 text-sm font-bold text-black transition-colors hover:bg-ink-muted"
           >
             <span>Create account</span>
             <ArrowRight className="h-4 w-4" />
-          </button>
+          </MagneticButton>
 
           {/* Direct verification specs */}
           <div className="mt-8 flex flex-wrap items-center justify-center gap-6 text-xs text-ink-subtle">
