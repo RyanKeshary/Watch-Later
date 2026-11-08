@@ -281,25 +281,30 @@ function VirtualCardContainer({
         children
       ) : (
         <div
-          className={`w-full h-full rounded-2xl border border-white/[0.08] bg-[#141414] p-4 flex flex-col justify-between overflow-hidden shadow-sm animate-pulse ${placeholderClassName}`}
+          className={`w-full h-full rounded-2xl border border-white/[0.08] bg-[#121214] p-4 flex flex-col justify-between overflow-hidden shadow-sm relative group/skeleton ${placeholderClassName}`}
           aria-hidden="true"
         >
+          {/* Subtle boneyard shimmer sweep */}
+          <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/[0.04] to-transparent pointer-events-none" />
+
           {/* Top Bar Skeleton */}
-          <div className="flex items-center justify-between w-full">
-            <div className="h-4 w-14 rounded-full bg-white/[0.08]" />
-            <div className="h-6 w-6 rounded-lg bg-white/[0.08]" />
+          <div className="flex items-center justify-between w-full relative z-10">
+            <div className="h-4 w-16 rounded-full bg-white/[0.08] animate-pulse" />
+            <div className="h-6 w-6 rounded-lg bg-white/[0.08] animate-pulse" />
           </div>
 
           {/* Middle Media Silhouette */}
-          <div className="my-auto flex items-center justify-center">
-            <div className="h-10 w-10 rounded-full bg-white/[0.04]" />
+          <div className="my-auto flex items-center justify-center relative z-10">
+            <div className="h-12 w-12 rounded-full bg-white/[0.04] border border-white/[0.06] flex items-center justify-center animate-pulse">
+              <Play className="h-5 w-5 text-white/20 ml-0.5" />
+            </div>
           </div>
 
           {/* Bottom Title & Summary Bones */}
-          <div className="w-full space-y-2 pt-2">
-            <div className="h-3.5 w-4/5 rounded bg-white/[0.12]" />
-            <div className="h-2.5 w-full rounded bg-white/[0.06]" />
-            <div className="h-2.5 w-3/5 rounded bg-white/[0.06]" />
+          <div className="w-full space-y-2 pt-2 relative z-10">
+            <div className="h-3.5 w-4/5 rounded bg-white/[0.12] animate-pulse" />
+            <div className="h-2.5 w-full rounded bg-white/[0.06] animate-pulse" />
+            <div className="h-2.5 w-3/5 rounded bg-white/[0.06] animate-pulse" />
           </div>
         </div>
       )}
