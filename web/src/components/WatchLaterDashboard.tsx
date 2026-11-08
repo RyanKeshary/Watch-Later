@@ -1123,33 +1123,27 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                         {nicheCategories.map((cat, idx) => {
                           const count = reels.filter(r => r.category_id === cat.id).length;
                           const pct = reels.length > 0 ? Math.round((count / reels.length) * 100) : 0;
-                          const color = PIE_COLORS[idx % PIE_COLORS.length];
                           return (
                             <div
                               key={cat.id}
-                              className="group/bar flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-white/5 bg-[#0D0D10]/80 hover:bg-[#141418] hover:border-white/15 transition-all duration-300 shadow-sm"
+                              className="group/bar flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-[#2B2B30] bg-[#121216]/90 hover:bg-[#18181E] hover:border-[#00F0FF]/40 transition-all duration-300 shadow-sm"
                             >
-                              <div className="flex items-center gap-2 w-28 sm:w-36 min-w-0">
-                                <span
-                                  className="h-2 w-2 rounded-full shrink-0 shadow-[0_0_8px_currentColor] transition-transform duration-300 group-hover/bar:scale-125"
-                                  style={{ backgroundColor: color, color }}
-                                />
-                                <span className="text-xs font-medium text-zinc-300 group-hover/bar:text-white truncate transition-colors">
+                              <div className="flex items-center gap-2.5 w-28 sm:w-36 min-w-0">
+                                <span className="h-1.5 w-1.5 rounded-full shrink-0 bg-[#00F0FF] shadow-[0_0_8px_#00F0FF] transition-transform duration-300 group-hover/bar:scale-125" />
+                                <span className="text-xs font-medium text-[#D0D6E0] group-hover/bar:text-white truncate transition-colors">
                                   {cat.name}
                                 </span>
                               </div>
-                              <div className="flex-1 h-2 rounded-full bg-black/60 overflow-hidden border border-white/5 p-px">
+                              <div className="flex-1 h-2 rounded-full bg-[#090A0F] overflow-hidden border border-[#262832] p-px">
                                 <div
-                                  className="h-full rounded-full transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] shadow-[0_0_10px_currentColor]"
+                                  className="h-full rounded-full transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] bg-gradient-to-r from-[#00F0FF]/80 via-[#00F0FF] to-white shadow-[0_0_12px_rgba(0,240,255,0.4)]"
                                   style={{
                                     width: barsAnimated ? `${pct}%` : '0%',
-                                    backgroundColor: color,
-                                    color,
-                                    transitionDelay: `${Math.min(idx * 40, 500)}ms`
+                                    transitionDelay: `${Math.min(idx * 35, 450)}ms`
                                   }}
                                 />
                               </div>
-                              <span className="font-mono-micro text-zinc-400 group-hover/bar:text-zinc-200 w-24 text-right tabular-nums transition-colors">
+                              <span className="font-mono-micro text-[#8A8F98] group-hover/bar:text-[#F7F8F8] w-24 text-right tabular-nums transition-colors">
                                 <NumberTicker value={count} duration={900} /> (<NumberTicker value={pct} duration={900} />%)
                               </span>
                             </div>
