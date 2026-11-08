@@ -227,7 +227,6 @@ export default function App() {
         const targetCat = categories.find(c => c.id === targetCatId);
         showIncomingAlert(`Moved reel into "${targetCat?.name || 'Category'}" ✓`);
       } catch (err: any) {
-        clearIncomingAlert();
         console.error('Failed to move reel:', err);
         alert(`Failed to move reel: ${err.message || err}`);
         await loadData();
@@ -264,7 +263,6 @@ export default function App() {
         const targetCat = categories.find(c => c.id === targetCatId);
         showIncomingAlert(`Nested folder inside "${targetCat?.name || 'Parent Folder'}" ✓`);
       } catch (err: any) {
-        clearIncomingAlert();
         console.error('Failed to nest folder:', err);
         alert(`Failed to nest folder: ${err.message || err}`);
         await loadData();
