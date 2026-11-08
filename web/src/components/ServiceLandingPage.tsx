@@ -3,17 +3,11 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   Download,
-  Share2,
-  Cpu,
-  Layers,
-  CheckCircle2,
   ArrowRight,
-  Sparkles,
-  Play,
+  CheckCircle2,
   X,
   Eye,
-  EyeOff,
-  FolderSync
+  EyeOff
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import SplashCursor from '@/components/SplashCursor';
@@ -55,7 +49,6 @@ export default function ServiceLandingPage({
       return;
     }
 
-    // Trigger APK download
     const link = document.createElement('a');
     link.href = '/watch-later.apk';
     link.download = 'watch-later.apk';
@@ -63,7 +56,6 @@ export default function ServiceLandingPage({
     link.click();
     document.body.removeChild(link);
 
-    // Save in session
     if (typeof window !== 'undefined') {
       sessionStorage.setItem('wl_downloaded', 'true');
     }
@@ -74,7 +66,6 @@ export default function ServiceLandingPage({
     }, 1800);
   };
 
-  // Auth submission
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthLoading(true);
@@ -111,7 +102,7 @@ export default function ServiceLandingPage({
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       const { innerWidth, innerHeight } = window;
-      const x = (e.clientX / innerWidth - 0.5) * 2; // -1 to 1
+      const x = (e.clientX / innerWidth - 0.5) * 2;
       const y = (e.clientY / innerHeight - 0.5) * 2;
       setMousePos({ x, y });
     };
@@ -130,7 +121,6 @@ export default function ServiceLandingPage({
 
   // Horizontal Scroll Section Ref & Logic (Desktop Scroll-Hijack)
   const horizontalSectionRef = useRef<HTMLDivElement>(null);
-  const horizontalTrackRef = useRef<HTMLDivElement>(null);
   const [scrollProgress, setScrollProgress] = useState(0);
 
   useEffect(() => {
@@ -155,40 +145,36 @@ export default function ServiceLandingPage({
     {
       num: '01',
       title: 'Share the reel',
-      subtitle: 'Same share button you already use',
-      desc: 'No copying links. No switching apps. Just hit the paper airplane in Instagram, tap Watch Later, and keep scrolling. Zero friction.',
-      tag: 'ONE TAP',
-      badge: 'Instagram Native'
+      note: 'Same native share sheet you tap every day',
+      body: 'No copying links into a notes app or texting yourself. Hit the paper airplane on Instagram, tap Watch Later, and keep scrolling.',
+      detail: 'Zero app switching'
     },
     {
       num: '02',
       title: 'It gets grabbed silently',
-      subtitle: 'No app opens, nothing to fill out',
-      desc: 'Our Android listener catches the link in under 20 milliseconds, queues it offline if your signal drops, and slips back into the dark. No popups, no forms.',
-      tag: '20MS CAPTURE',
-      badge: 'Zero Interrupt'
+      note: 'No window opens, nothing to fill out',
+      body: 'Caught in under twenty milliseconds. If your cellular signal cuts out on the subway, it queues offline in local storage and syncs the second you reconnect.',
+      detail: 'Offline-first queue'
     },
     {
       num: '03',
       title: 'It gets sorted automatically',
-      subtitle: 'AI reads it and files it into the right category',
-      desc: 'Transcripts, captions, and creators parsed on the fly. No manual tagging ever. Your reels auto-file into clean pillars like Cooking, AI, or Fitness.',
-      tag: 'AI AUTONOMY',
-      badge: 'Smart Indexing'
+      note: 'Transcripts and captions parsed on arrival',
+      body: 'No manual folders, no tagging chores. The engine reads what the creator actually said and sorts it into clean, dedicated pillars.',
+      detail: 'Zero manual tagging'
     },
     {
       num: '04',
       title: 'Ready to actually watch',
-      subtitle: 'Sitting in your dashboard — organized, not buried',
-      desc: 'One clean dashboard instead of a 300-reel junk drawer. Pick a mood or category, extract the insight, and once watched, it auto-cleans out.',
-      tag: 'THE PAYOFF',
-      badge: 'Zero Clutter'
+      note: 'Sitting in your dashboard — organized, not buried',
+      body: 'One focused library instead of an endless saved grave. Open a category, extract the insight, and once watched, it clears out.',
+      detail: 'Auto-cleaned queue'
     }
   ];
 
   return (
-    <div className="relative min-h-screen bg-[#0B0B0B] text-[#D9D9D9] font-sans selection:bg-[#333333] selection:text-white overflow-x-hidden antialiased">
-      {/* Custom Fluid Cursor Effect (reused from existing codebase, hidden on touch devices via CSS) */}
+    <div className="relative min-h-screen bg-[#080809] text-[#E4E4E7] font-sans selection:bg-[#27272A] selection:text-white overflow-x-hidden antialiased">
+      {/* Custom Fluid Cursor Effect (preserved on desktop, hidden on touch devices) */}
       <div className="hidden md:block pointer-events-none">
         <SplashCursor
           contained={false}
@@ -210,14 +196,11 @@ export default function ServiceLandingPage({
       </div>
 
       {/* ========================================================================= */}
-      {/* 2.1 NAV: Wordmark only + secondary CTA mirroring the hero state           */}
+      {/* 2.1 NAV: Pure Wordmark + Single Secondary CTA                             */}
       {/* ========================================================================= */}
-      <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-[#0B0B0B]/80 backdrop-blur-md transition-all">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-          <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-white/20 to-white/5 border border-white/20 flex items-center justify-center shadow-inner">
-              <span className="font-zolo font-black text-sm text-white tracking-tighter">W</span>
-            </div>
+      <header className="sticky top-0 z-40 border-b border-white/[0.07] bg-[#080809]/90 backdrop-blur-md">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6 sm:px-10">
+          <div className="flex items-center gap-2.5">
             <span className="font-zolo text-lg font-bold tracking-tight text-white">Watch Later</span>
           </div>
 
@@ -226,7 +209,7 @@ export default function ServiceLandingPage({
               <button
                 type="button"
                 onClick={onEnterDashboard}
-                className="inline-flex items-center justify-center rounded-full bg-white text-black px-4 py-2 text-xs font-semibold hover:bg-neutral-200 transition active:scale-[0.98]"
+                className="inline-flex items-center justify-center rounded-full bg-white text-black px-4 py-1.5 text-xs font-semibold hover:bg-[#E4E4E7] transition active:scale-[0.98]"
               >
                 Go to Dashboard
               </button>
@@ -237,7 +220,7 @@ export default function ServiceLandingPage({
                   setAuthMode('signin');
                   setShowAuthModal(true);
                 }}
-                className="inline-flex items-center justify-center rounded-full bg-white text-black px-4 py-1.5 text-xs font-semibold hover:bg-neutral-200 transition active:scale-[0.98]"
+                className="inline-flex items-center justify-center rounded-full bg-white text-black px-4 py-1.5 text-xs font-semibold hover:bg-[#E4E4E7] transition active:scale-[0.98]"
               >
                 Sign In
               </button>
@@ -256,28 +239,28 @@ export default function ServiceLandingPage({
       </header>
 
       {/* ========================================================================= */}
-      {/* 2.2 HERO: Headline + 1-sentence plain pitch + Reactive 3D Background      */}
+      {/* 2.2 HERO: Editorial Stance + Reactive 3D Spatial Rig                      */}
       {/* ========================================================================= */}
       <section
         ref={heroRef}
-        className="relative min-h-[88vh] flex flex-col justify-center items-center px-6 overflow-hidden pt-12 pb-24"
+        className="relative min-h-[90vh] flex flex-col justify-center items-center px-6 sm:px-10 overflow-hidden pt-16 pb-28 border-b border-white/[0.06]"
       >
-        {/* Reactive 3D Hero Background (§3.1) */}
+        {/* Reactive 3D Background (§3.1) */}
         <div
           className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center overflow-hidden"
-          style={{ perspective: '1200px' }}
+          style={{ perspective: '1100px' }}
         >
-          {/* Ambient Lighting Gradients */}
+          {/* Subtle Ambient Depth Lighting */}
           <div
-            className="absolute h-[420px] w-[420px] rounded-full bg-amber-600/[0.07] blur-[120px] transition-transform duration-700 ease-out"
+            className="absolute h-[500px] w-[500px] rounded-full bg-amber-700/[0.06] blur-[140px] transition-transform duration-700 ease-out"
             style={{
-              transform: `translate3d(${mousePos.x * 40}px, ${mousePos.y * 40 - scrollY * 0.15}px, 0)`
+              transform: `translate3d(${mousePos.x * 45}px, ${mousePos.y * 45 - scrollY * 0.15}px, 0)`
             }}
           />
           <div
-            className="absolute h-[340px] w-[340px] rounded-full bg-rose-900/[0.06] blur-[100px] transition-transform duration-700 ease-out"
+            className="absolute h-[380px] w-[380px] rounded-full bg-rose-950/[0.05] blur-[120px] transition-transform duration-700 ease-out"
             style={{
-              transform: `translate3d(${-mousePos.x * 30}px, ${-mousePos.y * 30 - scrollY * 0.2}px, 0)`
+              transform: `translate3d(${-mousePos.x * 35}px, ${-mousePos.y * 35 - scrollY * 0.2}px, 0)`
             }}
           />
 
@@ -285,41 +268,39 @@ export default function ServiceLandingPage({
           <div
             className="relative transition-transform duration-200 ease-out will-change-transform"
             style={{
-              transform: `rotateX(${-mousePos.y * 14}deg) rotateY(${mousePos.x * 16}deg) translateZ(-60px) translateY(${-scrollY * 0.12}px)`
+              transform: `rotateX(${-mousePos.y * 12}deg) rotateY(${mousePos.x * 14}deg) translateZ(-50px) translateY(${-scrollY * 0.1}px)`
             }}
           >
-            {/* Outer 3D Glass Layer */}
-            <div className="h-80 w-80 sm:h-96 sm:w-96 rounded-[48px] border border-white/[0.08] bg-gradient-to-tr from-white/[0.03] to-white/[0.01] backdrop-blur-[2px] shadow-2xl [transform:rotate(15deg)] relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-b from-white/[0.06] to-transparent opacity-60" />
+            {/* Monolithic Editorial Panel */}
+            <div className="h-72 w-72 sm:h-96 sm:w-96 rounded-[44px] border border-white/[0.08] bg-gradient-to-br from-white/[0.03] to-white/[0.005] [transform:rotate(12deg)] shadow-2xl relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-b from-white/[0.04] to-transparent opacity-80" />
             </div>
 
-            {/* Inner Floating Offset Cube */}
+            {/* Inset Offset Depth Frame */}
             <div
-              className="absolute -inset-6 rounded-[40px] border border-white/[0.12] bg-white/[0.015] [transform:rotate(-10deg)_translateZ(40px)] transition-transform duration-300"
+              className="absolute -inset-5 rounded-[36px] border border-white/[0.07] bg-white/[0.01] [transform:rotate(-8deg)] transition-transform duration-300"
               style={{
-                transform: `rotate(-10deg) translateZ(${30 + Math.abs(mousePos.x) * 20}px)`
+                transform: `rotate(-8deg) translateZ(${25 + Math.abs(mousePos.x) * 15}px)`
               }}
             />
           </div>
         </div>
 
-        {/* Hero Content Layer */}
+        {/* Hero Content */}
         <div className="relative z-10 mx-auto max-w-3xl text-center flex flex-col items-center">
-          {/* Tagline Headline */}
           <h1 className="font-zolo text-4xl sm:text-6xl md:text-7xl font-black tracking-tight text-white text-balance leading-[1.08] mb-6">
             Never lose a reel worth revisiting.
           </h1>
 
-          {/* Plain Talk / Friend-Style Pitch */}
           <p className="text-base sm:text-lg text-[#A1A1AA] max-w-xl text-balance leading-relaxed mb-10">
             Stop letting reels rot in your saved folder. Just share the reel to Watch Later — it gets grabbed silently, sorted by AI into clean categories, and stays ready to actually watch.
           </p>
 
-          {/* Single Hero CTA with §1.6 morphing logic */}
+          {/* Single Hero CTA with §1.6 morphing */}
           <div className="flex flex-col items-center gap-3">
             <div className="relative">
               {downloadSuccess ? (
-                <div className="animate-fade-in inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-8 py-4 text-sm font-semibold text-emerald-300 shadow-lg">
+                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-8 py-4 text-sm font-semibold text-emerald-300 shadow-lg">
                   <CheckCircle2 className="h-4 w-4 text-emerald-400" />
                   <span>Downloading APK... Check your notifications.</span>
                 </div>
@@ -330,7 +311,7 @@ export default function ServiceLandingPage({
                     setAuthMode('signin');
                     setShowAuthModal(true);
                   }}
-                  className="group relative inline-flex items-center justify-center gap-2 rounded-full bg-white px-8 py-4 text-sm font-bold text-black shadow-2xl transition-all duration-300 hover:bg-neutral-200 active:scale-[0.98]"
+                  className="group relative inline-flex items-center justify-center gap-2 rounded-full bg-white px-8 py-4 text-sm font-bold text-black shadow-2xl transition-all duration-200 hover:bg-[#E4E4E7] active:scale-[0.98]"
                 >
                   <span>Sign In</span>
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
@@ -339,7 +320,7 @@ export default function ServiceLandingPage({
                 <button
                   type="button"
                   onClick={handleDownloadClick}
-                  className="group relative inline-flex items-center justify-center gap-2.5 rounded-full bg-white px-8 py-4 text-sm font-bold text-black shadow-[0_0_40px_rgba(255,255,255,0.18)] transition-all duration-300 hover:bg-neutral-200 active:scale-[0.98]"
+                  className="group relative inline-flex items-center justify-center gap-2.5 rounded-full bg-white px-8 py-4 text-sm font-bold text-black shadow-[0_0_35px_rgba(255,255,255,0.15)] transition-all duration-200 hover:bg-[#E4E4E7] active:scale-[0.98]"
                 >
                   <Download className="h-4 w-4" />
                   <span>Download App (Android)</span>
@@ -347,9 +328,8 @@ export default function ServiceLandingPage({
               )}
             </div>
 
-            {/* Post-Download Confirmation Hint */}
             <p
-              className={`text-xs text-[#71717A] transition-opacity duration-500 ${
+              className={`text-xs text-[#71717A] transition-opacity duration-300 ${
                 hasDownloaded || downloadSuccess ? 'opacity-100' : 'opacity-0'
               }`}
             >
@@ -360,164 +340,151 @@ export default function ServiceLandingPage({
       </section>
 
       {/* ========================================================================= */}
-      {/* 2.3 HOW IT WORKS: Horizontal-Scroll Sequence (Desktop Hijack + Mobile Swipe)*/}
+      {/* 2.3 HOW IT WORKS: Horizontal Scroll Narrative (No AI card clichés)         */}
       {/* ========================================================================= */}
       <section
         ref={horizontalSectionRef}
-        className="relative md:h-[300vh] bg-[#070707] border-y border-white/[0.06]"
+        className="relative md:h-[280vh] bg-[#0A0A0C]"
       >
-        {/* Desktop Sticky Container for Horizontal Track */}
-        <div className="md:sticky md:top-0 md:h-screen md:flex md:flex-col md:justify-center overflow-hidden py-20 md:py-0">
-          <div className="mx-auto max-w-6xl px-6 mb-8 md:mb-12">
-            <span className="font-mono text-xs tracking-widest text-[#71717A] uppercase block mb-2">
-              HOW IT WORKS
-            </span>
-            <h2 className="font-zolo text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
+        <div className="md:sticky md:top-0 md:h-screen md:flex md:flex-col md:justify-center overflow-hidden py-24 md:py-0">
+          <div className="mx-auto max-w-6xl px-6 sm:px-10 mb-8 md:mb-12">
+            <h2 className="font-zolo text-3xl sm:text-4xl font-extrabold tracking-tight text-white mb-2 text-balance">
               One tap. Everything else is on autopilot.
             </h2>
+            <p className="text-sm text-[#71717A]">
+              Follow the physical path from Instagram share sheet to clean library.
+            </p>
           </div>
 
           {/* Desktop Horizontal Sliding Track (§3.2) */}
           <div className="hidden md:block w-full overflow-hidden">
             <div
-              ref={horizontalTrackRef}
-              className="flex gap-6 px-6 transition-transform duration-100 ease-out will-change-transform"
+              className="flex gap-8 px-10 transition-transform duration-100 ease-out will-change-transform"
               style={{
-                transform: `translateX(calc(${-(scrollProgress * (steps.length - 1) * 380)}px + 5vw))`
+                transform: `translateX(calc(${-(scrollProgress * (steps.length - 1) * 440)}px + 3vw))`
               }}
             >
               {steps.map((step, idx) => (
-                <div
+                <article
                   key={step.num}
-                  className="w-[420px] shrink-0 rounded-[24px] border border-white/[0.1] bg-[#121214] p-8 shadow-xl flex flex-col justify-between transition-all duration-300 hover:border-white/25"
+                  className="w-[460px] shrink-0 border-t-2 border-white/20 pt-6 pb-8 flex flex-col justify-between transition-colors hover:border-white/50"
                 >
                   <div>
-                    <div className="flex items-center justify-between mb-6">
-                      <span className="font-mono text-xs font-semibold tracking-wider text-[#A1A1AA] border border-white/10 px-2.5 py-1 rounded-full bg-white/[0.03]">
-                        {step.num} {'//'} {step.tag}
+                    <div className="flex items-baseline justify-between mb-8">
+                      <span className="font-mono text-3xl font-light tracking-tighter text-[#71717A]">
+                        {step.num}
                       </span>
-                      <span className="text-xs text-[#71717A] font-medium">{step.badge}</span>
+                      <span className="text-xs text-[#A1A1AA]">{step.detail}</span>
                     </div>
 
                     <h3 className="font-zolo text-2xl font-bold text-white mb-2 tracking-tight">
                       {step.title}
                     </h3>
-                    <p className="text-sm font-medium text-amber-500/90 mb-4">{step.subtitle}</p>
-                    <p className="text-sm text-[#A1A1AA] leading-relaxed">{step.desc}</p>
+                    <p className="text-sm text-amber-400/90 mb-4 font-medium">{step.note}</p>
+                    <p className="text-sm text-[#A1A1AA] leading-relaxed">{step.body}</p>
                   </div>
 
-                  <div className="pt-8 mt-6 border-t border-white/[0.06] flex items-center justify-between text-xs text-[#71717A] font-mono">
-                    <span>STEP {idx + 1} OF 4</span>
-                    <span className="h-1.5 w-1.5 rounded-full bg-white/40" />
+                  <div className="pt-8 text-xs text-[#71717A] font-mono">
+                    BEAT {idx + 1} OF 4
                   </div>
-                </div>
+                </article>
               ))}
             </div>
           </div>
 
           {/* Mobile Touch Native Horizontal Swipe Strip (§3.5) */}
-          <div className="md:hidden flex gap-4 overflow-x-auto px-6 pb-6 pt-2 snap-x snap-mandatory scrollbar-none">
+          <div className="md:hidden flex gap-5 overflow-x-auto px-6 pb-6 pt-2 snap-x snap-mandatory scrollbar-none">
             {steps.map((step) => (
-              <div
+              <article
                 key={step.num}
-                className="w-[82vw] shrink-0 snap-center rounded-[20px] border border-white/[0.1] bg-[#121214] p-6 shadow-lg flex flex-col justify-between"
+                className="w-[84vw] shrink-0 snap-center border-t-2 border-white/20 pt-5 pb-6 flex flex-col justify-between"
               >
                 <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="font-mono text-[11px] font-semibold text-[#A1A1AA] border border-white/10 px-2 py-0.5 rounded-full">
-                      {step.num}
-                    </span>
-                    <span className="text-[11px] text-[#71717A]">{step.badge}</span>
+                  <div className="flex items-baseline justify-between mb-4">
+                    <span className="font-mono text-2xl text-[#71717A]">{step.num}</span>
+                    <span className="text-[11px] text-[#A1A1AA]">{step.detail}</span>
                   </div>
-                  <h3 className="font-zolo text-xl font-bold text-white mb-1">{step.title}</h3>
-                  <p className="text-xs font-medium text-amber-500/90 mb-3">{step.subtitle}</p>
-                  <p className="text-xs text-[#A1A1AA] leading-relaxed">{step.desc}</p>
+                  <h3 className="font-zolo text-xl font-bold text-white mb-1.5">{step.title}</h3>
+                  <p className="text-xs text-amber-400/90 mb-3 font-medium">{step.note}</p>
+                  <p className="text-xs text-[#A1A1AA] leading-relaxed">{step.body}</p>
                 </div>
-              </div>
+              </article>
             ))}
           </div>
 
-          {/* Progress dots indicator */}
-          <div className="hidden md:flex items-center justify-center gap-2 mt-8">
-            {steps.map((_, i) => (
+          {/* Desktop Progress Line Indicator */}
+          <div className="hidden md:flex items-center gap-2 px-10 mt-10 max-w-6xl mx-auto w-full">
+            <div className="h-[2px] flex-1 bg-white/[0.08] rounded-full overflow-hidden">
               <div
-                key={i}
-                className={`h-1.5 rounded-full transition-all duration-300 ${
-                  scrollProgress >= i / (steps.length - 1) - 0.1 &&
-                  scrollProgress <= i / (steps.length - 1) + 0.1
-                    ? 'w-8 bg-white'
-                    : 'w-2 bg-white/20'
-                }`}
+                className="h-full bg-white transition-all duration-150"
+                style={{ width: `${Math.max(12, scrollProgress * 100)}%` }}
               />
-            ))}
+            </div>
+            <span className="font-mono text-xs text-[#71717A] ml-2">
+              {Math.min(4, Math.floor(scrollProgress * 4) + 1)}/4
+            </span>
           </div>
         </div>
       </section>
 
       {/* ========================================================================= */}
-      {/* 2.4 THE DASHBOARD / PAYOFF: Clean, minimal visual of sorted categories    */}
+      {/* 2.4 THE DASHBOARD / PAYOFF: Editorial List Layout (Replaces AI cards)     */}
       {/* ========================================================================= */}
-      <section className="py-28 px-6 bg-[#0B0B0B]">
+      <section className="py-32 px-6 sm:px-10 bg-[#080809] border-t border-white/[0.06]">
         <div className="mx-auto max-w-5xl">
-          <div className="text-center max-w-2xl mx-auto mb-14">
-            <span className="font-mono text-xs tracking-widest text-[#71717A] uppercase block mb-3">
-              THE PAYOFF
-            </span>
+          <div className="max-w-xl mb-16">
             <h2 className="font-zolo text-3xl sm:text-5xl font-black text-white tracking-tight mb-4 text-balance">
               No endless saved list. Just what matters.
             </h2>
-            <p className="text-sm sm:text-base text-[#A1A1AA] text-balance">
+            <p className="text-base text-[#A1A1AA] text-balance">
               Instead of scrolling past the same 200 saved reels forever, pick a category and actually watch what you saved.
             </p>
           </div>
 
-          {/* Minimalist Dashboard Preview Frame (Clean Mockup, No Fake Code) */}
-          <div className="relative rounded-[28px] border border-white/10 bg-[#121214] p-5 sm:p-8 shadow-2xl overflow-hidden">
-            <div className="flex items-center justify-between border-b border-white/[0.08] pb-5 mb-8">
-              <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-white/20" />
-                <div className="h-3 w-3 rounded-full bg-white/10" />
-                <div className="h-3 w-3 rounded-full bg-white/10" />
-                <span className="ml-3 font-mono text-xs text-[#71717A]">library.watchlater.internal</span>
+          {/* Editorial Pillar Directory (Clean typographic layout) */}
+          <div className="divide-y divide-white/[0.08] border-y border-white/[0.08]">
+            <div className="py-8 grid grid-cols-1 md:grid-cols-12 gap-4 items-baseline group">
+              <div className="md:col-span-4 flex items-baseline gap-3">
+                <span className="font-mono text-xs text-[#71717A]">01</span>
+                <h3 className="font-zolo text-xl font-bold text-white group-hover:text-amber-300 transition-colors">
+                  Cooking & Food
+                </h3>
               </div>
-              <span className="text-xs font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full">
-                AI Auto-Synced
-              </span>
+              <p className="md:col-span-6 text-sm text-[#A1A1AA] leading-relaxed">
+                Italian pasta technique, 3-minute sourdough prep, homemade bone broth.
+              </p>
+              <div className="md:col-span-2 text-left md:text-right font-mono text-xs text-[#71717A]">
+                4 reels queued
+              </div>
             </div>
 
-            {/* Category Pillars Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="rounded-2xl border border-white/10 bg-[#18181B] p-5 transition hover:border-white/20">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-mono text-[#A1A1AA]">4 REELS READY</span>
-                  <span className="h-2 w-2 rounded-full bg-amber-400" />
-                </div>
-                <h4 className="font-zolo font-bold text-lg text-white mb-1">Cooking & Food</h4>
-                <p className="text-xs text-[#71717A] leading-relaxed">
-                  Italian pasta technique, 3-minute sourdough, homemade ramen broth.
-                </p>
+            <div className="py-8 grid grid-cols-1 md:grid-cols-12 gap-4 items-baseline group">
+              <div className="md:col-span-4 flex items-baseline gap-3">
+                <span className="font-mono text-xs text-[#71717A]">02</span>
+                <h3 className="font-zolo text-xl font-bold text-white group-hover:text-amber-300 transition-colors">
+                  Design & Visual
+                </h3>
               </div>
-
-              <div className="rounded-2xl border border-white/10 bg-[#18181B] p-5 transition hover:border-white/20">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-mono text-[#A1A1AA]">7 REELS READY</span>
-                  <span className="h-2 w-2 rounded-full bg-sky-400" />
-                </div>
-                <h4 className="font-zolo font-bold text-lg text-white mb-1">Design & Visual</h4>
-                <p className="text-xs text-[#71717A] leading-relaxed">
-                  Typography hierarchies, spatial motion principles, tactile interfaces.
-                </p>
+              <p className="md:col-span-6 text-sm text-[#A1A1AA] leading-relaxed">
+                Typography hierarchies, spatial motion principles, tactile interfaces.
+              </p>
+              <div className="md:col-span-2 text-left md:text-right font-mono text-xs text-[#71717A]">
+                7 reels queued
               </div>
+            </div>
 
-              <div className="rounded-2xl border border-white/10 bg-[#18181B] p-5 transition hover:border-white/20">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-mono text-[#A1A1AA]">3 REELS READY</span>
-                  <span className="h-2 w-2 rounded-full bg-purple-400" />
-                </div>
-                <h4 className="font-zolo font-bold text-lg text-white mb-1">Fitness & Recovery</h4>
-                <p className="text-xs text-[#71717A] leading-relaxed">
-                  Shoulder mobility cues, deadlift mechanics, recovery routines.
-                </p>
+            <div className="py-8 grid grid-cols-1 md:grid-cols-12 gap-4 items-baseline group">
+              <div className="md:col-span-4 flex items-baseline gap-3">
+                <span className="font-mono text-xs text-[#71717A]">03</span>
+                <h3 className="font-zolo text-xl font-bold text-white group-hover:text-amber-300 transition-colors">
+                  Fitness & Recovery
+                </h3>
+              </div>
+              <p className="md:col-span-6 text-sm text-[#A1A1AA] leading-relaxed">
+                Shoulder mobility cues, deadlift mechanics, deep tissue recovery routines.
+              </p>
+              <div className="md:col-span-2 text-left md:text-right font-mono text-xs text-[#71717A]">
+                3 reels queued
               </div>
             </div>
           </div>
@@ -525,9 +492,9 @@ export default function ServiceLandingPage({
       </section>
 
       {/* ========================================================================= */}
-      {/* 2.5 FINAL CTA: One line pitch + exactly one CTA: "Create account"         */}
+      {/* 2.5 FINAL CTA: Single Action "Create account"                             */}
       {/* ========================================================================= */}
-      <section className="py-24 px-6 border-t border-white/[0.06] bg-[#070707] text-center">
+      <section className="py-28 px-6 sm:px-10 border-t border-white/[0.06] bg-[#050506] text-center">
         <div className="mx-auto max-w-xl flex flex-col items-center">
           <h2 className="font-zolo text-3xl sm:text-5xl font-black text-white tracking-tight mb-4 text-balance">
             Never lose a reel worth revisiting.
@@ -542,7 +509,7 @@ export default function ServiceLandingPage({
               setAuthMode('signup');
               setShowAuthModal(true);
             }}
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-8 py-4 text-sm font-bold text-black shadow-xl hover:bg-neutral-200 transition active:scale-[0.98]"
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-8 py-4 text-sm font-bold text-black shadow-xl hover:bg-[#E4E4E7] transition active:scale-[0.98]"
           >
             <span>Create account</span>
             <ArrowRight className="h-4 w-4" />
@@ -551,9 +518,9 @@ export default function ServiceLandingPage({
       </section>
 
       {/* ========================================================================= */}
-      {/* 2.6 FOOTER: Wordmark + tagline only, one line                             */}
+      {/* 2.6 FOOTER: One line Wordmark + Tagline                                   */}
       {/* ========================================================================= */}
-      <footer className="border-t border-white/[0.06] py-8 px-6 bg-[#070707]">
+      <footer className="border-t border-white/[0.06] py-8 px-6 sm:px-10 bg-[#050506]">
         <div className="mx-auto max-w-6xl flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#71717A]">
           <span className="font-zolo font-bold text-sm text-white">Watch Later</span>
           <span>Never lose a reel worth revisiting.</span>
@@ -561,10 +528,10 @@ export default function ServiceLandingPage({
       </footer>
 
       {/* ========================================================================= */}
-      {/* AUTH MODAL (Clean minimal login / register)                               */}
+      {/* AUTH MODAL                                                                */}
       {/* ========================================================================= */}
       {showAuthModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
           <div className="relative w-full max-w-md rounded-[24px] border border-white/15 bg-[#121214] p-8 shadow-2xl text-left">
             <button
               type="button"
@@ -626,7 +593,7 @@ export default function ServiceLandingPage({
               <button
                 type="submit"
                 disabled={authLoading}
-                className="w-full mt-2 inline-flex items-center justify-center rounded-xl bg-white py-3 text-sm font-bold text-black hover:bg-neutral-200 transition disabled:opacity-50 active:scale-[0.98]"
+                className="w-full mt-2 inline-flex items-center justify-center rounded-xl bg-white py-3 text-sm font-bold text-black hover:bg-[#E4E4E7] transition disabled:opacity-50 active:scale-[0.98]"
               >
                 {authLoading ? 'Authenticating...' : authMode === 'signin' ? 'Sign In' : 'Create Account'}
               </button>
