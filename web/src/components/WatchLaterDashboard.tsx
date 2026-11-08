@@ -223,6 +223,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
     pinnedCategories,
     savesFolders,
     handleCreateSaveFolder,
+    toggleSaveReel,
     loadData,
     incomingAlert,
     lastMoveAction,
@@ -306,6 +307,15 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
   // Saves page folder creation state
   const [isCreatingSaveFolder, setIsCreatingSaveFolder] = useState(false);
   const [newSaveFolderName, setNewSaveFolderName] = useState('');
+
+  // Animation state for Niche Category Breakdown bars & counters
+  const [barsAnimated, setBarsAnimated] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setBarsAnimated(true);
+    }, 60);
+    return () => clearTimeout(timer);
+  }, []);
 
   // If unauthenticated on a subpage, route to /
   useEffect(() => {
@@ -904,17 +914,23 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                   </h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  {rootCategories.map(cat => {
+                  {rootCategories.map((cat, idx) => {
                     const count = reels.filter(r => r.category_id === cat.id).length;
                     const pct = reels.length > 0 ? Math.round((count / reels.length) * 100) : 0;
                     return (
                       <div key={cat.id} className="flex items-center gap-3 px-3 py-2 rounded-xl border border-[#262626] bg-[#0B0B0B]/70 hover:bg-[#141414] transition">
                         <span className="text-xs font-medium text-[#D9D9D9] w-28 sm:w-36 truncate">{cat.name}</span>
                         <div className="flex-1 h-1.5 rounded-full bg-[#1A1A1A] overflow-hidden border border-[#333333]/40">
-                          <div className="h-full bg-[#D9D9D9] rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+                          <div
+                            className="h-full bg-gradient-to-r from-zinc-400 to-white rounded-full transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)]"
+                            style={{
+                              width: barsAnimated ? `${pct}%` : '0%',
+                              transitionDelay: `${Math.min(idx * 30, 400)}ms`
+                            }}
+                          />
                         </div>
-                        <span className="font-mono-micro text-[#6B6B6B] w-20 text-right">
-                          {count} ({pct}%)
+                        <span className="font-mono-micro text-[#6B6B6B] w-24 text-right tabular-nums">
+                          <NumberTicker value={count} duration={900} /> (<NumberTicker value={pct} duration={900} />%)
                         </span>
                       </div>
                     );
@@ -1375,6 +1391,17 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                                     <span>{reel.completion_status === 'completed' ? 'Mark Unwatched' : 'Mark Watched'}</span>
                                   </button>
 
+                                  <button
+                                    onClick={() => {
+                                      toggleSaveReel(reel.id);
+                                      setActiveCardMenuId(null);
+                                    }}
+                                    className="relative z-10 flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-xs font-medium text-white hover:bg-white/15 transition active:scale-98"
+                                  >
+                                    <Bookmark className={`h-3.5 w-3.5 ${savedLaterIds.includes(reel.id) ? 'text-amber-400' : 'text-zinc-400'}`} />
+                                    <span>{savedLaterIds.includes(reel.id) ? 'Remove from Saves' : 'Save to Saves'}</span>
+                                  </button>
+
                                   <div className="relative z-10 my-1 border-t border-white/15" />
 
                                   <button
@@ -1557,6 +1584,17 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                                 >
                                   <CheckCircle className="h-3.5 w-3.5 text-emerald-400" />
                                   <span>{reel.completion_status === 'completed' ? 'Mark Unwatched' : 'Mark Watched'}</span>
+                                </button>
+
+                                <button
+                                  onClick={() => {
+                                    toggleSaveReel(reel.id);
+                                    setActiveCardMenuId(null);
+                                  }}
+                                  className="relative z-10 flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-xs font-medium text-white hover:bg-white/15 transition active:scale-98"
+                                >
+                                  <Bookmark className={`h-3.5 w-3.5 ${savedLaterIds.includes(reel.id) ? 'text-amber-400' : 'text-zinc-400'}`} />
+                                  <span>{savedLaterIds.includes(reel.id) ? 'Remove from Saves' : 'Save to Saves'}</span>
                                 </button>
 
                                 <div className="relative z-10 my-1 border-t border-white/15" />
@@ -2134,10 +2172,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                       </button>
 
                       <button
-                        onClick={() => {
-                          const isSaved = savedLaterIds.includes(detailReel.id);
-                          setSavedLaterIds(prev => isSaved ? prev.filter(id => id !== detailReel.id) : [...prev, detailReel.id]);
-                        }}
+                        onClick={() => toggleSaveReel(detailReel.id)}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition active:scale-95 shadow-md ${
                           savedLaterIds.includes(detailReel.id)
                             ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'

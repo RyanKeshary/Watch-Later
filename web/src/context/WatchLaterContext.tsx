@@ -42,6 +42,7 @@ interface WatchLaterContextType {
   savesFolderIds: string[];
   savesFolders: Category[];
   handleCreateSaveFolder: (name: string) => Promise<void>;
+  toggleSaveReel: (reelId: string) => void;
   loadData: () => Promise<void>;
   incomingAlert: string | null;
   lastMoveAction: {
@@ -130,6 +131,23 @@ interface WatchLaterContextType {
 }
 
 const WatchLaterContext = createContext<WatchLaterContextType | undefined>(undefined);
+
+const CROSS_TAB_CHANNEL_NAME = 'watchlater_cross_tab_sync';
+
+let crossTabChannel: BroadcastChannel | null = null;
+if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+  try {
+    crossTabChannel = new BroadcastChannel(CROSS_TAB_CHANNEL_NAME);
+  } catch (e) { }
+}
+
+const broadcastCrossTab = (message: { type: string; payload?: any }) => {
+  if (crossTabChannel) {
+    try {
+      crossTabChannel.postMessage(message);
+    } catch (e) { }
+  }
+};
 
 export function WatchLaterProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<any>(null);
@@ -236,6 +254,23 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
 
   const [savedLaterIds, setSavedLaterIds] = useState<string[]>([]);
 
+  // Toggle saving reel with cross-tab broadcast and localStorage sync
+  const toggleSaveReel = useCallback((reelId: string) => {
+    setSavedLaterIds(prev => {
+      const isSaved = prev.includes(reelId);
+      const next = isSaved ? prev.filter(id => id !== reelId) : [...prev, reelId];
+      const userId = sessionRef.current?.user?.id;
+      if (userId) {
+        try {
+          localStorage.setItem(`watchlater_saved_later_ids_${userId}`, JSON.stringify(next));
+        } catch (e) { }
+        broadcastCrossTab({ type: 'SAVES_CHANGE', payload: { userId, savedLaterIds: next } });
+      }
+      showIncomingAlert(isSaved ? 'Removed from Saves' : 'Saved to Saves vault ✓');
+      return next;
+    });
+  }, [showIncomingAlert]);
+
   // Helper to load user-scoped savesFolderIds (separate from global AI categories)
   const loadSavesFolderIdsForUser = useCallback((userId?: string): string[] => {
     if (!userId) return [];
@@ -337,6 +372,7 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
       try {
         localStorage.setItem('watchlater_pinned_folders', JSON.stringify(next));
       } catch (e) { }
+      broadcastCrossTab({ type: 'PINS_CHANGE', payload: { pinnedFolderIds: next } });
       return next;
     });
   };
@@ -346,6 +382,47 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
     try {
       localStorage.setItem('watchlater_view_layout', val);
     } catch (err) { }
+    broadcastCrossTab({ type: 'VIEW_LAYOUT_CHANGE', payload: { layout: val } });
+  };
+
+  const updateDensity = (d: 'compact' | 'comfortable' | 'spacious') => {
+    setDensity(d);
+    try {
+      localStorage.setItem('watchlater_density', d);
+    } catch (err) { }
+    broadcastCrossTab({ type: 'DENSITY_CHANGE', payload: { density: d } });
+  };
+
+  const updateShowThumbnails = (s: boolean) => {
+    setShowThumbnails(s);
+    try {
+      localStorage.setItem('watchlater_show_thumbnails', String(s));
+    } catch (err) { }
+    broadcastCrossTab({ type: 'THUMBNAILS_CHANGE', payload: { showThumbnails: s } });
+  };
+
+  const updateShowPersonaInsights = (s: boolean) => {
+    setShowPersonaInsights(s);
+    try {
+      localStorage.setItem('watchlater_show_persona', String(s));
+    } catch (err) { }
+    broadcastCrossTab({ type: 'PERSONA_CHANGE', payload: { showPersonaInsights: s } });
+  };
+
+  const updateSidebarCollapsed = (s: boolean) => {
+    setSidebarCollapsed(s);
+    try {
+      localStorage.setItem('watchlater_sidebar_collapsed', String(s));
+    } catch (err) { }
+    broadcastCrossTab({ type: 'SIDEBAR_CHANGE', payload: { sidebarCollapsed: s } });
+  };
+
+  const updateRetentionPeriod = (p: 'day' | 'week' | 'month') => {
+    setRetentionPeriod(p);
+    try {
+      localStorage.setItem('watchlater_archive_retention', p);
+    } catch (err) { }
+    broadcastCrossTab({ type: 'RETENTION_CHANGE', payload: { retentionPeriod: p } });
   };
 
   // Main data loader
@@ -525,6 +602,134 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
     }
   }, [savesFolderIds, session?.user?.id, loading]);
 
+  // Cross-Tab Synchronization Effect (BroadcastChannel + storage event)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    let bc: BroadcastChannel | null = null;
+    if ('BroadcastChannel' in window) {
+      try {
+        bc = new BroadcastChannel(CROSS_TAB_CHANNEL_NAME);
+        bc.onmessage = (event) => {
+          const { type, payload } = event.data || {};
+          if (!type) return;
+
+          const currentUserId = sessionRef.current?.user?.id;
+
+          switch (type) {
+            case 'SAVES_CHANGE':
+              if (payload?.userId === currentUserId && Array.isArray(payload?.savedLaterIds)) {
+                setSavedLaterIds(payload.savedLaterIds);
+              }
+              break;
+            case 'SAVES_FOLDERS_CHANGE':
+              if (payload?.userId === currentUserId && Array.isArray(payload?.savesFolderIds)) {
+                setSavesFolderIds(payload.savesFolderIds);
+              }
+              break;
+            case 'PINS_CHANGE':
+              if (Array.isArray(payload?.pinnedFolderIds)) {
+                setPinnedFolderIds(payload.pinnedFolderIds);
+              }
+              break;
+            case 'CATEGORY_META_CHANGE':
+              if (payload?.meta) {
+                setCategoryMetaMap(payload.meta);
+              }
+              break;
+            case 'VIEW_LAYOUT_CHANGE':
+              if (payload?.layout) {
+                setViewLayout(payload.layout);
+              }
+              break;
+            case 'DENSITY_CHANGE':
+              if (payload?.density) {
+                setDensity(payload.density);
+              }
+              break;
+            case 'THUMBNAILS_CHANGE':
+              if (payload?.showThumbnails !== undefined) {
+                setShowThumbnails(payload.showThumbnails);
+              }
+              break;
+            case 'PERSONA_CHANGE':
+              if (payload?.showPersonaInsights !== undefined) {
+                setShowPersonaInsights(payload.showPersonaInsights);
+              }
+              break;
+            case 'SIDEBAR_CHANGE':
+              if (payload?.sidebarCollapsed !== undefined) {
+                setSidebarCollapsed(payload.sidebarCollapsed);
+              }
+              break;
+            case 'RETENTION_CHANGE':
+              if (payload?.retentionPeriod) {
+                setRetentionPeriod(payload.retentionPeriod);
+              }
+              break;
+            case 'REEL_UPDATE':
+              if (payload?.reelId) {
+                setReels(prev => prev.map(r => r.id === payload.reelId ? { ...r, completion_status: payload.status } : r));
+              }
+              break;
+            case 'REEL_DELETE':
+              if (payload?.reelId) {
+                setReels(prev => prev.filter(r => r.id !== payload.reelId));
+                setSavedLaterIds(prev => prev.filter(id => id !== payload.reelId));
+              }
+              break;
+            case 'DATA_REFRESH':
+              loadData();
+              break;
+          }
+        };
+      } catch (e) { }
+    }
+
+    // Window storage event (fires in other open tabs when localStorage changes)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (!e.key || e.newValue === null) return;
+      const currentUserId = sessionRef.current?.user?.id;
+
+      try {
+        if (currentUserId && e.key === `watchlater_saved_later_ids_${currentUserId}`) {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed)) setSavedLaterIds(parsed);
+        } else if (currentUserId && e.key === `watchlater_saves_folder_ids_${currentUserId}`) {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed)) setSavesFolderIds(parsed);
+        } else if (e.key === 'watchlater_pinned_folders') {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed)) setPinnedFolderIds(parsed);
+        } else if (e.key === 'watchlater_categories_meta') {
+          const parsed = JSON.parse(e.newValue);
+          if (parsed && typeof parsed === 'object') setCategoryMetaMap(parsed);
+        } else if (e.key === 'watchlater_view_layout') {
+          if (e.newValue === 'grid' || e.newValue === 'list') setViewLayout(e.newValue);
+        } else if (e.key === 'watchlater_density') {
+          if (e.newValue === 'compact' || e.newValue === 'comfortable' || e.newValue === 'spacious') {
+            setDensity(e.newValue as any);
+          }
+        } else if (e.key === 'watchlater_show_thumbnails') {
+          setShowThumbnails(e.newValue === 'true');
+        } else if (e.key === 'watchlater_show_persona') {
+          setShowPersonaInsights(e.newValue === 'true');
+        } else if (e.key === 'watchlater_sidebar_collapsed') {
+          setSidebarCollapsed(e.newValue === 'true');
+        } else if (e.key === 'watchlater_archive_retention') {
+          setRetentionPeriod(e.newValue as any);
+        }
+      } catch (err) { }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      if (bc) bc.close();
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [loadData]);
+
   // Real-time synchronization
   const currentUserId = session?.user?.id;
   useEffect(() => {
@@ -642,6 +847,8 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
       completed_at: timestamp
     } : r));
 
+    broadcastCrossTab({ type: 'REEL_UPDATE', payload: { reelId, status } });
+
     const { error } = await supabase
       .from('reels')
       .update({
@@ -662,6 +869,8 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
 
     setReels(prev => prev.filter(r => r.id !== reelId));
     setSavedLaterIds(prev => prev.filter(id => id !== reelId));
+
+    broadcastCrossTab({ type: 'REEL_DELETE', payload: { reelId } });
 
     const { error } = await supabase.from('reels').delete().eq('id', reelId);
     if (error) {
@@ -700,6 +909,7 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
         return;
       }
 
+      broadcastCrossTab({ type: 'DATA_REFRESH' });
       await loadData();
     } catch (err: any) {
       alert(`Retry failed: ${err.message}`);
@@ -713,6 +923,7 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
     try {
       localStorage.setItem('watchlater_categories_meta', JSON.stringify(updatedMap));
     } catch (e) { }
+    broadcastCrossTab({ type: 'CATEGORY_META_CHANGE', payload: { meta: updatedMap } });
   };
 
   const handleCreateCategory = async (e: React.FormEvent) => {
@@ -750,6 +961,7 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
         setNewCategoryName('');
         setIsCreatingCategory(false);
         setCategoryParentId(null);
+        broadcastCrossTab({ type: 'DATA_REFRESH' });
       }
     } finally {
       setCategoryInsertPending(false);
@@ -783,6 +995,7 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
 
     setCategories(prev => prev.map(c => c.id === editingCategory.id ? { ...c, name: trimmed } : c));
     setEditingCategory(null);
+    broadcastCrossTab({ type: 'DATA_REFRESH' });
   };
 
   const handleDeleteCategory = async (catId: string, e?: React.MouseEvent) => {
@@ -801,10 +1014,13 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
           try {
             localStorage.setItem(`watchlater_saves_folder_ids_${session.user.id}`, JSON.stringify(next));
           } catch (e) { }
+          broadcastCrossTab({ type: 'SAVES_FOLDERS_CHANGE', payload: { userId: session.user.id, savesFolderIds: next } });
         }
         return next;
       });
     }
+
+    broadcastCrossTab({ type: 'DATA_REFRESH' });
 
     const { error } = await supabase.from('categories').delete().eq('id', catId);
     if (error) {
@@ -856,6 +1072,8 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
           } catch (e) { }
           return next;
         });
+        broadcastCrossTab({ type: 'SAVES_FOLDERS_CHANGE', payload: { userId, savesFolderIds: [...savesFolderIds, data.id] } });
+        broadcastCrossTab({ type: 'DATA_REFRESH' });
         showIncomingAlert(`Created Saves folder "${trimmed}" ✓`);
       }
     } finally {
@@ -959,6 +1177,7 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
       }
     }
 
+    broadcastCrossTab({ type: 'DATA_REFRESH' });
     setDraggedItem(null);
   };
 
@@ -979,6 +1198,7 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
       setReels([]);
       setSavedLaterIds([]);
       setShowClearHistoryLightbox(false);
+      broadcastCrossTab({ type: 'DATA_REFRESH' });
       await loadData();
     } catch (err: any) {
       alert(`Clear failed: ${err.message || err}`);
@@ -1090,6 +1310,7 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
     savesFolderIds,
     savesFolders,
     handleCreateSaveFolder,
+    toggleSaveReel,
     loadData,
     incomingAlert,
     lastMoveAction,
@@ -1105,18 +1326,18 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
     togglePinFolder,
     retryingId,
     density,
-    setDensity,
+    setDensity: updateDensity,
     showThumbnails,
-    setShowThumbnails,
+    setShowThumbnails: updateShowThumbnails,
     showPersonaInsights,
-    setShowPersonaInsights,
+    setShowPersonaInsights: updateShowPersonaInsights,
     isFirstTimePersona,
     dismissFirstTimePersona,
     userPersonaInsight,
     sidebarCollapsed,
-    setSidebarCollapsed,
+    setSidebarCollapsed: updateSidebarCollapsed,
     retentionPeriod,
-    setRetentionPeriod,
+    setRetentionPeriod: updateRetentionPeriod,
     viewLayout,
     updateViewLayout,
     searchQuery,
