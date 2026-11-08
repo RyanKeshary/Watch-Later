@@ -221,6 +221,11 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
   const [refreshing, setRefreshing] = useState(false);
   const [retryingId, setRetryingId] = useState<string | null>(null);
 
+  // Track initial load completion and known reel IDs for incoming alert notifications
+  const initialLoadCompletedRef = useRef(false);
+  const knownReelIdsRef = useRef<Set<string>>(new Set());
+  const alertedReelIdsRef = useRef<Set<string>>(new Set());
+
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -522,6 +527,21 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
           const fetchedReels = reelsRes.data as Reel[];
           const fetchedIds = new Set(fetchedReels.map(r => r.id));
 
+          // If initial load was already completed, detect new incoming reels
+          if (initialLoadCompletedRef.current) {
+            const newlyArrived = fetchedReels.filter(r => !knownReelIdsRef.current.has(r.id) && !alertedReelIdsRef.current.has(r.id));
+            if (newlyArrived.length > 0) {
+              const latestNew = newlyArrived[0];
+              alertedReelIdsRef.current.add(latestNew.id);
+              showIncomingAlert(`Incoming Reel: "${latestNew.ai_title || latestNew.caption || 'New Reel'}" arrived in vault ✓`);
+            }
+          } else {
+            initialLoadCompletedRef.current = true;
+          }
+
+          // Update known IDs ref
+          fetchedReels.forEach(r => knownReelIdsRef.current.add(r.id));
+
           setReels(prevReels => {
             const recentNewReels = prevReels.filter(r => {
               if (fetchedIds.has(r.id)) return false;
@@ -551,7 +571,7 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
     } finally {
       if (!silent) setRefreshing(false);
     }
-  }, []);
+  }, [showIncomingAlert]);
 
   // Undo Last Move
   const undoLastMove = useCallback(async () => {
@@ -595,12 +615,18 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
       const nextUserId = newSession?.user?.id;
 
       if (!nextUserId) {
+        initialLoadCompletedRef.current = false;
+        knownReelIdsRef.current.clear();
+        alertedReelIdsRef.current.clear();
         setReels([]);
         setCategories([]);
         setDevices([]);
         setSavedLaterIds([]);
         setSavesFolderIds([]);
       } else if (nextUserId !== prevUserId) {
+        initialLoadCompletedRef.current = false;
+        knownReelIdsRef.current.clear();
+        alertedReelIdsRef.current.clear();
         setReels([]);
         setCategories([]);
         setDevices([]);
@@ -903,7 +929,11 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
                 if (prev.some(r => r.id === newReel.id)) return prev;
                 return [newReel, ...prev];
               });
-              showIncomingAlert(`Incoming Reel: "${newReel.ai_title || 'New Reel'}" arrived in vault ✓`);
+              knownReelIdsRef.current.add(newReel.id);
+              if (!alertedReelIdsRef.current.has(newReel.id)) {
+                alertedReelIdsRef.current.add(newReel.id);
+                showIncomingAlert(`Incoming Reel: "${newReel.ai_title || newReel.caption || 'New Reel'}" arrived in vault ✓`);
+              }
             } else if (payload.eventType === 'UPDATE') {
               const updatedReel = payload.new as Reel;
               setReels((prev) =>
