@@ -22,6 +22,7 @@ import {
   Search,
   LogOut,
   Bookmark,
+  FolderMinus,
   RotateCcw,
   Plus,
   Trash2,
@@ -107,6 +108,13 @@ export default function App() {
 
   // Real-time toast arrival banner on dashboard
   const [incomingAlert, setIncomingAlert] = useState<string | null>(null);
+  const [lastMoveAction, setLastMoveAction] = useState<{
+    type: 'reel' | 'folder';
+    id: string;
+    prevCatId: string | null;
+    targetCatId: string | null;
+    title: string;
+  } | null>(null);
   const incomingAlertTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const showIncomingAlert = useCallback((msg: string) => {
@@ -117,7 +125,7 @@ export default function App() {
     incomingAlertTimerRef.current = setTimeout(() => {
       setIncomingAlert(null);
       incomingAlertTimerRef.current = null;
-    }, 5000);
+    }, 6000);
   }, []);
 
   const clearIncomingAlert = useCallback(() => {
@@ -133,6 +141,34 @@ export default function App() {
       if (incomingAlertTimerRef.current) clearTimeout(incomingAlertTimerRef.current);
     };
   }, []);
+
+  const handleUndoMove = async () => {
+    if (!lastMoveAction) return;
+    const action = lastMoveAction;
+    setLastMoveAction(null);
+
+    if (action.type === 'reel') {
+      setReels(prev => prev.map(r => r.id === action.id ? { ...r, category_id: action.prevCatId } : r));
+      try {
+        const { error } = await supabase.from('reels').update({ category_id: action.prevCatId }).eq('id', action.id);
+        if (error) throw error;
+        showIncomingAlert('Reverted move ✓');
+      } catch (err: any) {
+        alert(`Failed to revert move: ${err.message || err}`);
+        await loadData();
+      }
+    } else if (action.type === 'folder') {
+      setCategories(prev => prev.map(c => c.id === action.id ? { ...c, parent_id: action.prevCatId } : c));
+      try {
+        const { error } = await supabase.from('categories').update({ parent_id: action.prevCatId }).eq('id', action.id);
+        if (error) throw error;
+        showIncomingAlert('Reverted folder move ✓');
+      } catch (err: any) {
+        alert(`Failed to revert folder move: ${err.message || err}`);
+        await loadData();
+      }
+    }
+  };
 
   // Data
   const [reels, setReels] = useState<Reel[]>([]);
@@ -212,6 +248,9 @@ export default function App() {
     const item = data || draggedItem;
     if (!item) return;
 
+    const isRootTarget = targetCatId === '__root__';
+    const targetDbId = isRootTarget ? null : targetCatId;
+
     if (item.type === 'reel') {
       const reelId = item.id || (item as any).reelId;
       if (!reelId) {
@@ -219,13 +258,26 @@ export default function App() {
         return;
       }
 
-      setReels(prev => prev.map(r => r.id === reelId ? { ...r, category_id: targetCatId } : r));
+      const prevCatId = reels.find(r => r.id === reelId)?.category_id || null;
+      if (prevCatId === targetDbId) {
+        setDraggedItem(null);
+        return;
+      }
+
+      setReels(prev => prev.map(r => r.id === reelId ? { ...r, category_id: targetDbId } : r));
 
       try {
-        const { error } = await supabase.from('reels').update({ category_id: targetCatId }).eq('id', reelId);
+        const { error } = await supabase.from('reels').update({ category_id: targetDbId }).eq('id', reelId);
         if (error) throw error;
-        const targetCat = categories.find(c => c.id === targetCatId);
-        showIncomingAlert(`Moved reel into "${targetCat?.name || 'Category'}" ✓`);
+        const targetCat = categories.find(c => c.id === targetDbId);
+        setLastMoveAction({
+          type: 'reel',
+          id: reelId,
+          prevCatId,
+          targetCatId: targetDbId,
+          title: targetDbId ? (targetCat?.name || 'Category') : 'Root'
+        });
+        showIncomingAlert(targetDbId ? `Moved reel into "${targetCat?.name || 'Category'}" ✓` : 'Removed reel from folder ✓');
       } catch (err: any) {
         console.error('Failed to move reel:', err);
         alert(`Failed to move reel: ${err.message || err}`);
@@ -233,35 +285,50 @@ export default function App() {
       }
     } else if (item.type === 'folder') {
       const folderId = item.id || (item as any).folderId;
-      if (!folderId || folderId === targetCatId) {
+      if (!folderId || folderId === targetDbId) {
         setDraggedItem(null);
         return;
       }
 
-      // Reject if targetCatId is a descendant of folderId
-      let curr: string | null = targetCatId;
-      let isDescendant = false;
-      while (curr) {
-        if (curr === folderId) {
-          isDescendant = true;
-          break;
+      const prevParentId = categories.find(c => c.id === folderId)?.parent_id || null;
+      if (prevParentId === targetDbId) {
+        setDraggedItem(null);
+        return;
+      }
+
+      if (!isRootTarget) {
+        // Reject if targetCatId is a descendant of folderId
+        let curr: string | null = targetCatId;
+        let isDescendant = false;
+        while (curr) {
+          if (curr === folderId) {
+            isDescendant = true;
+            break;
+          }
+          const parentCat = categories.find(c => c.id === curr);
+          curr = parentCat ? parentCat.parent_id : null;
         }
-        const parentCat = categories.find(c => c.id === curr);
-        curr = parentCat ? parentCat.parent_id : null;
-      }
-      if (isDescendant) {
-        setDraggedItem(null);
-        alert('Cannot move a folder into its own subfolder.');
-        return;
+        if (isDescendant) {
+          setDraggedItem(null);
+          alert('Cannot move a folder into its own subfolder.');
+          return;
+        }
       }
 
-      setCategories(prev => prev.map(c => c.id === folderId ? { ...c, parent_id: targetCatId } : c));
+      setCategories(prev => prev.map(c => c.id === folderId ? { ...c, parent_id: targetDbId } : c));
 
       try {
-        const { error } = await supabase.from('categories').update({ parent_id: targetCatId }).eq('id', folderId);
+        const { error } = await supabase.from('categories').update({ parent_id: targetDbId }).eq('id', folderId);
         if (error) throw error;
-        const targetCat = categories.find(c => c.id === targetCatId);
-        showIncomingAlert(`Nested folder inside "${targetCat?.name || 'Parent Folder'}" ✓`);
+        const targetCat = categories.find(c => c.id === targetDbId);
+        setLastMoveAction({
+          type: 'folder',
+          id: folderId,
+          prevCatId: prevParentId,
+          targetCatId: targetDbId,
+          title: targetDbId ? (targetCat?.name || 'Parent Folder') : 'Root'
+        });
+        showIncomingAlert(targetDbId ? `Nested folder inside "${targetCat?.name || 'Parent Folder'}" ✓` : 'Moved folder to root ✓');
       } catch (err: any) {
         console.error('Failed to nest folder:', err);
         alert(`Failed to nest folder: ${err.message || err}`);
@@ -1192,15 +1259,23 @@ export default function App() {
 
   return (
     <div className="flex h-screen bg-fabric text-[#D9D9D9] font-sans antialiased">
-      {/* Toast Alert for Incoming Reels */}
+      {/* Toast Alert for Incoming Reels & Undoable Actions */}
       {incomingAlert && (
-        <div className="fixed top-4 right-4 z-50 flex items-center gap-3 rounded-xl border border-white/10 bg-panel/95 p-4 shadow-2xl backdrop-blur animate-fade-up">
-          <Bell className="h-5 w-5 text-cyanbrand animate-pulse" />
-          <div>
-            <p className="text-xs font-semibold text-ink">New Content Captured!</p>
-            <p className="text-[11px] text-ink-subtle truncate max-w-xs">{incomingAlert}</p>
+        <div className="fixed top-4 right-4 z-50 flex items-center gap-3 rounded-2xl border border-white/20 bg-[#141414]/90 backdrop-blur-2xl px-4 py-3 shadow-[0_20px_50px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.25)] animate-fade-up">
+          <Bell className="h-4 w-4 text-cyan-400 shrink-0 animate-pulse" />
+          <div className="min-w-0 pr-1">
+            <p className="text-xs font-semibold text-white">Notice</p>
+            <p className="text-[11px] text-[#A8A8A8] truncate max-w-xs">{incomingAlert}</p>
           </div>
-          <button onClick={clearIncomingAlert} className="text-ink-subtle hover:text-ink">✕</button>
+          {lastMoveAction && (
+            <button
+              onClick={handleUndoMove}
+              className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-white/10 hover:bg-white/20 text-cyan-300 hover:text-white border border-cyan-400/30 transition active:scale-95 shrink-0"
+            >
+              Undo
+            </button>
+          )}
+          <button onClick={() => { clearIncomingAlert(); setLastMoveAction(null); }} className="text-[#6B6B6B] hover:text-white text-xs">✕</button>
         </div>
       )}
 
@@ -1350,18 +1425,23 @@ export default function App() {
               return (
                 <button
                   key={cat.id}
-                  draggable
+                  draggable={currentPage === 'savelater'}
                   onDragStart={(e) => {
-                    setDraggedItem({ type: 'folder', id: cat.id });
-                    e.dataTransfer.setData('application/json', JSON.stringify({ type: 'folder', id: cat.id }));
+                    if (currentPage !== 'savelater') { e.preventDefault(); return; }
+                    setDraggedItem({ type: 'folder', id: cat.id, folderId: cat.id });
+                    e.dataTransfer.setData('application/json', JSON.stringify({ type: 'folder', id: cat.id, folderId: cat.id }));
                   }}
                   onDragOver={(e) => {
+                    if (currentPage !== 'savelater') return;
                     e.preventDefault();
                     e.stopPropagation();
                     setDragOverCatId(cat.id);
                   }}
                   onDragLeave={() => setDragOverCatId(null)}
-                  onDrop={(e) => handleDropOnCategory(cat.id, e)}
+                  onDrop={(e) => {
+                    if (currentPage !== 'savelater') return;
+                    handleDropOnCategory(cat.id, e);
+                  }}
                   onClick={() => {
                     setCurrentPage('categories');
                     setSelectedCategoryId(cat.id);
@@ -1461,7 +1541,11 @@ export default function App() {
                       className="w-full bg-transparent text-xs sm:text-sm text-[#D9D9D9] placeholder-[#6B6B6B] focus:outline-none"
                     />
                     {searchQuery && (
-                      <div className="flex items-center gap-2 shrink-0 animate-in fade-in zoom-in-90 duration-200">
+                      <div className="flex items-center gap-2 shrink-0 animate-in fade-in zoom-in-90 duration-150">
+                        <span className="font-mono text-[10px] bg-cyan-400/10 text-cyan-300 border border-cyan-400/30 px-2 py-0.5 rounded-full flex items-center gap-1 shadow-[0_0_12px_rgba(34,211,238,0.25)]">
+                          <Zap className="h-2.5 w-2.5 fill-cyan-400 text-cyan-400" />
+                          <span>0ms</span>
+                        </span>
                         <span className="font-mono text-[10px] bg-white/10 text-white px-2 py-0.5 rounded-full border border-white/15 tabular-nums">
                           {displayedReels.length} match{displayedReels.length === 1 ? '' : 'es'}
                         </span>
@@ -1679,20 +1763,6 @@ export default function App() {
                   return (
                     <div
                       key={cat.id}
-                      draggable
-                      onDragStart={(e) => {
-                        setDraggedItem({ type: 'folder', id: cat.id });
-                        e.dataTransfer.setData('application/json', JSON.stringify({ type: 'folder', id: cat.id, folderId: cat.id }));
-                        e.dataTransfer.effectAllowed = 'move';
-                      }}
-                      onDragEnd={() => setDraggedItem(null)}
-                      onDragOver={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setDragOverCatId(cat.id);
-                      }}
-                      onDragLeave={() => setDragOverCatId(null)}
-                      onDrop={(e) => handleDropOnCategory(cat.id, e)}
                       className={`group relative rounded-xl border transition shadow-sm overflow-hidden ${
                         isDragOver ? 'ring-2 ring-white border-white bg-[#262626] scale-105' : 'border-[#333333] bg-[#1A1A1A]/80 hover:bg-[#1A1A1A] hover:border-[#6B6B6B]'
                       }`}
@@ -1786,9 +1856,22 @@ export default function App() {
                   <div className="flex items-center gap-2 mb-2.5">
                     <button
                       onClick={() => setSelectedCategoryId(null)}
-                      className="text-xs text-[#D9D9D9] hover:underline"
+                      onDragOver={(e) => {
+                        if (currentPage !== 'savelater') return;
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setDragOverCatId('__root__');
+                      }}
+                      onDragLeave={() => setDragOverCatId(null)}
+                      onDrop={(e) => {
+                        if (currentPage !== 'savelater') return;
+                        handleDropOnCategory('__root__', e);
+                      }}
+                      className={`text-xs px-2 py-1 rounded-lg border transition ${
+                        dragOverCatId === '__root__' ? 'border-amber-400 bg-amber-950/40 text-amber-200 ring-2 ring-amber-400' : 'border-transparent text-[#D9D9D9] hover:underline'
+                      }`}
                     >
-                      ← Back to Categories
+                      ← Back to Categories {currentPage === 'savelater' && '(Drop to take out)'}
                     </button>
                     <span className="text-[#6B6B6B]">/</span>
                     <span className="text-xs text-white font-semibold">
@@ -1812,20 +1895,25 @@ export default function App() {
                             return (
                               <button
                                 key={sub.id}
-                                draggable
+                                draggable={currentPage === 'savelater'}
                                 onDragStart={(e) => {
-                                  setDraggedItem({ type: 'folder', id: sub.id });
+                                  if (currentPage !== 'savelater') { e.preventDefault(); return; }
+                                  setDraggedItem({ type: 'folder', id: sub.id, folderId: sub.id });
                                   e.dataTransfer.setData('application/json', JSON.stringify({ type: 'folder', id: sub.id, folderId: sub.id }));
                                   e.dataTransfer.effectAllowed = 'move';
                                 }}
                                 onDragEnd={() => setDraggedItem(null)}
                                 onDragOver={(e) => {
+                                  if (currentPage !== 'savelater') return;
                                   e.preventDefault();
                                   e.stopPropagation();
                                   setDragOverCatId(sub.id);
                                 }}
                                 onDragLeave={() => setDragOverCatId(null)}
-                                onDrop={(e) => handleDropOnCategory(sub.id, e)}
+                                onDrop={(e) => {
+                                  if (currentPage !== 'savelater') return;
+                                  handleDropOnCategory(sub.id, e);
+                                }}
                                 onClick={() => setSelectedCategoryId(sub.id)}
                                 className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs text-white transition ${
                                   isOver ? 'ring-2 ring-white border-white bg-[#222]' : 'border-[#333333] bg-[#0A0A0A] hover:bg-[#1A1A1A] hover:border-[#666]'
@@ -1903,6 +1991,30 @@ export default function App() {
 
                   {/* Horizontal Folders Strip (Draggable, Droppable, Click to open instantly) */}
                   <div className="flex items-center gap-2.5 overflow-x-auto pb-1.5 pt-1 scrollbar-thin scrollbar-thumb-zinc-700">
+                    {/* Dedicated "Out of Folder" drop zone */}
+                    <div
+                      onDragOver={(e) => {
+                        if (currentPage !== 'savelater') return;
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setDragOverCatId('__root__');
+                      }}
+                      onDragLeave={() => setDragOverCatId(null)}
+                      onDrop={(e) => {
+                        if (currentPage !== 'savelater') return;
+                        handleDropOnCategory('__root__', e);
+                      }}
+                      className={`group flex items-center gap-2 px-3 py-2 rounded-xl border border-dashed cursor-pointer select-none shrink-0 transition-all text-xs font-medium ${
+                        dragOverCatId === '__root__'
+                          ? 'ring-2 ring-amber-400 border-amber-400 bg-amber-950/40 text-amber-200 scale-105 shadow-[0_0_15px_rgba(251,191,36,0.25)]'
+                          : 'border-white/20 bg-white/[0.04] text-zinc-400 hover:text-white hover:border-white/40'
+                      }`}
+                      title="Drop a reel or folder here to take it out to root (uncategorized)"
+                    >
+                      <FolderMinus className="h-4 w-4 text-amber-400/80" />
+                      <span>Take Out of Folder</span>
+                    </div>
+
                     {rootCategories.map((cat) => {
                       const count = reels.filter(r => r.category_id === cat.id).length;
                       const subCats = categories.filter(c => c.parent_id === cat.id);
@@ -1913,20 +2025,25 @@ export default function App() {
                       return (
                         <div
                           key={cat.id}
-                          draggable
+                          draggable={currentPage === 'savelater'}
                           onDragStart={(e) => {
-                            setDraggedItem({ type: 'folder', id: cat.id });
+                            if (currentPage !== 'savelater') { e.preventDefault(); return; }
+                            setDraggedItem({ type: 'folder', id: cat.id, folderId: cat.id });
                             e.dataTransfer.setData('application/json', JSON.stringify({ type: 'folder', id: cat.id, folderId: cat.id }));
                             e.dataTransfer.effectAllowed = 'move';
                           }}
                           onDragEnd={() => setDraggedItem(null)}
                           onDragOver={(e) => {
+                            if (currentPage !== 'savelater') return;
                             e.preventDefault();
                             e.stopPropagation();
                             setDragOverCatId(cat.id);
                           }}
                           onDragLeave={() => setDragOverCatId(null)}
-                          onDrop={(e) => handleDropOnCategory(cat.id, e)}
+                          onDrop={(e) => {
+                            if (currentPage !== 'savelater') return;
+                            handleDropOnCategory(cat.id, e);
+                          }}
                           onClick={() => {
                             setCurrentPage('categories');
                             setSelectedCategoryId(cat.id);
@@ -1984,11 +2101,11 @@ export default function App() {
 
                     return (
                       <div
-                        key={reel.id}
+                        key={`${reel.id}-${searchQuery ? 's' : 'i'}`}
                         draggable={currentPage === 'savelater'}
                         onDragStart={(e) => {
                           if (currentPage !== 'savelater') return;
-                          setDraggedItem({ type: 'reel', id: reel.id });
+                          setDraggedItem({ type: 'reel', id: reel.id, reelId: reel.id });
                           e.dataTransfer.setData('application/json', JSON.stringify({ type: 'reel', id: reel.id, reelId: reel.id }));
                           e.dataTransfer.effectAllowed = 'move';
                         }}
@@ -2002,7 +2119,7 @@ export default function App() {
                         className={`group relative rounded-2xl border border-[#333333] bg-[#141414] overflow-hidden transition-all duration-300 hover:border-[#6B6B6B] hover:shadow-[0_16px_40px_rgba(0,0,0,0.75)] hover:-translate-y-1 flex flex-col justify-between aspect-[9/14] sm:aspect-[9/14] ${
                           currentPage === 'savelater' ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
                         } ${density === 'compact' ? 'p-3' : density === 'spacious' ? 'p-5' : 'p-4'} ${
-                          searchQuery ? 'animate-in fade-in zoom-in-[0.98] duration-200' : ''
+                          searchQuery ? 'animate-in fade-in zoom-in-95 slide-in-from-bottom-2 duration-150' : ''
                         }`}
                       >
                         {/* Full Card Length Thumbnail Background */}
@@ -2015,14 +2132,14 @@ export default function App() {
                           <img
                             src={reel.thumbnail_url}
                             alt={reel.ai_title || 'Thumbnail'}
-                            className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                            className="absolute inset-0 h-full w-full object-cover transition-all duration-500 ease-out group-hover:scale-105 group-hover:brightness-110"
                           />
                         ) : (
                           <div className="absolute inset-0 bg-gradient-to-br from-[#1C1C1C] via-[#121212] to-[#0A0A0A]" />
                         )}
 
-                        {/* Fade Effect from Card Bottom to Middle */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/85 via-45% to-black/20 pointer-events-none z-[1]" />
+                        {/* Fade Effect from Card Bottom to Middle with Hover Opacity Dimming */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/85 via-45% to-black/20 pointer-events-none z-[1] transition-opacity duration-500 ease-out group-hover:opacity-30" />
 
                         {/* Card Top: Floating Badges & 3-Dot Menu */}
                         <div className="relative z-10 flex items-start justify-between gap-1.5 w-full">
@@ -2114,6 +2231,25 @@ export default function App() {
                                     <span>Get More Info</span>
                                   </button>
 
+                                  {/* Option: Take out of folder */}
+                                  {reel.category_id && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setActiveCardMenuId(null);
+                                        handleDropOnCategory('__root__', {
+                                          preventDefault: () => {},
+                                          stopPropagation: () => {},
+                                          dataTransfer: { getData: () => JSON.stringify({ type: 'reel', id: reel.id, reelId: reel.id }) }
+                                        } as any);
+                                      }}
+                                      className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium text-amber-300 hover:bg-amber-500/15 transition"
+                                    >
+                                      <FolderMinus className="h-3.5 w-3.5 text-amber-400" />
+                                      <span>Take out of folder</span>
+                                    </button>
+                                  )}
+
                                   <div className="h-px bg-white/10 my-1" />
 
                                   {/* Option 3: Direct Instagram Link */}
@@ -2175,11 +2311,11 @@ export default function App() {
 
                     return (
                       <div
-                        key={reel.id}
+                        key={`${reel.id}-${searchQuery ? 's' : 'i'}`}
                         draggable={currentPage === 'savelater'}
                         onDragStart={(e) => {
                           if (currentPage !== 'savelater') return;
-                          setDraggedItem({ type: 'reel', id: reel.id });
+                          setDraggedItem({ type: 'reel', id: reel.id, reelId: reel.id });
                           e.dataTransfer.setData('application/json', JSON.stringify({ type: 'reel', id: reel.id, reelId: reel.id }));
                           e.dataTransfer.effectAllowed = 'move';
                         }}
@@ -2191,7 +2327,7 @@ export default function App() {
                           window.open(reel.url, '_blank', 'noopener,noreferrer');
                         }}
                         className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-xl border border-[#333333] bg-[#1A1A1A]/90 ${density === 'compact' ? 'p-2.5 sm:py-2 sm:px-3' : density === 'spacious' ? 'p-4' : 'p-3'
-                          } backdrop-blur hover:border-[#6B6B6B] ${currentPage === 'savelater' ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} ${activeCardMenuId === reel.id ? 'relative z-20' : ''} transition shadow-sm`}
+                          } backdrop-blur hover:border-[#6B6B6B] ${currentPage === 'savelater' ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} ${activeCardMenuId === reel.id ? 'relative z-20' : ''} ${searchQuery ? 'animate-in fade-in zoom-in-95 duration-150' : ''} transition shadow-sm`}
                       >
                         <div className="flex items-center gap-3.5 min-w-0 flex-1 w-full sm:w-auto">
                           {isPending ? (
@@ -2203,7 +2339,7 @@ export default function App() {
                               <img
                                 src={reel.thumbnail_url}
                                 alt="Thumbnail"
-                                className="h-full w-full object-cover group-hover/thumb:scale-105 transition"
+                                className="h-full w-full object-cover group-hover/thumb:scale-105 group-hover/thumb:brightness-110 transition"
                               />
                             </div>
                           ) : null}
@@ -2320,6 +2456,25 @@ export default function App() {
                                   <Info className="h-3.5 w-3.5 text-zinc-400" />
                                   <span>Get More Info</span>
                                 </button>
+
+                                {/* Option: Take out of folder */}
+                                {reel.category_id && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setActiveCardMenuId(null);
+                                      handleDropOnCategory('__root__', {
+                                        preventDefault: () => {},
+                                        stopPropagation: () => {},
+                                        dataTransfer: { getData: () => JSON.stringify({ type: 'reel', id: reel.id, reelId: reel.id }) }
+                                      } as any);
+                                    }}
+                                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium text-amber-300 hover:bg-amber-500/15 transition"
+                                  >
+                                    <FolderMinus className="h-3.5 w-3.5 text-amber-400" />
+                                    <span>Take out of folder</span>
+                                  </button>
+                                )}
 
                                 <div className="h-px bg-white/10 my-1" />
 
@@ -2782,21 +2937,24 @@ export default function App() {
         </div>
       </main>
 
-      {/* REEL DETAIL PANEL / LIGHTBOX */}
+      {/* REEL DETAIL PANEL / LIGHTBOX (Apple Liquid Glass) */}
       {detailReel && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-fade-up"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/75 backdrop-blur-2xl animate-fade-in"
           onClick={() => setDetailReelId(null)}
         >
           <div
-            className="w-full max-w-4xl max-h-[92vh] flex flex-col rounded-2xl border border-[#333333] bg-[#1A1A1A] shadow-2xl overflow-hidden"
+            className="relative w-full max-w-4xl max-h-[92vh] flex flex-col rounded-[32px] overflow-hidden border border-white/25 bg-gradient-to-b from-white/[0.12] via-[#141414]/95 to-[#0A0A0A]/98 backdrop-blur-3xl shadow-[0_32px_90px_rgba(0,0,0,0.85),inset_0_1.5px_2px_rgba(255,255,255,0.4)] text-white animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Specular Ambient Glow */}
+            <div className="absolute top-0 inset-x-0 h-44 bg-gradient-to-tr from-cyan-400/15 via-white/10 to-purple-500/15 pointer-events-none rounded-t-[32px] blur-2xl" />
+
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-[#333333] px-6 py-4 bg-[#0B0B0B]/60">
+            <div className="relative z-10 flex items-center justify-between border-b border-white/10 px-6 py-4 bg-white/[0.02]">
               <div className="flex items-center gap-3 truncate">
-                <div className="h-8 w-8 rounded-lg bg-[#0B0B0B] border border-[#333333] flex items-center justify-center text-white shrink-0">
-                  <Film className="h-4 w-4 text-[#D9D9D9]" />
+                <div className="h-8 w-8 rounded-xl bg-white/[0.1] border border-white/20 flex items-center justify-center text-white shrink-0 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3)]">
+                  <Film className="h-4 w-4 text-white" />
                 </div>
                 <h3 className="font-oughter text-lg font-bold text-white truncate">
                   {detailReel.ai_title || 'Post Details'}
@@ -2804,18 +2962,18 @@ export default function App() {
               </div>
               <button
                 onClick={() => setDetailReelId(null)}
-                className="p-1.5 rounded-lg text-[#6B6B6B] hover:bg-[#333333] hover:text-white transition"
+                className="p-1.5 rounded-full bg-white/[0.1] hover:bg-white/[0.2] border border-white/20 text-white/80 hover:text-white transition active:scale-90 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3)]"
                 title="Close (Esc)"
               >
-                <X className="h-5 w-5" />
+                <X className="h-4 w-4" />
               </button>
             </div>
 
             {/* Body */}
-            <div className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-6">
+            <div className="relative z-10 flex-1 overflow-y-auto p-6 sm:p-8 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                 {detailReel.thumbnail_url ? (
-                  <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-[#0B0B0B] border border-[#333333] group/preview">
+                  <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-[#0B0B0B] border border-white/15 group/preview shadow-lg">
                     <img
                       src={detailReel.thumbnail_url}
                       alt="Thumbnail"
@@ -2834,35 +2992,35 @@ export default function App() {
                     </a>
                   </div>
                 ) : (detailReel.processing_status === 'pending' || detailReel.processing_status === 'resolving') ? (
-                  <div className="aspect-video w-full rounded-xl bg-[#0B0B0B] border border-[#333333] flex flex-col items-center justify-center gap-3 text-white">
+                  <div className="aspect-video w-full rounded-2xl bg-[#0B0B0B] border border-white/15 flex flex-col items-center justify-center gap-3 text-white">
                     <Morph size={48} />
                     <span className="font-mono-micro text-[#A8A8A8] tracking-wider animate-pulse">PARSING REEL CONTENT...</span>
                   </div>
                 ) : (
-                  <div className="aspect-video w-full rounded-xl bg-[#0B0B0B] border border-[#333333] flex items-center justify-center text-[#6B6B6B] text-xs font-mono-micro">
+                  <div className="aspect-video w-full rounded-2xl bg-[#0B0B0B] border border-white/15 flex items-center justify-center text-[#6B6B6B] text-xs font-mono-micro">
                     [NO THUMBNAIL AVAILABLE]
                   </div>
                 )}
 
-                <div className="flex flex-col justify-between space-y-4 bg-[#0B0B0B] p-5 rounded-xl border border-[#333333]">
+                <div className="flex flex-col justify-between space-y-4 bg-white/[0.04] p-5 rounded-2xl border border-white/10 backdrop-blur-md">
                   <div>
-                    <span className="font-mono-micro text-[#6B6B6B] block mb-1">CREATOR</span>
+                    <span className="font-mono-micro text-white/60 block mb-1">CREATOR</span>
                     <span className="text-base font-bold font-mono text-white">
                       {detailReel.creator_username ? `@${detailReel.creator_username}` : 'Unknown Creator'}
                     </span>
                   </div>
 
                   <div>
-                    <span className="font-mono-micro text-[#6B6B6B] block mb-1">TAXONOMY</span>
-                    <span className="text-sm font-semibold text-[#D9D9D9]">
+                    <span className="font-mono-micro text-white/60 block mb-1">TAXONOMY</span>
+                    <span className="text-sm font-semibold text-white/90">
                       {categories.find(c => c.id === detailReel.category_id)?.name || 'Uncategorized'}
                       {detailReel.subcategory_id && ` / ${categories.find(c => c.id === detailReel.subcategory_id)?.name}`}
                     </span>
                   </div>
 
                   <div>
-                    <span className="font-mono-micro text-[#6B6B6B] block mb-1">SAVED TIMESTAMP</span>
-                    <span className="text-xs text-[#999999] font-mono">
+                    <span className="font-mono-micro text-white/60 block mb-1">SAVED TIMESTAMP</span>
+                    <span className="text-xs text-white/70 font-mono">
                       {new Date(detailReel.created_at).toLocaleString()}
                     </span>
                   </div>
@@ -2870,41 +3028,41 @@ export default function App() {
               </div>
 
               {detailReel.ai_summary && (
-                <div className="p-5 rounded-xl bg-[#0B0B0B] border border-[#333333]">
-                  <span className="font-mono-micro text-[#D9D9D9] block mb-2 font-bold tracking-wider">[KEY TAKEAWAYS &amp; SUMMARY]</span>
-                  <p className="text-sm text-[#D9D9D9] leading-relaxed whitespace-pre-wrap">
+                <div className="p-5 rounded-2xl bg-white/[0.04] border border-white/10 backdrop-blur-md">
+                  <span className="font-mono-micro text-white/80 block mb-2 font-bold tracking-wider">[KEY TAKEAWAYS &amp; SUMMARY]</span>
+                  <p className="text-sm text-white/90 leading-relaxed whitespace-pre-wrap">
                     {detailReel.ai_summary}
                   </p>
                 </div>
               )}
 
               {detailReel.ai_description && (
-                <div className="p-5 rounded-xl bg-[#0B0B0B] border border-[#333333]">
-                  <span className="font-mono-micro text-[#6B6B6B] block mb-2 font-bold tracking-wider">[DESCRIPTION]</span>
-                  <p className="text-sm text-[#999999] leading-relaxed">
+                <div className="p-5 rounded-2xl bg-white/[0.04] border border-white/10 backdrop-blur-md">
+                  <span className="font-mono-micro text-white/60 block mb-2 font-bold tracking-wider">[DESCRIPTION]</span>
+                  <p className="text-sm text-white/80 leading-relaxed">
                     {detailReel.ai_description}
                   </p>
                 </div>
               )}
 
-              <div className="p-5 rounded-xl bg-[#0B0B0B] border border-[#333333]">
-                <span className="font-mono-micro text-[#6B6B6B] block mb-2 font-bold tracking-wider">[ORIGINAL CAPTION]</span>
-                <p className="text-xs text-[#999999] whitespace-pre-wrap max-h-48 overflow-y-auto font-mono leading-relaxed">
+              <div className="p-5 rounded-2xl bg-white/[0.04] border border-white/10 backdrop-blur-md">
+                <span className="font-mono-micro text-white/60 block mb-2 font-bold tracking-wider">[ORIGINAL CAPTION]</span>
+                <p className="text-xs text-white/70 whitespace-pre-wrap max-h-48 overflow-y-auto font-mono leading-relaxed">
                   {detailReel.caption || detailReel.raw_shared_text || 'No caption found'}
                 </p>
               </div>
 
               {/* Direct Play Link */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-xl bg-[#0B0B0B] border border-[#333333] gap-3">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-2xl bg-white/[0.04] border border-white/10 gap-3 backdrop-blur-md">
                 <div className="min-w-0 flex-1">
                   <span className="text-xs font-semibold text-white block">Watch Original Instagram Reel</span>
-                  <span className="text-[11px] text-[#6B6B6B] truncate block font-mono">{detailReel.url}</span>
+                  <span className="text-[11px] text-white/60 truncate block font-mono">{detailReel.url}</span>
                 </div>
                 <a
                   href={detailReel.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-xs font-bold text-black transition hover:bg-[#D9D9D9] active:scale-95 shrink-0"
+                  className="flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-xs font-bold text-black transition hover:bg-zinc-200 active:scale-95 shrink-0 shadow-lg"
                 >
                   <Play className="h-3.5 w-3.5 fill-black" />
                   <span>Play on Instagram</span>
@@ -2914,8 +3072,8 @@ export default function App() {
             </div>
 
             {/* Footer */}
-            <div className="border-t border-[#333333] px-6 py-4 flex items-center justify-between bg-[#0B0B0B]">
-              <span className="font-mono-micro text-[#6B6B6B]">
+            <div className="relative z-10 border-t border-white/10 px-6 py-4 flex items-center justify-between bg-white/[0.02]">
+              <span className="font-mono-micro text-white/60">
                 STATUS: {detailReel.completion_status} ({detailReel.processing_status})
               </span>
 
@@ -2925,9 +3083,9 @@ export default function App() {
                   title="Save for Later"
                   aria-label="Save for Later"
                   aria-pressed={savedLaterIds.includes(detailReel.id)}
-                  className={`rounded-lg border px-3.5 py-1.5 text-xs font-semibold transition active:scale-95 flex items-center gap-1.5 ${savedLaterIds.includes(detailReel.id)
-                      ? 'border-amber-500/40 bg-amber-500/10 text-amber-400'
-                      : 'border-[#333333] bg-[#1A1A1A] hover:bg-[#333333] text-[#D9D9D9]'
+                  className={`rounded-xl border px-3.5 py-1.5 text-xs font-semibold transition active:scale-95 flex items-center gap-1.5 ${savedLaterIds.includes(detailReel.id)
+                      ? 'border-amber-400/40 bg-amber-500/20 text-amber-300 shadow-[0_0_15px_rgba(251,191,36,0.2)]'
+                      : 'border-white/15 bg-white/[0.08] hover:bg-white/[0.16] text-white shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)]'
                     }`}
                 >
                   <Bookmark className={`h-3.5 w-3.5 ${savedLaterIds.includes(detailReel.id) ? 'fill-amber-400' : ''}`} />
@@ -2935,13 +3093,13 @@ export default function App() {
                 </button>
                 <button
                   onClick={() => handleStatusChange(detailReel.id, 'completed')}
-                  className="rounded-lg bg-[#1A1A1A] hover:bg-[#333333] border border-[#333333] px-3.5 py-1.5 text-xs font-semibold text-white transition active:scale-95"
+                  className="rounded-xl bg-white/[0.08] hover:bg-white/[0.16] border border-white/15 px-3.5 py-1.5 text-xs font-semibold text-white transition active:scale-95 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)]"
                 >
                   Mark Watched
                 </button>
                 <button
                   onClick={() => handleStatusChange(detailReel.id, 'archived')}
-                  className="rounded-lg bg-[#1A1A1A] hover:bg-[#333333] border border-[#333333] px-3.5 py-1.5 text-xs font-semibold text-[#999999] hover:text-white transition active:scale-95"
+                  className="rounded-xl bg-white/[0.08] hover:bg-white/[0.16] border border-white/15 px-3.5 py-1.5 text-xs font-semibold text-white/70 hover:text-white transition active:scale-95 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)]"
                 >
                   Archive
                 </button>
@@ -2953,51 +3111,54 @@ export default function App() {
 
 
 
-      {/* Delete All Saved Items Lightbox */}
+      {/* Delete All Saved Items Lightbox (Apple Liquid Glass) */}
       {showClearHistoryLightbox && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/75 backdrop-blur-2xl animate-fade-in"
           onClick={() => !isClearingHistory && setShowClearHistoryLightbox(false)}
         >
           <div
-            className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl space-y-4"
+            className="relative w-full max-w-md rounded-[32px] overflow-hidden border border-white/25 bg-gradient-to-b from-white/[0.12] via-[#141414]/95 to-[#0A0A0A]/98 backdrop-blur-3xl p-6 sm:p-8 shadow-[0_32px_90px_rgba(0,0,0,0.85),inset_0_1.5px_2px_rgba(255,255,255,0.4)] space-y-4 text-white animate-in zoom-in-95 duration-200"
             onClick={e => e.stopPropagation()}
           >
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-red-950/60 border border-red-800/40 flex items-center justify-center text-red-400 shrink-0">
+            {/* Ambient Refraction Glow */}
+            <div className="absolute top-0 inset-x-0 h-36 bg-gradient-to-tr from-red-500/20 via-white/10 to-amber-500/15 pointer-events-none rounded-t-[32px] blur-xl" />
+
+            <div className="relative z-10 flex items-center gap-3">
+              <div className="h-10 w-10 rounded-2xl bg-red-500/15 border border-red-500/30 flex items-center justify-center text-red-400 shrink-0 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)]">
                 <Trash2 className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-white">Delete All Saved Items</h3>
-                <p className="text-xs text-zinc-400">Permanently delete saved items from your account.</p>
+                <h3 className="font-oughter text-base font-bold text-white">Delete All Saved Items</h3>
+                <p className="text-xs text-white/70">Permanently delete saved items from your account.</p>
               </div>
             </div>
 
-            <p className="text-xs text-zinc-300 leading-relaxed">
+            <p className="relative z-10 text-xs text-white/80 leading-relaxed">
               This will permanently remove all {reels.length} saved item(s) from Watch Later. This action cannot be undone.
             </p>
 
-            <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-3.5 flex items-start gap-3">
+            <div className="relative z-10 rounded-2xl border border-white/10 bg-white/[0.04] p-3.5 flex items-start gap-3 backdrop-blur-md">
               <input
                 id="clear-categories-check"
                 type="checkbox"
                 checked={clearCategoriesAlso}
                 onChange={e => setClearCategoriesAlso(e.target.checked)}
-                className="mt-0.5 rounded accent-red-600 cursor-pointer"
+                className="mt-0.5 rounded accent-red-500 cursor-pointer"
               />
-              <label htmlFor="clear-categories-check" className="text-xs text-zinc-300 cursor-pointer select-none">
+              <label htmlFor="clear-categories-check" className="text-xs text-white/80 cursor-pointer select-none">
                 <span className="font-medium text-white block">Also clear all categories &amp; sub-folders</span>
-                <span className="text-[11px] text-zinc-500">
+                <span className="text-[11px] text-white/60">
                   Delete all {categories.length} category folder(s) alongside saved posts.
                 </span>
               </label>
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2">
+            <div className="relative z-10 flex items-center justify-end gap-2 pt-2">
               <button
                 disabled={isClearingHistory}
                 onClick={() => setShowClearHistoryLightbox(false)}
-                className="rounded-lg border border-zinc-700 bg-zinc-800 hover:bg-zinc-700 px-4 py-2 text-xs font-medium text-zinc-300 transition disabled:opacity-50"
+                className="rounded-xl border border-white/15 bg-white/[0.08] hover:bg-white/[0.16] px-4 py-2 text-xs font-semibold text-white/90 transition disabled:opacity-50 active:scale-95 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)]"
               >
                 Cancel
               </button>
@@ -3037,7 +3198,7 @@ export default function App() {
                     setIsClearingHistory(false);
                   }
                 }}
-                className="rounded-lg bg-red-600 hover:bg-red-500 px-4 py-2 text-xs font-semibold text-white transition disabled:opacity-50"
+                className="rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 border border-red-400/30 px-4 py-2 text-xs font-semibold text-white transition disabled:opacity-50 active:scale-95 shadow-[0_8px_20px_rgba(220,38,38,0.35)]"
               >
                 {isClearingHistory ? 'Deleting...' : 'Delete All Saved Items'}
               </button>
@@ -3048,26 +3209,29 @@ export default function App() {
       {/* Edit Category Lightbox - Redesigned to match website palette, icon color picker, expanded icons */}
       {editingCategory && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fade-in"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/75 backdrop-blur-2xl animate-fade-in"
           onClick={() => setEditingCategory(null)}
         >
           <div
-            className="w-full max-w-lg rounded-2xl border border-[#333333] bg-[#141414] p-6 sm:p-7 shadow-2xl space-y-4"
+            className="relative w-full max-w-lg rounded-[32px] overflow-hidden border border-white/25 bg-gradient-to-b from-white/[0.12] via-[#141414]/95 to-[#0A0A0A]/98 backdrop-blur-3xl p-6 sm:p-7 shadow-[0_32px_90px_rgba(0,0,0,0.85),inset_0_1.5px_2px_rgba(255,255,255,0.4)] space-y-4 text-white animate-in zoom-in-95 duration-200"
             onClick={e => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between pb-1 border-b border-[#262626]">
+            {/* Ambient Refraction Glow */}
+            <div className="absolute top-0 inset-x-0 h-40 bg-gradient-to-tr from-cyan-400/15 via-white/10 to-purple-500/15 pointer-events-none rounded-t-[32px] blur-xl" />
+
+            <div className="relative z-10 flex items-center justify-between pb-2 border-b border-white/10">
               <div className="flex items-center gap-2.5">
-                <div className="p-1.5 rounded-lg bg-white/10 text-white border border-white/20">
+                <div className="p-2 rounded-xl bg-white/[0.1] text-white border border-white/20 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3)]">
                   <Palette className="h-4 w-4" />
                 </div>
                 <div>
                   <h3 className="font-oughter text-base font-bold text-white tracking-tight">Customize Category</h3>
-                  <p className="text-[11px] text-[#6B6B6B]">Personalize name, color accent, and iconic symbol</p>
+                  <p className="text-[11px] text-white/70">Personalize name, color accent, and iconic symbol</p>
                 </div>
               </div>
               <button
                 onClick={() => setEditingCategory(null)}
-                className="p-1 rounded-lg text-[#6B6B6B] hover:text-white hover:bg-[#262626] transition"
+                className="p-1.5 rounded-full bg-white/[0.1] hover:bg-white/[0.2] border border-white/20 text-white/80 hover:text-white transition active:scale-90 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3)]"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -3200,17 +3364,17 @@ export default function App() {
                 </span>
               </div>
 
-              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#262626]">
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-white/10">
                 <button
                   type="button"
                   onClick={() => setEditingCategory(null)}
-                  className="rounded-xl border border-[#333333] bg-[#1A1A1A] hover:bg-[#262626] px-4 py-2 text-xs font-medium text-[#D9D9D9] hover:text-white transition"
+                  className="rounded-xl border border-white/15 bg-white/[0.08] hover:bg-white/[0.16] px-4 py-2 text-xs font-semibold text-white/90 transition active:scale-95 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)]"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="rounded-xl bg-white hover:bg-[#E5E5E5] text-black px-5 py-2 text-xs font-bold transition active:scale-95 shadow-sm"
+                  className="rounded-xl bg-white hover:bg-zinc-200 text-black px-5 py-2 text-xs font-bold transition active:scale-95 shadow-[0_4px_16px_rgba(255,255,255,0.25)]"
                 >
                   Save Changes
                 </button>

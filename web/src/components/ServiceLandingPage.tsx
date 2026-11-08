@@ -959,22 +959,25 @@ export default function ServiceLandingPage({
           role="dialog"
           aria-modal="true"
           aria-labelledby="auth-modal-title"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/75 backdrop-blur-2xl animate-fade-in"
         >
-          <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-[24px] border border-white/[0.12] bg-panel p-6 sm:p-8 text-left">
+          <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-[32px] overflow-hidden border border-white/25 bg-gradient-to-b from-white/[0.12] via-[#141414]/95 to-[#0A0A0A]/98 backdrop-blur-3xl p-6 sm:p-8 text-left shadow-[0_32px_90px_rgba(0,0,0,0.85),inset_0_1.5px_2px_rgba(255,255,255,0.4)] text-white animate-in zoom-in-95 duration-200">
+            {/* Ambient Refraction Glow */}
+            <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-tr from-cyan-400/15 via-white/10 to-purple-500/15 pointer-events-none rounded-t-[32px] blur-xl" />
+
             <button
               type="button"
               onClick={() => setShowAuthModal(false)}
-              className="absolute top-6 right-6 text-ink-subtle hover:text-ink transition-colors"
+              className="absolute top-6 right-6 p-1.5 rounded-full bg-white/[0.1] hover:bg-white/[0.2] border border-white/20 text-white/80 hover:text-white transition active:scale-90 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3)] z-10"
               aria-label="Close dialog"
             >
-              <X className="h-5 w-5" />
+              <X className="h-4 w-4" />
             </button>
 
-            <h3 id="auth-modal-title" className="font-oughter text-2xl font-bold text-ink mb-1">
+            <h3 id="auth-modal-title" className="relative z-10 font-oughter text-2xl font-bold text-white mb-1">
               {authMode === 'signin' ? 'Welcome back' : 'Create account'}
             </h3>
-            <p className="text-xs text-ink-muted mb-6">
+            <p className="relative z-10 text-xs text-white/70 mb-6">
               {authMode === 'signin'
                 ? 'Sign in to access your categorized reel library.'
                 : 'Create your account to start auto-sorting your saved reels.'}
