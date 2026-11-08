@@ -203,13 +203,25 @@ flowchart TD
 
 ## 🎨 Design Engineering & UI/UX Craft
 
-Following the `@sexy` design system rules, Watch Later embodies high-craft visual and tactile principles:
+Following the design system rules, Watch Later embodies high-craft visual and tactile principles:
 
-1. **Concentric Radii**: Card borders and inner elements adhere to mathematical concentricity:
+1. **Strict Grayscale Token Architecture**: The landing experience and mobile companion are hard-locked to an intentional six-shade palette:
+   - Base background: `#0B0B0B`
+   - Panel surface: `#1A1A1A`
+   - Muted border: `#333333`
+   - Secondary text: `#6B6B6B`
+   - Soft light surface / text: `#D9D9D9`
+   - Pure highlight / primary: `#FFFFFF`
+2. **Unified Dotted Fabric Background**: Both the web application and the native Android companion feature a continuous micro-texture dot matrix (`bg-fabric`), providing visual continuity from desktop dashboard to native mobile client.
+3. **Scroll-Driven Kinematics & Storytelling**:
+   - Continuous preloader-to-hero sequence where the loading phone rotates in 3D, expands, and settles behind the display headline before translating into a right-leaning resting tilt.
+   - Scroll-linked traveling reel icon that leaves the hero phone on scroll, textured behind the About section, and collides with the Mission section's chaotic feed to snap it into an organized grid library.
+   - Edge-to-edge category tag marquee with mathematically calculated loop transitions.
+4. **Concentric Radii**: Card borders and inner elements adhere to mathematical concentricity:
    $$\text{Radius}_{\text{inner}} = \text{Radius}_{\text{outer}} - \text{Padding}$$
-2. **Kinetic Tactile Feedback**: All clickable elements employ spring physics (`active:scale-[0.98]`, `transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1)`).
-3. **Accessibility First (Reduced Motion)**: The WebGL fluid canvas automatically respects operating system motion preferences via `matchMedia('(prefers-reduced-motion: reduce)')`. When active, WebGL framebuffers and fluid simulation textures are cleared immediately and animation loops are cancelled.
-4. **Subpixel Typography & Geometry**: Dynamic numbers use `tabular-nums` to avoid layout jitter during counting animations. Headlines use `text-wrap: balance` to prevent typographic widows.
+5. **Kinetic Tactile Feedback**: All clickable elements employ spring physics (`active:scale-[0.98]`, `transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1)`).
+6. **Accessibility First (Reduced Motion)**: The WebGL fluid canvas and preloader transitions automatically respect operating system motion preferences via `matchMedia('(prefers-reduced-motion: reduce)')`. When active, heavy motion is disabled and clean static fallbacks render immediately.
+7. **Subpixel Typography & Geometry**: Dynamic numbers use `tabular-nums` to avoid layout jitter during counting animations. Headlines use `text-wrap: balance` to prevent typographic widows.
 
 ---
 

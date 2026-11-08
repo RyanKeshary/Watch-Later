@@ -16,7 +16,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PointMode
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
@@ -82,106 +86,148 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = DarkBg
                 ) {
-                    val isLoggedIn = remember { mutableStateOf(PreferenceManager.isLoggedIn(this)) }
-                    isLoggedInState = isLoggedIn
-                    var userEmail by remember { mutableStateOf(PreferenceManager.getUserEmail(this) ?: "") }
-                    var availableUpdate by remember { mutableStateOf<AppVersionInfo?>(null) }
-                    var isDownloadingUpdate by remember { mutableStateOf(false) }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .drawWithCache {
+                                val dotSpacing = 20.dp.toPx()
+                                val dotStrokeWidth = 2.dp.toPx() // Diameter of 1.dp radius
+                                val dotColor1 = Color.White.copy(alpha = 0.12f)
+                                val dotColor2 = Color.White.copy(alpha = 0.06f)
 
-                    // Check for in-app update on launch
-                    LaunchedEffect(Unit) {
-                        val update = AppUpdater.checkForUpdate()
-                        if (update != null) {
-                            availableUpdate = update
-                        }
-                    }
+                                val points1 = mutableListOf<Offset>()
+                                val points2 = mutableListOf<Offset>()
 
-                    if (isLoggedIn.value) {
-                        LaunchedEffect(Unit) {
-                            lifecycleScope.launch(Dispatchers.IO) {
-                                // 1. Verify remote device registration in Supabase
-                                val isStillRegistered = checkDeviceRegistration()
-                                if (!isStillRegistered) {
-                                    withContext(Dispatchers.Main) {
-                                        PreferenceManager.clearSession(this@MainActivity)
-                                        isLoggedIn.value = false
-                                        Toast.makeText(this@MainActivity, "Device removed from dashboard. Signed out.", Toast.LENGTH_LONG).show()
+                                var x = 0f
+                                while (x < size.width) {
+                                    var y = 0f
+                                    while (y < size.height) {
+                                        points1.add(Offset(x, y))
+                                        points2.add(Offset(x + dotSpacing / 2f, y + dotSpacing / 2f))
+                                        y += dotSpacing
                                     }
-                                    return@launch
+                                    x += dotSpacing
                                 }
 
-                                // 2. Trigger sync of any pending reels
-                                val db = AppDatabase.getDatabase(applicationContext)
-                                db.reelDao().markPendingAuthAsPendingSync()
-                                ReelSyncWorker.enqueue(applicationContext)
+                                onDrawBehind {
+                                    drawPoints(
+                                        points = points1,
+                                        pointMode = PointMode.Points,
+                                        color = dotColor1,
+                                        strokeWidth = dotStrokeWidth,
+                                        cap = StrokeCap.Round
+                                    )
+                                    drawPoints(
+                                        points = points2,
+                                        pointMode = PointMode.Points,
+                                        color = dotColor2,
+                                        strokeWidth = dotStrokeWidth,
+                                        cap = StrokeCap.Round
+                                    )
+                                }
+                            }
+                    ) {
+                        val isLoggedIn = remember { mutableStateOf(PreferenceManager.isLoggedIn(this@MainActivity)) }
+                        isLoggedInState = isLoggedIn
+                        var userEmail by remember { mutableStateOf(PreferenceManager.getUserEmail(this@MainActivity) ?: "") }
+                        var availableUpdate by remember { mutableStateOf<AppVersionInfo?>(null) }
+                        var isDownloadingUpdate by remember { mutableStateOf(false) }
 
-                                // 3. Periodic fast polling (every 4s) while app is open to detect remote de-registration instantly
-                                while (PreferenceManager.isLoggedIn(this@MainActivity)) {
-                                    kotlinx.coroutines.delay(4000)
-                                    val stillValid = checkDeviceRegistration()
-                                    if (!stillValid) {
+                        // Check for in-app update on launch
+                        LaunchedEffect(Unit) {
+                            val update = AppUpdater.checkForUpdate()
+                            if (update != null) {
+                                availableUpdate = update
+                            }
+                        }
+
+                        if (isLoggedIn.value) {
+                            LaunchedEffect(Unit) {
+                                lifecycleScope.launch(Dispatchers.IO) {
+                                    // 1. Verify remote device registration in Supabase
+                                    val isStillRegistered = checkDeviceRegistration()
+                                    if (!isStillRegistered) {
                                         withContext(Dispatchers.Main) {
                                             PreferenceManager.clearSession(this@MainActivity)
                                             isLoggedIn.value = false
                                             Toast.makeText(this@MainActivity, "Device removed from dashboard. Signed out.", Toast.LENGTH_LONG).show()
                                         }
-                                        break
+                                        return@launch
+                                    }
+
+                                    // 2. Trigger sync of any pending reels
+                                    val db = AppDatabase.getDatabase(applicationContext)
+                                    db.reelDao().markPendingAuthAsPendingSync()
+                                    ReelSyncWorker.enqueue(applicationContext)
+
+                                    // 3. Periodic fast polling (every 4s) while app is open to detect remote de-registration instantly
+                                    while (PreferenceManager.isLoggedIn(this@MainActivity)) {
+                                        kotlinx.coroutines.delay(4000)
+                                        val stillValid = checkDeviceRegistration()
+                                        if (!stillValid) {
+                                            withContext(Dispatchers.Main) {
+                                                PreferenceManager.clearSession(this@MainActivity)
+                                                isLoggedIn.value = false
+                                                Toast.makeText(this@MainActivity, "Device removed from dashboard. Signed out.", Toast.LENGTH_LONG).show()
+                                            }
+                                            break
+                                        }
                                     }
                                 }
                             }
-                        }
-                        SettingsScreen(
-                            email = userEmail,
-                            availableUpdate = availableUpdate,
-                            isDownloadingUpdate = isDownloadingUpdate,
-                            onUpdateClick = {
-                                availableUpdate?.let { info ->
-                                    isDownloadingUpdate = true
-                                    Toast.makeText(this@MainActivity, "Starting update download...", Toast.LENGTH_SHORT).show()
+                            SettingsScreen(
+                                email = userEmail,
+                                availableUpdate = availableUpdate,
+                                isDownloadingUpdate = isDownloadingUpdate,
+                                onUpdateClick = {
+                                    availableUpdate?.let { info ->
+                                        isDownloadingUpdate = true
+                                        Toast.makeText(this@MainActivity, "Starting update download...", Toast.LENGTH_SHORT).show()
 
-                                    // Bounded 10-minute timeout watchdog to clear download spinner if download hangs or is cancelled
-                                    val watchdogJob = lifecycleScope.launch {
-                                        kotlinx.coroutines.delay(600_000L)
-                                        if (isDownloadingUpdate) {
-                                            isDownloadingUpdate = false
-                                            Toast.makeText(this@MainActivity, "Update download timed out", Toast.LENGTH_SHORT).show()
+                                        // Bounded 10-minute timeout watchdog to clear download spinner if download hangs or is cancelled
+                                        val watchdogJob = lifecycleScope.launch {
+                                            kotlinx.coroutines.delay(600_000L)
+                                            if (isDownloadingUpdate) {
+                                                isDownloadingUpdate = false
+                                                Toast.makeText(this@MainActivity, "Update download timed out", Toast.LENGTH_SHORT).show()
+                                            }
                                         }
-                                    }
 
-                                    AppUpdater.startDownloadAndInstall(this@MainActivity, info) { result ->
-                                        watchdogJob.cancel()
-                                        runOnUiThread {
-                                            isDownloadingUpdate = false
-                                            when (result) {
-                                                UpdateResult.SUCCESS -> {}
-                                                UpdateResult.BROWSER_OPENED -> {
-                                                    Toast.makeText(this@MainActivity, "Opening update in browser...", Toast.LENGTH_SHORT).show()
-                                                }
-                                                UpdateResult.FAILED -> {
-                                                    Toast.makeText(this@MainActivity, "Update download was cancelled or failed", Toast.LENGTH_SHORT).show()
+                                        AppUpdater.startDownloadAndInstall(this@MainActivity, info) { result ->
+                                            watchdogJob.cancel()
+                                            runOnUiThread {
+                                                isDownloadingUpdate = false
+                                                when (result) {
+                                                    UpdateResult.SUCCESS -> {}
+                                                    UpdateResult.BROWSER_OPENED -> {
+                                                        Toast.makeText(this@MainActivity, "Opening update in browser...", Toast.LENGTH_SHORT).show()
+                                                    }
+                                                    UpdateResult.FAILED -> {
+                                                        Toast.makeText(this@MainActivity, "Update download was cancelled or failed", Toast.LENGTH_SHORT).show()
+                                                    }
                                                 }
                                             }
                                         }
                                     }
+                                },
+                                onLogout = {
+                                    PreferenceManager.clearSession(this@MainActivity)
+                                    isLoggedIn.value = false
                                 }
-                            },
-                            onLogout = {
-                                PreferenceManager.clearSession(this)
-                                isLoggedIn.value = false
-                            }
-                        )
-                    } else {
-                        AuthScreen(
-                            onAuthSuccess = { email ->
-                                userEmail = email
-                                isLoggedIn.value = true
-                                lifecycleScope.launch(Dispatchers.IO) {
-                                    val db = AppDatabase.getDatabase(applicationContext)
-                                    db.reelDao().markPendingAuthAsPendingSync()
-                                    ReelSyncWorker.enqueue(applicationContext)
+                            )
+                        } else {
+                            AuthScreen(
+                                onAuthSuccess = { email ->
+                                    userEmail = email
+                                    isLoggedIn.value = true
+                                    lifecycleScope.launch(Dispatchers.IO) {
+                                        val db = AppDatabase.getDatabase(applicationContext)
+                                        db.reelDao().markPendingAuthAsPendingSync()
+                                        ReelSyncWorker.enqueue(applicationContext)
+                                    }
                                 }
-                            }
-                        )
+                            )
+                        }
                     }
                 }
             }
@@ -256,7 +302,6 @@ class MainActivity : ComponentActivity() {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(DarkBg)
                 .padding(horizontal = 28.dp, vertical = 36.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
@@ -514,7 +559,6 @@ class MainActivity : ComponentActivity() {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(DarkBg)
                 .padding(28.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
