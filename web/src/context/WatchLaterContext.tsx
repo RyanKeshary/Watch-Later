@@ -458,12 +458,12 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
   };
 
   // Main data loader
-  const loadData = useCallback(async () => {
-    setRefreshing(true);
+  const loadData = useCallback(async (silent = false) => {
+    if (!silent) setRefreshing(true);
     try {
       const { data: { session: currentSession } } = await supabase.auth.getSession();
       if (!currentSession?.user?.id) {
-        setRefreshing(false);
+        if (!silent) setRefreshing(false);
         return;
       }
       const requestUserId = currentSession.user.id;
@@ -549,7 +549,7 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
     } catch (err) {
       console.error('Error fetching data:', err);
     } finally {
-      setRefreshing(false);
+      if (!silent) setRefreshing(false);
     }
   }, []);
 
@@ -962,7 +962,15 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
 
       userRealtimeChannel = channel;
 
+      // Active 4-second sync buffer: checks for incoming reels and device connection status without manual page refresh
+      const bufferInterval = setInterval(() => {
+        if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+          loadData(true);
+        }
+      }, 4000);
+
       return () => {
+        clearInterval(bufferInterval);
         userRealtimeChannel = null;
         supabase.removeChannel(channel);
       };
