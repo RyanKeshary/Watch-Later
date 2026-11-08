@@ -18,6 +18,8 @@ import {
 import { supabase } from '@/lib/supabase';
 import SplashCursor from '@/components/SplashCursor';
 import Preloader from '@/components/Preloader';
+import StageshowStepCard from '@/components/StageshowStepCard';
+import StageshowAboutCard from '@/components/StageshowAboutCard';
 
 interface ServicePageProps {
   onSignInSuccess?: () => void;
@@ -582,7 +584,10 @@ export default function ServiceLandingPage({
               </span>
             </h2>
 
-            {/* Removed the small supporting graphic & removed 'Learn how it works' button per §6 */}
+            {/* Faux Product UI Live Vault Card */}
+            <div className="w-full mt-4">
+              <StageshowAboutCard />
+            </div>
           </div>
         </section>
 
@@ -777,6 +782,11 @@ export default function ServiceLandingPage({
                         <p className="text-sm text-[#D9D9D9] leading-relaxed mb-6">
                           {step.body}
                         </p>
+
+                        {/* Interactive Stageshow Faux Product Simulation */}
+                        <div className="mb-6">
+                          <StageshowStepCard stepIndex={idx} />
+                        </div>
                       </div>
 
                       <div className="pt-6 border-t border-[#333333] flex items-center justify-between text-xs text-[#6B6B6B]">
@@ -800,7 +810,7 @@ export default function ServiceLandingPage({
 
             {/* Mobile Touch Native Horizontal Swipe Strip */}
             <div className="md:hidden flex gap-4 overflow-x-auto px-6 pb-6 pt-2 snap-x snap-mandatory scrollbar-none w-full">
-              {steps.map((step) => {
+              {steps.map((step, idx) => {
                 const Icon = step.icon;
                 return (
                   <article
@@ -815,6 +825,9 @@ export default function ServiceLandingPage({
                       </div>
                       <h4 className="text-xl font-bold text-[#FFFFFF] mb-2">{step.title}</h4>
                       <p className="text-xs text-[#D9D9D9] leading-relaxed mb-4">{step.body}</p>
+                      <div className="mb-4">
+                        <StageshowStepCard stepIndex={idx} />
+                      </div>
                     </div>
                     <div className="pt-4 border-t border-[#333333] text-[11px] text-[#6B6B6B]">
                       {step.note}
