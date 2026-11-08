@@ -3,7 +3,6 @@
 @tailwind utilities;
 
 :root {
-  --font-oughter: var(--font-oughter, 'Oughter', sans-serif);
   --font-zolo: var(--font-oughter, 'Oughter', sans-serif);
   --font-mono: 'JetBrains Mono', monospace;
 

@@ -193,26 +193,48 @@ export default function App() {
       setReels(prev => prev.map(r => r.id === reelId ? { ...r, category_id: targetCatId } : r));
       const targetCat = categories.find(c => c.id === targetCatId);
       setIncomingAlert(`Moved reel into "${targetCat?.name || 'Category'}" ✓`);
+      setTimeout(() => setIncomingAlert(null), 5000);
 
       try {
         const { error } = await supabase.from('reels').update({ category_id: targetCatId }).eq('id', reelId);
         if (error) throw error;
       } catch (err: any) {
         console.error('Failed to move reel:', err);
+        alert(`Failed to move reel: ${err.message || err}`);
+        await loadData();
       }
     } else if (item.type === 'folder') {
       const folderId = item.id || (item as any).folderId;
       if (!folderId || folderId === targetCatId) return;
 
+      // Reject if targetCatId is a descendant of folderId
+      let curr: string | null = targetCatId;
+      let isDescendant = false;
+      while (curr) {
+        if (curr === folderId) {
+          isDescendant = true;
+          break;
+        }
+        const parentCat = categories.find(c => c.id === curr);
+        curr = parentCat ? parentCat.parent_id : null;
+      }
+      if (isDescendant) {
+        alert('Cannot move a folder into its own subfolder.');
+        return;
+      }
+
       setCategories(prev => prev.map(c => c.id === folderId ? { ...c, parent_id: targetCatId } : c));
       const targetCat = categories.find(c => c.id === targetCatId);
       setIncomingAlert(`Nested folder inside "${targetCat?.name || 'Parent Folder'}" ✓`);
+      setTimeout(() => setIncomingAlert(null), 5000);
 
       try {
         const { error } = await supabase.from('categories').update({ parent_id: targetCatId }).eq('id', folderId);
         if (error) throw error;
       } catch (err: any) {
         console.error('Failed to nest folder:', err);
+        alert(`Failed to nest folder: ${err.message || err}`);
+        await loadData();
       }
     }
 
@@ -2139,7 +2161,7 @@ export default function App() {
                           window.open(reel.url, '_blank', 'noopener,noreferrer');
                         }}
                         className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-xl border border-[#333333] bg-[#1A1A1A]/90 ${density === 'compact' ? 'p-2.5 sm:py-2 sm:px-3' : density === 'spacious' ? 'p-4' : 'p-3'
-                          } backdrop-blur hover:border-[#6B6B6B] ${currentPage === 'savelater' ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} transition shadow-sm`}
+                          } backdrop-blur hover:border-[#6B6B6B] ${currentPage === 'savelater' ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} ${activeCardMenuId === reel.id ? 'relative z-20' : ''} transition shadow-sm`}
                       >
                         <div className="flex items-center gap-3.5 min-w-0 flex-1 w-full sm:w-auto">
                           {isPending ? (

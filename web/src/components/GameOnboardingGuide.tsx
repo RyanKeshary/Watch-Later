@@ -41,6 +41,15 @@ export default function GameOnboardingGuide({
   });
   const [xp, setXp] = useState(50);
 
+  // Reset progress whenever guide opens
+  useEffect(() => {
+    if (isOpen) {
+      setStep(0);
+      setDemoState({ m1Shared: false, m2Nested: false, m3Watched: false });
+      setXp(50);
+    }
+  }, [isOpen]);
+
   // Keyboard navigation
   useEffect(() => {
     if (!isOpen) return;
