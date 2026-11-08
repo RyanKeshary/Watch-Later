@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useWatchLater, NavPage, isAllContentReel, isInboxReel } from '@/context/WatchLaterContext';
 import { supabase } from '@/lib/supabase';
@@ -375,6 +375,36 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
     });
   }, [reels, currentPage, selectedCategoryId, searchQuery, postTypeFilter, savedLaterIds]);
 
+  // Hover-expand state for collapsed navbar
+  const [isSidebarHovered, setIsSidebarHovered] = useState(false);
+  const isEffectiveExpanded = !sidebarCollapsed || isSidebarHovered;
+
+  // Windowed visible loading for instant response & 0-lag rendering
+  const [visibleCount, setVisibleCount] = useState(24);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    setVisibleCount(24);
+  }, [currentPage, selectedCategoryId, searchQuery, postTypeFilter]);
+
+  useEffect(() => {
+    if (!sentinelRef.current) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setVisibleCount((prev) => Math.min(prev + 20, displayedReels.length));
+        }
+      },
+      { rootMargin: '400px' }
+    );
+    observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
+  }, [displayedReels.length]);
+
+  const renderedReels = useMemo(() => {
+    return displayedReels.slice(0, visibleCount);
+  }, [displayedReels, visibleCount]);
+
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-fabric text-white">
@@ -426,83 +456,77 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
       />
 
       <aside
-        className={`${sidebarCollapsed ? 'w-72 md:w-20' : 'w-72 md:w-72 lg:w-76 xl:w-80 2xl:w-88'
+        onMouseEnter={() => {
+          if (sidebarCollapsed) setIsSidebarHovered(true);
+        }}
+        onMouseLeave={() => {
+          setIsSidebarHovered(false);
+        }}
+        className={`${isEffectiveExpanded ? 'w-72 md:w-72 lg:w-76 xl:w-80' : 'w-72 md:w-20'
           } ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
-          } fixed md:static inset-y-0 left-0 z-40 transition-all duration-300 border-r border-[#333333] bg-[#0B0B0B]/95 md:bg-[#0B0B0B]/80 backdrop-blur p-3.5 sm:p-4 flex flex-col justify-between select-none shrink-0`}
+          } fixed md:static inset-y-0 left-0 z-40 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] border-r border-[#333333] bg-[#0B0B0B]/95 md:bg-[#0B0B0B]/85 backdrop-blur-xl p-3 sm:p-3.5 flex flex-col justify-between select-none shrink-0 ${
+            sidebarCollapsed && isSidebarHovered ? 'shadow-[0_20px_60px_rgba(0,0,0,0.85)] z-50' : ''
+          }`}
       >
         <div className="overflow-y-auto overflow-x-hidden">
           {/* Logo & Toggle */}
-          <div className={`px-2 py-3 mb-2 flex items-center ${sidebarCollapsed ? 'flex-row md:flex-col justify-between md:justify-center gap-3' : 'justify-between'}`}>
-            {!sidebarCollapsed ? (
-              <>
-                <button
-                  onClick={() => { router.push('/'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
-                  className="flex items-center gap-3 cursor-pointer hover:opacity-90 transition text-left group min-w-0"
-                  title="Return to Home"
-                >
-                  <img src="/logo.png" alt="Watch Later" className="h-12 w-12 sm:h-14 sm:w-14 object-contain shrink-0 group-hover:scale-105 transition-transform drop-shadow" />
-                  <div className="min-w-0">
-                    <span className="font-oughter text-xl sm:text-2xl font-bold tracking-tight text-white block leading-none">Watch Later</span>
-                    <span className="text-[11px] text-[#7E7E7E] block leading-tight mt-1 truncate">Never lose a reel worth revisiting.</span>
-                  </div>
-                </button>
-                <div className="flex items-center gap-1 shrink-0">
-                  <button
-                    onClick={() => setSidebarCollapsed(true)}
-                    className="hidden md:inline-flex p-1.5 rounded-lg hover:bg-zinc-800/80 text-zinc-400 hover:text-white transition active:scale-95"
-                    title="Collapse sidebar"
-                  >
-                    <PanelLeftClose className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => setMobileMenuOpen(false)}
-                    aria-label="Close navigation"
-                    className="md:hidden p-1.5 rounded-lg hover:bg-zinc-800/80 text-zinc-400 hover:text-white transition"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
+          <div className="px-1.5 py-2 mb-2 flex items-center justify-between gap-2">
+            <button
+              onClick={() => { router.push('/'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
+              className={`flex items-center gap-2.5 cursor-pointer hover:opacity-90 transition text-left group min-w-0 ${
+                !isEffectiveExpanded ? 'mx-auto' : ''
+              }`}
+              title="Return to Home"
+            >
+              <img
+                src="/logo.png"
+                alt="Watch Later"
+                className={`${isEffectiveExpanded ? 'h-9 w-9 sm:h-10 sm:w-10' : 'h-8 w-8'} object-contain shrink-0 group-hover:scale-105 transition-all drop-shadow`}
+              />
+              {isEffectiveExpanded && (
+                <div className="min-w-0 transition-opacity duration-200">
+                  <span className="font-oughter text-lg sm:text-xl font-bold tracking-tight text-white block leading-none">
+                    Watch Later
+                  </span>
+                  <span className="text-[10px] text-[#7E7E7E] block leading-tight mt-0.5 truncate">
+                    Never lose a reel worth revisiting.
+                  </span>
                 </div>
-              </>
-            ) : (
-              <>
-                {/* Mobile View when collapsed */}
-                <button
-                  onClick={() => { router.push('/'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
-                  className="flex md:hidden items-center gap-3 cursor-pointer hover:opacity-85 transition text-left"
-                  title="Return to Home"
-                >
-                  <img src="/logo.png" alt="Watch Later" className="h-12 w-12 object-contain shrink-0" />
-                  <div>
-                    <span className="font-oughter text-xl font-bold tracking-tight text-white block leading-none">Watch Later</span>
-                    <span className="text-[11px] text-[#7E7E7E] block leading-tight mt-1">Never lose a reel worth revisiting.</span>
-                  </div>
-                </button>
-                <button
-                  onClick={() => setMobileMenuOpen(false)}
-                  aria-label="Close navigation"
-                  className="md:hidden p-1.5 rounded-lg hover:bg-zinc-800/80 text-zinc-400 hover:text-white transition"
-                >
-                  <X className="h-5 w-5" />
-                </button>
+              )}
+            </button>
 
-                {/* Desktop Collapsed Column */}
-                <div className="hidden md:flex flex-col items-center gap-2.5 w-full">
-                  <button
-                    onClick={() => setSidebarCollapsed(false)}
-                    className="p-2 rounded-xl hover:bg-zinc-800 text-zinc-400 hover:text-white transition active:scale-95"
-                    title="Expand sidebar"
-                  >
-                    <PanelLeft className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => { router.push('/'); setSelectedCategoryId(null); }}
-                    className="p-1 rounded-xl hover:bg-white/5 transition active:scale-95 flex items-center justify-center group"
-                    title="Watch Later Home"
-                  >
-                    <img src="/logo.png" alt="Watch Later" className="h-10 w-10 object-contain drop-shadow group-hover:scale-110 transition-transform" />
-                  </button>
-                </div>
-              </>
+            {/* Desktop Collapse / Expand Toggle */}
+            <div className={`flex items-center gap-1 shrink-0 ${!isEffectiveExpanded ? 'hidden' : 'flex'}`}>
+              <button
+                onClick={() => {
+                  setSidebarCollapsed(!sidebarCollapsed);
+                  setIsSidebarHovered(false);
+                }}
+                className="hidden md:inline-flex p-1.5 rounded-lg hover:bg-zinc-800/80 text-zinc-400 hover:text-white transition active:scale-95"
+                title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              >
+                {sidebarCollapsed ? <PanelLeft className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+              </button>
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                aria-label="Close navigation"
+                className="md:hidden p-1.5 rounded-lg hover:bg-zinc-800/80 text-zinc-400 hover:text-white transition"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {!isEffectiveExpanded && (
+              <button
+                onClick={() => {
+                  setSidebarCollapsed(false);
+                  setIsSidebarHovered(false);
+                }}
+                className="hidden md:inline-flex p-1.5 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-white transition active:scale-95 mx-auto"
+                title="Expand sidebar"
+              >
+                <PanelLeft className="h-4 w-4" />
+              </button>
             )}
           </div>
 
@@ -510,90 +534,90 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
           <div className="space-y-1">
             <button
               onClick={() => { router.push('/'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
-              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-start gap-2.5 md:justify-center' : 'gap-2.5'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'home' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
+              className={`flex w-full items-center ${!isEffectiveExpanded ? 'justify-start gap-2.5 md:justify-center' : 'gap-2.5'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'home' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
                 }`}
               title="Home (Stats & Insights)"
             >
               <Home className="h-4 w-4 shrink-0 text-white" />
-              <span className={sidebarCollapsed ? 'inline md:hidden' : 'inline'}>Home</span>
+              <span className={!isEffectiveExpanded ? 'inline md:hidden' : 'inline'}>Home</span>
             </button>
 
             <button
               onClick={() => { router.push('/allcontent'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
-              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-between md:justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'all' && !selectedCategoryId ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
+              className={`flex w-full items-center ${!isEffectiveExpanded ? 'justify-between md:justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'all' && !selectedCategoryId ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
                 }`}
               title="All Content"
             >
               <div className="flex items-center gap-2.5">
                 <Film className="h-4 w-4 shrink-0" />
-                <span className={sidebarCollapsed ? 'inline md:hidden' : 'inline'}>All Content</span>
+                <span className={!isEffectiveExpanded ? 'inline md:hidden' : 'inline'}>All Content</span>
               </div>
-              <span className={`font-mono-micro text-[#6B6B6B] ${sidebarCollapsed ? 'inline md:hidden' : 'inline'}`}>{counts.all}</span>
+              <span className={`font-mono-micro text-[#6B6B6B] ${!isEffectiveExpanded ? 'inline md:hidden' : 'inline'}`}>{counts.all}</span>
             </button>
 
-            {/* Folders Navigation */}
+            {/* Categories Navigation */}
             <button
               onClick={() => { router.push('/categories'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
-              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-between md:justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'categories' && !selectedCategoryId ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
+              className={`flex w-full items-center ${!isEffectiveExpanded ? 'justify-between md:justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'categories' && !selectedCategoryId ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
                 }`}
-              title="Folders"
+              title="Categories"
             >
               <div className="flex items-center gap-2.5">
                 <FolderTree className="h-4 w-4 shrink-0 text-white" />
-                <span className={sidebarCollapsed ? 'inline md:hidden' : 'inline'}>Folders</span>
+                <span className={!isEffectiveExpanded ? 'inline md:hidden' : 'inline'}>Categories</span>
               </div>
-              <span className={`font-mono-micro text-[#6B6B6B] ${sidebarCollapsed ? 'inline md:hidden' : 'inline'}`}>{counts.categories}</span>
+              <span className={`font-mono-micro text-[#6B6B6B] ${!isEffectiveExpanded ? 'inline md:hidden' : 'inline'}`}>{counts.categories}</span>
             </button>
 
             {/* Saves Page */}
             <button
               onClick={() => { router.push('/saves'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
-              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-between md:justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${(currentPage === 'savelater' || currentPage === 'saves') ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
+              className={`flex w-full items-center ${!isEffectiveExpanded ? 'justify-between md:justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${(currentPage === 'savelater' || currentPage === 'saves') ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
                 }`}
               title="Saves"
             >
               <div className="flex items-center gap-2.5">
                 <Bookmark className="h-4 w-4 shrink-0" />
-                <span className={sidebarCollapsed ? 'inline md:hidden' : 'inline'}>Saves</span>
+                <span className={!isEffectiveExpanded ? 'inline md:hidden' : 'inline'}>Saves</span>
               </div>
-              <span className={`font-mono-micro text-[#6B6B6B] ${sidebarCollapsed ? 'inline md:hidden' : 'inline'}`}>{counts.savelater}</span>
+              <span className={`font-mono-micro text-[#6B6B6B] ${!isEffectiveExpanded ? 'inline md:hidden' : 'inline'}`}>{counts.savelater}</span>
             </button>
 
             <button
               onClick={() => { router.push('/watched'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
-              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-between md:justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'watched' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
+              className={`flex w-full items-center ${!isEffectiveExpanded ? 'justify-between md:justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'watched' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
                 }`}
               title="Watched"
             >
               <div className="flex items-center gap-2.5">
                 <CheckCircle className="h-4 w-4 shrink-0 text-[#D9D9D9]" />
-                <span className={sidebarCollapsed ? 'inline md:hidden' : 'inline'}>Watched</span>
+                <span className={!isEffectiveExpanded ? 'inline md:hidden' : 'inline'}>Watched</span>
               </div>
-              <span className={`font-mono-micro text-[#6B6B6B] ${sidebarCollapsed ? 'inline md:hidden' : 'inline'}`}>{counts.watched}</span>
+              <span className={`font-mono-micro text-[#6B6B6B] ${!isEffectiveExpanded ? 'inline md:hidden' : 'inline'}`}>{counts.watched}</span>
             </button>
 
             <button
               onClick={() => { router.push('/inbox'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
-              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-between md:justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'inbox' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
+              className={`flex w-full items-center ${!isEffectiveExpanded ? 'justify-between md:justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'inbox' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
                 }`}
               title="Inbox"
             >
               <div className="flex items-center gap-2.5">
                 <Inbox className="h-4 w-4 shrink-0" />
-                <span className={sidebarCollapsed ? 'inline md:hidden' : 'inline'}>Inbox</span>
+                <span className={!isEffectiveExpanded ? 'inline md:hidden' : 'inline'}>Inbox</span>
               </div>
-              <span className={`font-mono-micro text-[#6B6B6B] ${sidebarCollapsed ? 'inline md:hidden' : 'inline'}`}>{counts.inbox}</span>
+              <span className={`font-mono-micro text-[#6B6B6B] ${!isEffectiveExpanded ? 'inline md:hidden' : 'inline'}`}>{counts.inbox}</span>
             </button>
           </div>
 
-          {/* Dedicated Pinned Folders Sub-Menu */}
+          {/* Dedicated Pinned Categories Sub-Menu */}
           {pinnedCategories.length > 0 && (
             <div className="mt-6 pt-4 border-t border-[#262626]">
               <div className="flex items-center justify-between px-2 mb-2">
-                <span className={`font-mono-micro text-[#6B6B6B] tracking-wider block ${sidebarCollapsed ? 'hidden' : 'block'}`}>
-                  PINNED FOLDERS
+                <span className={`font-mono-micro text-[#6B6B6B] tracking-wider block ${!isEffectiveExpanded ? 'hidden' : 'block'}`}>
+                  PINNED CATEGORIES
                 </span>
-                <Pin className={`h-3 w-3 text-[#6B6B6B] ${sidebarCollapsed ? 'mx-auto' : ''}`} />
+                <Pin className={`h-3 w-3 text-[#6B6B6B] ${!isEffectiveExpanded ? 'mx-auto' : ''}`} />
               </div>
 
               <div className="space-y-0.5">
@@ -620,7 +644,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                         setSelectedCategoryId(cat.id);
                         setMobileMenuOpen(false);
                       }}
-                      className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} rounded-lg px-2.5 py-1.5 text-xs font-medium transition ${
+                      className={`flex w-full items-center ${!isEffectiveExpanded ? 'justify-center' : 'justify-between'} rounded-lg px-2.5 py-1.5 text-xs font-medium transition ${
                         dragOverCatId === cat.id
                           ? 'ring-2 ring-white border-white bg-[#262626] scale-105'
                           : isSelected
@@ -631,9 +655,9 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                     >
                       <div className="flex items-center gap-2 truncate">
                         {renderCategoryIcon(catIcon, `h-3 w-3 ${theme.text}`)}
-                        <span className={`truncate ${sidebarCollapsed ? 'hidden' : 'inline'}`}>{cat.name}</span>
+                        <span className={`truncate ${!isEffectiveExpanded ? 'hidden' : 'inline'}`}>{cat.name}</span>
                       </div>
-                      <span className={`font-mono-micro text-[#6B6B6B] ${sidebarCollapsed ? 'hidden' : 'inline'}`}>{count}</span>
+                      <span className={`font-mono-micro text-[#6B6B6B] ${!isEffectiveExpanded ? 'hidden' : 'inline'}`}>{count}</span>
                     </button>
                   );
                 })}
@@ -649,12 +673,12 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
               router.push('/settings');
               setMobileMenuOpen(false);
             }}
-            className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'gap-2.5'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'settings' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
+            className={`flex w-full items-center ${!isEffectiveExpanded ? 'justify-center' : 'gap-2.5'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'settings' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
               }`}
             title="Settings & Retention"
           >
             <SettingsIcon className="h-4 w-4 shrink-0 text-zinc-400" />
-            <span className={sidebarCollapsed ? 'hidden' : 'inline'}>Settings</span>
+            <span className={!isEffectiveExpanded ? 'hidden' : 'inline'}>Settings</span>
           </button>
         </div>
       </aside>
@@ -683,7 +707,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
               <h2 className="font-sans text-sm sm:text-base font-bold text-white tracking-tight whitespace-nowrap">
                 {currentPage === 'home' && 'Analytics & Intelligence'}
                 {currentPage === 'all' && 'All Saved Content'}
-                {currentPage === 'categories' && (selectedCategoryId ? categories.find(c => c.id === selectedCategoryId)?.name || 'Folder' : 'Folders Directory')}
+                {currentPage === 'categories' && (selectedCategoryId ? categories.find(c => c.id === selectedCategoryId)?.name || 'Category' : 'Categories Directory')}
                 {(currentPage === 'savelater' || currentPage === 'saves') && 'Saves'}
                 {currentPage === 'watched' && 'Watched Collection'}
                 {currentPage === 'inbox' && 'Processing Inbox'}
@@ -710,16 +734,13 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                       className="w-full bg-transparent text-xs sm:text-sm text-[#D9D9D9] placeholder-[#6B6B6B] focus:outline-none"
                     />
                     {searchQuery && (
-                      <div className="flex items-center gap-2 shrink-0 animate-in fade-in zoom-in-90 duration-150">
-                        <span className="font-mono text-[10px] bg-cyan-400/10 text-cyan-300 border border-cyan-400/30 px-2 py-0.5 rounded-full flex items-center gap-1 shadow-[0_0_12px_rgba(34,211,238,0.25)]">
-                          <Zap className="h-2.5 w-2.5 fill-cyan-400 text-cyan-400" />
-                          <span>0ms</span>
-                        </span>
-                        <span className="font-mono text-[10px] bg-white/10 text-white px-2 py-0.5 rounded-full border border-white/15 tabular-nums">
-                          {displayedReels.length} match{displayedReels.length === 1 ? '' : 'es'}
-                        </span>
-                        <button onClick={() => setSearchQuery('')} className="text-[#6B6B6B] hover:text-white text-xs p-0.5">✕</button>
-                      </div>
+                      <button
+                        onClick={() => setSearchQuery('')}
+                        className="text-[#6B6B6B] hover:text-white p-1 rounded-md hover:bg-white/10 transition shrink-0 text-xs"
+                        title="Clear search"
+                      >
+                        ✕
+                      </button>
                     )}
                   </div>
                 </div>
@@ -850,12 +871,12 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                 )
               )}
 
-              {/* Compressed Niche Folder Distribution */}
+              {/* Compressed Niche Category Distribution */}
               <div className="rounded-2xl border border-[#333333] bg-[#1A1A1A]/80 p-5 shadow-sm">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="font-sans text-sm font-bold text-white tracking-tight flex items-center gap-2">
                     <PieChart className="h-4 w-4 text-[#D9D9D9]" />
-                    <span>Niche Folder Breakdown</span>
+                    <span>Niche Category Breakdown</span>
                   </h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -879,20 +900,20 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
             </div>
           )}
 
-          {/* FOLDERS DIRECTORY VIEW */}
+          {/* CATEGORIES DIRECTORY VIEW */}
           {currentPage === 'categories' && !selectedCategoryId && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-sans text-sm sm:text-base font-bold text-white tracking-tight">Folders Directory</h3>
-                  <p className="text-[11px] sm:text-xs text-[#6B6B6B]">Click any folder to open and explore saved posts directly.</p>
+                  <h3 className="font-sans text-sm sm:text-base font-bold text-white tracking-tight">Categories Directory</h3>
+                  <p className="text-[11px] sm:text-xs text-[#6B6B6B]">Click any category to open and explore saved posts directly.</p>
                 </div>
                 <button
                   onClick={() => setIsCreatingCategory(!isCreatingCategory)}
                   className="flex items-center gap-1.5 rounded-lg bg-[#D9D9D9] hover:bg-white text-[#0B0B0B] px-3 py-1.5 text-xs font-semibold active:scale-95 transition"
                 >
                   <Plus className="h-3.5 w-3.5" />
-                  <span>New Folder</span>
+                  <span>New Category</span>
                 </button>
               </div>
 
@@ -903,16 +924,16 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                     required
                     value={newCategoryName}
                     onChange={(e) => setNewCategoryName(e.target.value)}
-                    placeholder="Folder name..."
+                    placeholder="Category name..."
                     className="flex-1 min-w-[180px] rounded-lg border border-[#333333] bg-[#0B0B0B] px-3 py-1.5 text-xs text-white placeholder-[#6B6B6B] focus:border-[#D9D9D9] focus:outline-none"
                   />
                   <button type="submit" className="rounded-lg bg-[#D9D9D9] hover:bg-white text-[#0B0B0B] px-3.5 py-1.5 text-xs font-semibold">
-                    Create Folder
+                    Create Category
                   </button>
                 </form>
               )}
 
-              {/* Minimalist Folder Tiles */}
+              {/* Minimalist Category Tiles */}
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-3.5">
                 {rootCategories.map(cat => {
                   const count = reels.filter(r => r.category_id === cat.id).length;
@@ -949,7 +970,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                         </button>
                         <button
                           onClick={(e) => handleDeleteCategory(cat.id, e)}
-                          title="Delete folder"
+                          title="Delete category"
                           className="p-1 rounded bg-[#0B0B0B]/80 hover:bg-red-950/80 text-zinc-400 hover:text-red-400 transition"
                         >
                           <Trash2 className="h-3 w-3" />
@@ -1010,7 +1031,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                         dragOverCatId === '__root__' ? 'border-amber-400 bg-amber-950/40 text-amber-200 ring-2 ring-amber-400' : 'border-transparent text-[#D9D9D9] hover:underline'
                       }`}
                     >
-                      ← Back to Folders {(currentPage === 'savelater' || currentPage === 'saves' || currentPage === 'categories') && '(Drop to take out)'}
+                      ← Back to Categories {(currentPage === 'savelater' || currentPage === 'saves' || currentPage === 'categories') && '(Drop to take out)'}
                     </button>
                     <span className="text-[#6B6B6B]">/</span>
                     <span className="text-xs text-white font-semibold">
@@ -1018,7 +1039,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                     </span>
                   </div>
 
-                  {/* Subfolders inside this selected category */}
+                  {/* Subcategories inside this selected category */}
                   {(() => {
                     const subCats = categories.filter(c => c.parent_id === selectedCategoryId);
                     if (subCats.length === 0) return null;
@@ -1026,7 +1047,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                     return (
                       <div className="p-3 rounded-xl border border-[#2E2E2E] bg-[#141414]/90 backdrop-blur space-y-2">
                         <span className="text-[10px] font-mono uppercase tracking-wider text-[#737373] block">
-                          Nested Folders ({subCats.length})
+                          Nested Categories ({subCats.length})
                         </span>
                         <div className="flex flex-wrap gap-2">
                           {subCats.map(sub => {
@@ -1038,8 +1059,8 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                                 draggable={isDragAllowed}
                                 onDragStart={(e) => {
                                   if (!isDragAllowed) { e.preventDefault(); return; }
-                                  setDraggedItem({ type: 'folder', id: sub.id, folderId: sub.id });
-                                  e.dataTransfer.setData('application/json', JSON.stringify({ type: 'folder', id: sub.id, folderId: sub.id }));
+                                  setDraggedItem({ type: 'category', id: sub.id, categoryId: sub.id });
+                                  e.dataTransfer.setData('application/json', JSON.stringify({ type: 'category', id: sub.id, categoryId: sub.id }));
                                   e.dataTransfer.effectAllowed = 'move';
                                 }}
                                 onDragEnd={() => setDraggedItem(null)}
@@ -1072,42 +1093,85 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                 </div>
               )}
 
-              {/* Option to create folders in Saves */}
+              {/* Option to create and manage categories in Saves */}
               {(currentPage === 'savelater' || currentPage === 'saves') && !selectedCategoryId && (
-                <div className="mb-4 flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl border border-white/10 bg-[#141414]/80 backdrop-blur-md">
-                  <div className="flex items-center gap-2.5">
-                    <div className="p-1.5 rounded-lg bg-white/10 text-white">
-                      <Folder className="h-4 w-4" />
+                <div className="mb-4 space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl border border-white/10 bg-[#141414]/80 backdrop-blur-md">
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-1.5 rounded-lg bg-white/10 text-white">
+                        <FolderTree className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <span className="text-xs font-semibold text-white block">Saves Vault Categories</span>
+                        <span className="text-[11px] text-[#7E7E7E] block">Drop saved reels into categories or click to explore</span>
+                      </div>
                     </div>
-                    <div>
-                      <span className="text-xs font-semibold text-white block">Saves Vault Folders</span>
-                      <span className="text-[11px] text-[#7E7E7E] block">Create folders to organize your saved reels</span>
-                    </div>
+                    <button
+                      onClick={() => setIsCreatingCategory(!isCreatingCategory)}
+                      className="flex items-center gap-1.5 rounded-xl bg-white hover:bg-zinc-200 text-black px-3 py-1.5 text-xs font-semibold active:scale-95 transition shadow-sm"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      <span>New Category</span>
+                    </button>
                   </div>
-                  <button
-                    onClick={() => setIsCreatingCategory(!isCreatingCategory)}
-                    className="flex items-center gap-1.5 rounded-xl bg-white hover:bg-zinc-200 text-black px-3 py-1.5 text-xs font-semibold active:scale-95 transition shadow-sm"
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                    <span>New Folder</span>
-                  </button>
-                </div>
-              )}
 
-              {isCreatingCategory && (currentPage === 'savelater' || currentPage === 'saves') && !selectedCategoryId && (
-                <form onSubmit={handleCreateCategory} className="mb-4 p-3.5 rounded-2xl border border-white/15 bg-[#181818]/95 backdrop-blur-xl flex flex-wrap gap-2 animate-fade-up">
-                  <input
-                    type="text"
-                    required
-                    value={newCategoryName}
-                    onChange={(e) => setNewCategoryName(e.target.value)}
-                    placeholder="New folder name..."
-                    className="flex-1 min-w-[180px] rounded-xl border border-white/20 bg-black/60 px-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:border-white focus:outline-none"
-                  />
-                  <button type="submit" className="rounded-xl bg-white hover:bg-zinc-200 text-black px-3.5 py-1.5 text-xs font-semibold active:scale-95 transition">
-                    Create Folder
-                  </button>
-                </form>
+                  {isCreatingCategory && (
+                    <form onSubmit={handleCreateCategory} className="p-3.5 rounded-2xl border border-white/15 bg-[#181818]/95 backdrop-blur-xl flex flex-wrap gap-2 animate-fade-up">
+                      <input
+                        type="text"
+                        required
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        placeholder="New category name..."
+                        className="flex-1 min-w-[180px] rounded-xl border border-white/20 bg-black/60 px-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:border-white focus:outline-none"
+                      />
+                      <button type="submit" className="rounded-xl bg-white hover:bg-zinc-200 text-black px-3.5 py-1.5 text-xs font-semibold active:scale-95 transition">
+                        Create Category
+                      </button>
+                    </form>
+                  )}
+
+                  {/* Horizontal generated category drop targets in Saves */}
+                  <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                    {rootCategories.map(cat => {
+                      const count = reels.filter(r => r.category_id === cat.id && savedLaterIds.includes(r.id)).length;
+                      const isDragOver = dragOverCatId === cat.id;
+                      const iconName = categoryMetaMap[cat.id]?.icon || 'Folder';
+                      const theme = getCategoryTheme(iconName, categoryMetaMap[cat.id]?.color);
+
+                      return (
+                        <div
+                          key={cat.id}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setDragOverCatId(cat.id);
+                          }}
+                          onDragLeave={() => setDragOverCatId(null)}
+                          onDrop={(e) => {
+                            handleDropOnCategory(cat.id, e);
+                          }}
+                          onClick={() => setSelectedCategoryId(cat.id)}
+                          className={`group flex items-center gap-2 px-3 py-2 rounded-xl border transition-all cursor-pointer shrink-0 select-none ${
+                            isDragOver
+                              ? 'border-cyan-400 bg-cyan-950/40 text-cyan-200 ring-2 ring-cyan-400 scale-105'
+                              : 'border-white/10 bg-[#161616]/80 hover:bg-[#202020] hover:border-white/25 text-[#D9D9D9]'
+                          }`}
+                        >
+                          <div className={`p-1 rounded-lg ${theme.bg} ${theme.border} border`}>
+                            {renderCategoryIcon(iconName, `h-3.5 w-3.5 ${theme.text}`)}
+                          </div>
+                          <span className="text-xs font-medium text-white group-hover:text-cyan-200 transition-colors">
+                            {cat.name}
+                          </span>
+                          <span className="text-[10px] font-mono text-zinc-400 bg-white/5 px-1.5 py-0.5 rounded-full">
+                            {count}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               )}
 
               {displayedReels.length === 0 ? (
@@ -1126,7 +1190,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                       ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'
                       : 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4'
                 }>
-                  {displayedReels.map((reel) => {
+                  {renderedReels.map((reel) => {
                     const extractionErr = Array.isArray(reel.extracted_content)
                       ? reel.extracted_content[0]?.extraction_error
                       : reel.extracted_content?.extraction_error;
@@ -1155,10 +1219,10 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                           isDragAllowed ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
                         } transition-all duration-500 shadow-md ${
                           density === 'compact'
-                            ? 'min-h-[420px] aspect-[9/18] p-3'
+                            ? 'min-h-[380px] aspect-[9/16] p-3'
                             : density === 'spacious'
-                              ? 'min-h-[560px] aspect-[9/16] p-5'
-                              : 'min-h-[480px] sm:min-h-[500px] aspect-[9/17] p-4'
+                              ? 'min-h-[500px] aspect-[9/15] p-4'
+                              : 'min-h-[430px] sm:min-h-[450px] aspect-[9/15] p-3.5'
                         } ${activeCardMenuId === reel.id ? 'z-20' : ''} ${searchQuery ? 'animate-in fade-in zoom-in-95 duration-150' : ''}`}
                       >
                         {/* Media Cover Layer */}
@@ -1167,9 +1231,11 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                             <img
                               src={reel.thumbnail_url}
                               alt="Reel Cover"
-                              className="h-full w-full object-cover opacity-30 filter blur-[0.5px] group-hover:opacity-85 group-hover:blur-0 group-hover:scale-105 transition-all duration-700 ease-out"
+                              loading="lazy"
+                              decoding="async"
+                              className="h-full w-full object-cover opacity-70 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500 ease-out"
                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-[#0B0B0B] via-[#0B0B0B]/80 to-[#0B0B0B]/40 group-hover:from-[#0B0B0B]/70 group-hover:via-[#0B0B0B]/25 group-hover:to-transparent transition-all duration-700 ease-out" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/15 group-hover:from-black/75 group-hover:via-black/25 group-hover:to-transparent transition-all duration-500 ease-out" />
                           </div>
                         )}
 
@@ -1207,10 +1273,10 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                                   e.stopPropagation();
                                   setActiveCardMenuId(activeCardMenuId === reel.id ? null : reel.id);
                                 }}
-                                className={`p-1.5 rounded-xl text-zinc-400 hover:text-white transition-all duration-500 ${
+                                className={`p-1.5 rounded-xl text-zinc-400 hover:text-white transition-colors duration-200 ${
                                   activeCardMenuId === reel.id
                                     ? 'opacity-100 bg-white/15'
-                                    : 'opacity-70 group-hover:opacity-0 hover:!opacity-100 hover:bg-white/15'
+                                    : 'opacity-80 hover:opacity-100 hover:bg-white/15'
                                 }`}
                                 title="Actions"
                               >
@@ -1219,10 +1285,10 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
 
                               {activeCardMenuId === reel.id && (
                                 <div
-                                  className="absolute right-full top-0 mr-2.5 w-48 rounded-2xl border border-white/25 bg-gradient-to-b from-white/[0.18] via-[#141414]/90 to-[#0A0A0A]/95 backdrop-blur-2xl p-1.5 shadow-[0_20px_50px_rgba(0,0,0,0.85),inset_0_1px_1px_rgba(255,255,255,0.35)] z-50 animate-in fade-in zoom-in-95 duration-200 text-left select-none"
+                                  className="absolute right-full top-0 mr-2.5 w-48 rounded-2xl border border-white/20 bg-[#0C0C0E]/98 backdrop-blur-2xl p-1.5 shadow-[0_24px_60px_rgba(0,0,0,0.95),inset_0_1px_1px_rgba(255,255,255,0.25)] z-50 animate-in fade-in zoom-in-95 duration-150 text-left select-none text-white"
                                   onClick={(e) => e.stopPropagation()}
                                 >
-                                  <div className="absolute top-0 inset-x-0 h-10 bg-gradient-to-b from-white/15 to-transparent pointer-events-none rounded-t-2xl" />
+                                  <div className="absolute top-0 inset-x-0 h-10 bg-gradient-to-b from-white/10 to-transparent pointer-events-none rounded-t-2xl" />
 
                                   <button
                                     onClick={() => {
@@ -1265,11 +1331,11 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                         </div>
 
                         {/* Card Bottom: Content info */}
-                        <div className="relative z-10 w-full mt-auto pt-4 transition-transform duration-700 ease-out transform group-hover:translate-y-8">
-                          <h3 className="font-sans font-bold text-white leading-snug text-sm sm:text-base mb-1.5 line-clamp-2 drop-shadow-sm group-hover:text-zinc-100 transition">
+                        <div className="relative z-10 w-full mt-auto pt-3 transition-transform duration-500 ease-out transform group-hover:translate-y-16">
+                          <h3 className="font-sans font-bold text-white leading-snug text-sm sm:text-base mb-1 line-clamp-2 group-hover:line-clamp-1 drop-shadow-sm group-hover:text-zinc-100 transition-all">
                             {reel.ai_title || 'Instagram Post'}
                           </h3>
-                          <p className="text-xs text-zinc-300 line-clamp-2 leading-relaxed transition-opacity duration-700 group-hover:opacity-75">
+                          <p className="text-xs text-zinc-300 line-clamp-2 leading-relaxed transition-opacity duration-300 group-hover:opacity-0 group-hover:pointer-events-none">
                             {reel.ai_summary || reel.ai_description || reel.caption || 'No summary available'}
                           </p>
 
@@ -1282,11 +1348,19 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                       </div>
                     );
                   })}
+                  <div ref={sentinelRef} className="col-span-full h-8 w-full flex items-center justify-center py-2">
+                    {visibleCount < displayedReels.length && (
+                      <div className="flex items-center gap-2 text-xs text-zinc-500 font-mono">
+                        <Morph size={16} />
+                        <span>Loading more reels...</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               ) : (
                 /* Dedicated List View */
                 <div className="space-y-2.5">
-                  {displayedReels.map((reel) => {
+                  {renderedReels.map((reel) => {
                     const extractionErr = Array.isArray(reel.extracted_content)
                       ? reel.extracted_content[0]?.extraction_error
                       : reel.extracted_content?.extraction_error;
@@ -1328,6 +1402,8 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                               <img
                                 src={reel.thumbnail_url}
                                 alt="Thumbnail"
+                                loading="lazy"
+                                decoding="async"
                                 className="h-full w-full object-cover group-hover/thumb:scale-105 group-hover/thumb:brightness-110 transition"
                               />
                             </div>
@@ -1393,10 +1469,10 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
 
                             {activeCardMenuId === reel.id && (
                               <div
-                                className="absolute right-full top-0 mr-2 w-48 rounded-2xl border border-white/25 bg-gradient-to-b from-white/[0.18] via-[#141414]/90 to-[#0A0A0A]/95 backdrop-blur-2xl p-1.5 shadow-[0_20px_50px_rgba(0,0,0,0.85),inset_0_1px_1px_rgba(255,255,255,0.35)] z-50 animate-in fade-in zoom-in-95 duration-200 text-left select-none"
+                                className="absolute right-full top-0 mr-2 w-48 rounded-2xl border border-white/20 bg-[#0C0C0E]/98 backdrop-blur-2xl p-1.5 shadow-[0_24px_60px_rgba(0,0,0,0.95),inset_0_1px_1px_rgba(255,255,255,0.25)] z-50 animate-in fade-in zoom-in-95 duration-150 text-left select-none text-white"
                                 onClick={(e) => e.stopPropagation()}
                               >
-                                <div className="absolute top-0 inset-x-0 h-10 bg-gradient-to-b from-white/15 to-transparent pointer-events-none rounded-t-2xl" />
+                                <div className="absolute top-0 inset-x-0 h-10 bg-gradient-to-b from-white/10 to-transparent pointer-events-none rounded-t-2xl" />
 
                                 <button
                                   onClick={() => {
@@ -1439,6 +1515,14 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                       </div>
                     );
                   })}
+                  <div ref={sentinelRef} className="h-8 w-full flex items-center justify-center py-2">
+                    {visibleCount < displayedReels.length && (
+                      <div className="flex items-center gap-2 text-xs text-zinc-500 font-mono">
+                        <Morph size={16} />
+                        <span>Loading more reels...</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -1858,7 +1942,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
       {/* REEL DETAIL PANEL / LIGHTBOX (Apple Liquid Glass) */}
       {detailReel && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/75 backdrop-blur-2xl animate-fade-in"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/25 backdrop-blur-md animate-fade-in"
           onClick={() => setDetailReelId(null)}
         >
           <div
@@ -1886,9 +1970,10 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
             </div>
 
             <div className="relative z-10 flex-1 overflow-y-auto p-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                <div className="md:col-span-4 flex flex-col gap-3">
-                  <div className="relative aspect-[9/16] w-full rounded-2xl overflow-hidden border border-white/20 bg-black/50 shadow-2xl">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+                {/* Left: Video ONLY */}
+                <div className="md:col-span-5 flex flex-col items-center">
+                  <div className="relative aspect-[9/16] w-full rounded-2xl overflow-hidden border border-white/20 bg-black/60 shadow-2xl">
                     {detailReel.thumbnail_url ? (
                       <img
                         src={detailReel.thumbnail_url}
@@ -1897,7 +1982,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center text-white/40">
-                        <Play className="h-12 w-12" />
+                        <Film className="h-12 w-12" />
                       </div>
                     )}
                     <a
@@ -1912,15 +1997,43 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                       </div>
                     </a>
                   </div>
-
-                  <div className="flex flex-col gap-1 text-[11px] text-white/60 font-mono">
-                    <span>Creator: {detailReel.creator_username || 'Unknown'}</span>
-                    <span>Date: {new Date(detailReel.created_at).toLocaleString()}</span>
-                    <span>Platform: {detailReel.url.includes('tiktok') ? 'TikTok' : detailReel.url.includes('youtu') ? 'YouTube' : 'Instagram'}</span>
-                  </div>
                 </div>
 
-                <div className="md:col-span-8 space-y-5">
+                {/* Right: ALL Content & Information */}
+                <div className="md:col-span-7 flex flex-col space-y-4">
+                  {/* Category & Platform Tags */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {(() => {
+                      const cat = categories.find(c => c.id === detailReel.category_id);
+                      const iconName = cat ? (categoryMetaMap[cat.id]?.icon || 'Folder') : 'Folder';
+                      const theme = getCategoryTheme(iconName, cat ? categoryMetaMap[cat.id]?.color : undefined);
+                      return (
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-medium ${theme.bg} ${theme.text} border ${theme.border}`}>
+                          {renderCategoryIcon(iconName, "h-3.5 w-3.5")}
+                          <span>{cat?.name || 'Uncategorized'}</span>
+                        </span>
+                      );
+                    })()}
+                    <span className="font-mono text-[11px] text-zinc-300 bg-white/10 border border-white/15 px-3 py-1 rounded-xl">
+                      {detailReel.url.includes('tiktok') ? 'TikTok' : detailReel.url.includes('youtu') ? 'YouTube' : 'Instagram'}
+                    </span>
+                  </div>
+
+                  {/* Metadata: Creator & Date */}
+                  <div className="grid grid-cols-2 gap-2 p-3.5 rounded-2xl bg-white/[0.04] border border-white/10 text-xs">
+                    <div>
+                      <span className="text-[10px] text-zinc-400 uppercase font-mono block">Creator</span>
+                      <span className="font-semibold text-white">@{detailReel.creator_username || 'unknown'}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-zinc-400 uppercase font-mono block">Added On</span>
+                      <span className="text-zinc-300 font-mono text-[11px]">
+                        {new Date(detailReel.created_at).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* AI Synthesized Summary */}
                   <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 backdrop-blur-md">
                     <span className="text-[10px] font-mono uppercase tracking-wider text-cyan-300 block mb-1">
                       AI Synthesized Summary
@@ -1930,18 +2043,20 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                     </p>
                   </div>
 
+                  {/* Original Caption */}
                   {detailReel.caption && (
                     <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 backdrop-blur-md">
                       <span className="text-[10px] font-mono uppercase tracking-wider text-white/50 block mb-1">
                         Original Caption
                       </span>
-                      <p className="text-xs text-zinc-300 whitespace-pre-wrap leading-relaxed max-h-40 overflow-y-auto pr-2">
+                      <p className="text-xs text-zinc-300 whitespace-pre-wrap leading-relaxed max-h-36 overflow-y-auto pr-2">
                         {detailReel.caption}
                       </p>
                     </div>
                   )}
 
-                  <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-white/10">
+                  {/* Action Buttons */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-white/10 mt-auto">
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => handleStatusChange(detailReel.id, detailReel.completion_status === 'completed' ? 'pending' : 'completed')}
@@ -1992,7 +2107,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
       {/* CLEAR HISTORY CONFIRMATION LIGHTBOX (Apple Liquid Glass) */}
       {showClearHistoryLightbox && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/75 backdrop-blur-2xl animate-fade-in"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/25 backdrop-blur-md animate-fade-in"
           onClick={() => {
             if (!isClearingHistory) setShowClearHistoryLightbox(false);
           }}
@@ -2026,7 +2141,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                 className="mt-0.5 rounded accent-red-500 cursor-pointer h-4 w-4 shrink-0"
               />
               <label htmlFor="clear-categories-check" className="text-xs text-white/90 cursor-pointer leading-tight">
-                Also delete all custom folders ({categories.length} folders will be removed)
+                Also delete all custom categories ({categories.length} categories will be removed)
               </label>
             </div>
 
@@ -2052,10 +2167,10 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
         </div>
       )}
 
-      {/* EDIT FOLDER LIGHTBOX (Apple Liquid Glass) */}
+      {/* EDIT CATEGORY LIGHTBOX (Apple Liquid Glass) */}
       {editingCategory && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/75 backdrop-blur-2xl animate-fade-in"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/25 backdrop-blur-md animate-fade-in"
           onClick={() => setEditingCategory(null)}
         >
           <div
@@ -2070,7 +2185,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                   <Palette className="h-4 w-4" />
                 </div>
                 <div>
-                  <h3 className="font-sans text-base font-bold text-white tracking-tight">Customize Folder</h3>
+                  <h3 className="font-sans text-base font-bold text-white tracking-tight">Customize Category</h3>
                   <p className="text-[11px] text-white/70">Personalize name, color accent, and iconic symbol</p>
                 </div>
               </div>
@@ -2084,7 +2199,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
 
             <form onSubmit={handleUpdateCategory} className="space-y-4">
               <div>
-                <label className="text-xs font-medium text-[#D9D9D9] block mb-1.5">Folder Name</label>
+                <label className="text-xs font-medium text-[#D9D9D9] block mb-1.5">Category Name</label>
                 <input
                   type="text"
                   required
@@ -2204,10 +2319,10 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                   value={editCategoryDesc}
                   onChange={e => setEditCategoryDesc(e.target.value)}
                   className="w-full rounded-xl border border-[#333333] bg-[#0B0B0B] px-3.5 py-2 text-xs text-white placeholder-[#6B6B6B] focus:border-white focus:outline-none resize-none transition"
-                  placeholder="What is saved in this folder (e.g. Italian pasta recipes, quick dinners)?"
+                  placeholder="What is saved in this category (e.g. Italian pasta recipes, quick dinners)?"
                 />
                 <span className="text-[10px] text-[#6B6B6B] block mt-1">
-                  This description preserves the folder&apos;s purpose so content continues organizing here cleanly.
+                  This description preserves the category&apos;s purpose so content continues organizing here cleanly.
                 </span>
               </div>
 

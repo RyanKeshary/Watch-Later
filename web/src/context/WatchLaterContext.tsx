@@ -686,10 +686,10 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
     setCategoryInsertPending(true);
     try {
       const isDuplicate = categories.some(
-        c => c.name.toLowerCase() === trimmed.toLowerCase() && c.parent_id === categoryParentId
+        c => c.name.toLowerCase() === trimmed.toLowerCase() && (c.parent_id || null) === (categoryParentId || null)
       );
       if (isDuplicate) {
-        alert('A folder with this name already exists in this level.');
+        alert('A category with this name already exists in this level.');
         return;
       }
 
@@ -698,13 +698,13 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
         .insert({
           name: trimmed,
           user_id: session.user.id,
-          parent_id: categoryParentId
+          parent_id: categoryParentId || null
         })
         .select()
         .single();
 
       if (error) {
-        alert(`Error creating folder: ${error.message}`);
+        alert(`Error creating category: ${error.message}`);
         return;
       }
 

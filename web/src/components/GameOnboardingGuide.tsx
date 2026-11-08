@@ -80,7 +80,7 @@ export default function GameOnboardingGuide({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/45 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/25 backdrop-blur-md animate-fade-in"
       onClick={onClose}
     >
       {/* Apple Liquid Glass Floating Vessel */}
@@ -199,17 +199,17 @@ export default function GameOnboardingGuide({
             <div className="space-y-3.5 animate-in fade-in duration-200">
               <div className="flex items-center justify-between">
                 <span className="font-mono text-[10px] uppercase tracking-wider text-zinc-300 font-semibold px-2 py-0.5 rounded-full bg-white/10 border border-white/15">
-                  02 · Folders &amp; Nesting
+                  02 · Categories &amp; Nesting
                 </span>
                 <span className="text-[11px] font-mono text-zinc-400">Step 2 of 3</span>
               </div>
 
               <div>
                 <h4 className="font-sans text-lg font-bold text-white tracking-tight">
-                  Drag reels &amp; nest folders
+                  Drag reels &amp; nest categories
                 </h4>
                 <p className="text-xs text-zinc-300 leading-relaxed mt-1">
-                  Drag saved reels straight into folders. Drag folders onto each other to organize sub-niches with clean navigation breadcrumbs.
+                  Drag saved reels straight into categories. Drag categories onto each other to organize sub-niches with clean navigation breadcrumbs.
                 </p>
               </div>
 
@@ -217,7 +217,7 @@ export default function GameOnboardingGuide({
               <div className="rounded-2xl border border-white/15 bg-white/[0.04] p-3.5 space-y-2.5">
                 <div className="grid grid-cols-2 gap-2.5">
                   <div className="rounded-xl border border-white/10 bg-black/40 p-2.5 text-center">
-                    <span className="text-[10px] font-mono text-zinc-400 block mb-1">Parent Folder</span>
+                    <span className="text-[10px] font-mono text-zinc-400 block mb-1">Parent Category</span>
                     <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 text-xs font-medium text-white border border-white/15">
                       <FolderTree className="h-3.5 w-3.5 text-zinc-300" />
                       <span>Design</span>
@@ -232,7 +232,7 @@ export default function GameOnboardingGuide({
                         : 'border-white/15 bg-black/40 hover:bg-white/10'
                     }`}
                   >
-                    <span className="text-[10px] font-mono text-zinc-400 block mb-1">Sub-folder</span>
+                    <span className="text-[10px] font-mono text-zinc-400 block mb-1">Sub-category</span>
                     <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 text-xs font-medium text-white">
                       <Folder className="h-3.5 w-3.5 text-zinc-300" />
                       <span>{demoState.m2Nested ? 'Nested in Design ✓' : 'Drop into Design'}</span>
