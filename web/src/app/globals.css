@@ -5,6 +5,22 @@
 :root {
   --font-zolo: 'Space Grotesk', -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
+
+  /* Hallmark Theme Tokens */
+  --canvas: #090A0F;
+  --surface-panel: #12151F;
+  --surface-raised: #181C2A;
+  --surface-border: rgba(255, 255, 255, 0.08);
+  --ink: #F7F8F8;
+  --ink-muted: #D0D6E0;
+  --ink-subtle: #8A8F98;
+  --ink-tertiary: #5C616B;
+  --accent-cyan: #00F0FF;
+  --accent-amber: #F59E0B;
+}
+
+html, body {
+  overflow-x: clip;
 }
 
 /* Fabric Micro-Texture Background Pattern */
