@@ -1126,24 +1126,24 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                           return (
                             <div
                               key={cat.id}
-                              className="group/bar flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-[#2B2B30] bg-[#121216]/90 hover:bg-[#18181E] hover:border-[#00F0FF]/40 transition-all duration-300 shadow-sm"
+                              className="group/bar flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-[#333333] bg-[#1A1A1A] hover:border-[#6B6B6B] hover:bg-[#1A1A1A]/90 transition-all duration-300 shadow-sm"
                             >
                               <div className="flex items-center gap-2.5 w-28 sm:w-36 min-w-0">
-                                <span className="h-1.5 w-1.5 rounded-full shrink-0 bg-[#00F0FF] shadow-[0_0_8px_#00F0FF] transition-transform duration-300 group-hover/bar:scale-125" />
-                                <span className="text-xs font-medium text-[#D0D6E0] group-hover/bar:text-white truncate transition-colors">
+                                <span className="h-1.5 w-1.5 rounded-full shrink-0 bg-[#D9D9D9] transition-transform duration-300 group-hover/bar:scale-125" />
+                                <span className="text-xs font-medium text-[#D9D9D9] group-hover/bar:text-white truncate transition-colors">
                                   {cat.name}
                                 </span>
                               </div>
-                              <div className="flex-1 h-2 rounded-full bg-[#090A0F] overflow-hidden border border-[#262832] p-px">
+                              <div className="flex-1 h-2 rounded-full bg-[#0B0B0B] overflow-hidden border border-[#333333] p-px">
                                 <div
-                                  className="h-full rounded-full transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] bg-gradient-to-r from-[#00F0FF]/80 via-[#00F0FF] to-white shadow-[0_0_12px_rgba(0,240,255,0.4)]"
+                                  className="h-full rounded-full transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] bg-gradient-to-r from-[#6B6B6B] via-[#D9D9D9] to-[#FFFFFF]"
                                   style={{
                                     width: barsAnimated ? `${pct}%` : '0%',
                                     transitionDelay: `${Math.min(idx * 35, 450)}ms`
                                   }}
                                 />
                               </div>
-                              <span className="font-mono-micro text-[#8A8F98] group-hover/bar:text-[#F7F8F8] w-24 text-right tabular-nums transition-colors">
+                              <span className="font-mono-micro text-[#6B6B6B] group-hover/bar:text-[#D9D9D9] w-24 text-right tabular-nums transition-colors">
                                 <NumberTicker value={count} duration={900} /> (<NumberTicker value={pct} duration={900} />%)
                               </span>
                             </div>
