@@ -14,7 +14,6 @@ import {
   Cpu
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import SplashCursor from '@/components/SplashCursor';
 import HeroParticleMesh from '@/components/HeroParticleMesh';
 import TiltCard from '@/components/TiltCard';
 import MagneticButton from '@/components/MagneticButton';
@@ -186,27 +185,6 @@ export default function ServiceLandingPage({
 
   return (
     <div className="relative min-h-dvh bg-canvas text-ink font-sans selection:bg-cyanbrand/20 selection:text-ink antialiased">
-      {/* Custom Fluid Cursor (desktop only) */}
-      <div className="hidden md:block pointer-events-none">
-        <SplashCursor
-          contained={false}
-          colors={['#00F0FF', '#F59E0B', '#D0D6E0']}
-          rainbow={false}
-          size={0.55}
-          force={0.25}
-          swirl={12}
-          trail={2.2}
-          clickSplash
-          colorSpeed={0}
-          intensity={0.45}
-          momentum={0.65}
-          glow={0.12}
-          quality="medium"
-          intro={false}
-          zIndex={1}
-        />
-      </div>
-
       {/* ========================================================================= */}
       {/* 2.1 NAV: Pure Wordmark + Optical Alignment + Single Secondary CTA        */}
       {/* ========================================================================= */}
