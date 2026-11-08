@@ -285,7 +285,7 @@ function VirtualCardContainer({
           aria-hidden="true"
         >
           {/* Subtle boneyard shimmer sweep */}
-          <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/[0.04] to-transparent pointer-events-none" />
+          <div className="absolute inset-0 animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/[0.04] to-transparent pointer-events-none" />
 
           {/* Top Bar Skeleton */}
           <div className="flex items-center justify-between w-full relative z-10">
