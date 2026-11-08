@@ -50,9 +50,9 @@ html, body {
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .bg-fabric {
+  body > .bg-fabric,
+  body.bg-fabric {
     animation: moveDottedBg 35s linear infinite;
-    will-change: background-position;
   }
 }
 

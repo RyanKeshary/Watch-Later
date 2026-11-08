@@ -242,10 +242,10 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
 
   // Device sync acknowledgment polling tracking
   const syncPollTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const syncPollActiveRef = useRef<boolean>(false);
+  const syncPollGenerationRef = useRef<number>(0);
   useEffect(() => {
     return () => {
-      syncPollActiveRef.current = false;
+      syncPollGenerationRef.current += 1;
       if (syncPollTimerRef.current) clearInterval(syncPollTimerRef.current);
     };
   }, []);
@@ -1474,12 +1474,12 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
   };
 
   const handleSyncDevice = async (deviceId: string) => {
-    // Clear any previous active polling timer
+    // Invalidate any previous sync poll generation and clean up its interval
+    const currentGeneration = ++syncPollGenerationRef.current;
     if (syncPollTimerRef.current) {
       clearInterval(syncPollTimerRef.current);
       syncPollTimerRef.current = null;
     }
-    syncPollActiveRef.current = true;
 
     const now = new Date().toISOString();
     setDevices(prev => prev.map(d => (d.id === deviceId ? { ...d, last_synced_at: now } : d)));
@@ -1488,18 +1488,34 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
       .update({ last_synced_at: now })
       .eq('id', deviceId);
     if (error) {
-      syncPollActiveRef.current = false;
+      if (syncPollGenerationRef.current === currentGeneration) {
+        syncPollGenerationRef.current += 1;
+      }
       alert(`Error syncing device: ${error.message}`);
       await loadData();
       return;
     }
 
+    // Abort if another sync was triggered while Supabase update was in-flight
+    if (syncPollGenerationRef.current !== currentGeneration) return;
+
     // Poll up to 10 seconds to verify that the phone acknowledged receipt
     const startTime = Date.now();
     let isRequestInFlight = false;
 
-    syncPollTimerRef.current = setInterval(async () => {
-      if (!syncPollActiveRef.current || isRequestInFlight) return;
+    const timer = setInterval(async () => {
+      const isCurrentPoll = () => syncPollGenerationRef.current === currentGeneration;
+
+      if (!isCurrentPoll() || Date.now() - startTime > 10000) {
+        clearInterval(timer);
+        if (isCurrentPoll()) {
+          syncPollGenerationRef.current += 1;
+          if (syncPollTimerRef.current === timer) syncPollTimerRef.current = null;
+        }
+        return;
+      }
+
+      if (isRequestInFlight) return;
       isRequestInFlight = true;
 
       try {
@@ -1509,12 +1525,13 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
           .eq('id', deviceId)
           .single();
 
-        if (!syncPollActiveRef.current) return;
+        if (!isCurrentPoll()) return;
 
         // Stop polling if device row is missing or deleted
         if (pollErr || !data) {
-          syncPollActiveRef.current = false;
-          if (syncPollTimerRef.current) clearInterval(syncPollTimerRef.current);
+          clearInterval(timer);
+          syncPollGenerationRef.current += 1;
+          if (syncPollTimerRef.current === timer) syncPollTimerRef.current = null;
           return;
         }
 
@@ -1523,17 +1540,17 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
         const targetMs = new Date(now).getTime();
         const isAcknowledged = !isNaN(ackMs) && !isNaN(targetMs) && ackMs >= targetMs;
         if (isAcknowledged) {
-          syncPollActiveRef.current = false;
-          if (syncPollTimerRef.current) clearInterval(syncPollTimerRef.current);
+          clearInterval(timer);
+          syncPollGenerationRef.current += 1;
+          if (syncPollTimerRef.current === timer) syncPollTimerRef.current = null;
           showIncomingAlert('Device acknowledged notification — sync confirmed ✓');
-        } else if (Date.now() - startTime > 10000) {
-          syncPollActiveRef.current = false;
-          if (syncPollTimerRef.current) clearInterval(syncPollTimerRef.current);
         }
       } finally {
         isRequestInFlight = false;
       }
     }, 1500);
+
+    syncPollTimerRef.current = timer;
   };
 
   const exportData = () => {

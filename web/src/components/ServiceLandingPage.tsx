@@ -196,6 +196,7 @@ export default function ServiceLandingPage({
 
   const handleDownloadClick = () => {
     if (hasDownloaded) {
+      setAuthMode('signin');
       setShowAuthModal(true);
       return;
     }
@@ -215,6 +216,16 @@ export default function ServiceLandingPage({
     setTimeout(() => {
       setHasDownloaded(true);
     }, 1800);
+  };
+
+  const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, target: HTMLElement | null, hash: string) => {
+    e.preventDefault();
+    if (window.location.hash !== hash) {
+      window.history.pushState(null, '', hash);
+    }
+    const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+    target?.scrollIntoView({ behavior });
+    target?.focus({ preventScroll: true });
   };
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
@@ -353,11 +364,7 @@ export default function ServiceLandingPage({
             <nav className="hidden sm:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center justify-center gap-8 text-xs font-medium text-[#6B6B6B] z-10">
               <a
                 href="#how-it-works"
-                onClick={(e) => {
-                  e.preventDefault();
-                  const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
-                  horizontalSectionRef.current?.scrollIntoView({ behavior });
-                }}
+                onClick={(e) => scrollToSection(e, horizontalSectionRef.current, '#how-it-works')}
                 className="relative py-1 hover:text-[#FFFFFF] transition-colors duration-200 group text-center"
               >
                 <span>How it works</span>
@@ -365,11 +372,7 @@ export default function ServiceLandingPage({
               </a>
               <a
                 href="#about"
-                onClick={(e) => {
-                  e.preventDefault();
-                  const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
-                  aboutRef.current?.scrollIntoView({ behavior });
-                }}
+                onClick={(e) => scrollToSection(e, aboutRef.current, '#about')}
                 className="relative py-1 hover:text-[#FFFFFF] transition-colors duration-200 group text-center"
               >
                 <span>About</span>
@@ -377,11 +380,7 @@ export default function ServiceLandingPage({
               </a>
               <a
                 href="#mission"
-                onClick={(e) => {
-                  e.preventDefault();
-                  const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
-                  missionRef.current?.scrollIntoView({ behavior });
-                }}
+                onClick={(e) => scrollToSection(e, missionRef.current, '#mission')}
                 className="relative py-1 hover:text-[#FFFFFF] transition-colors duration-200 group text-center"
               >
                 <span>Mission</span>
@@ -596,7 +595,8 @@ export default function ServiceLandingPage({
         <section
           id="about"
           ref={aboutRef}
-          className="relative z-50 min-h-screen flex flex-col justify-center items-center py-24 sm:py-32 px-6 sm:px-12 bg-[#FFFFFF] text-[#0B0B0B] border-y border-[#D9D9D9] text-center overflow-hidden shadow-[0_-25px_60px_rgba(0,0,0,0.35),0_25px_60px_rgba(0,0,0,0.35)]"
+          tabIndex={-1}
+          className="relative z-50 min-h-screen flex flex-col justify-center items-center py-24 sm:py-32 px-6 sm:px-12 bg-[#FFFFFF] text-[#0B0B0B] border-y border-[#D9D9D9] text-center overflow-hidden shadow-[0_-25px_60px_rgba(0,0,0,0.35),0_25px_60px_rgba(0,0,0,0.35)] outline-none"
         >
           {/* Subtle light watermark / depth geometry in pale grey */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0">
@@ -627,11 +627,7 @@ export default function ServiceLandingPage({
             {/* Structured action pill button */}
             <a
               href="#how-it-works"
-              onClick={(e) => {
-                e.preventDefault();
-                const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
-                horizontalSectionRef.current?.scrollIntoView({ behavior });
-              }}
+              onClick={(e) => scrollToSection(e, horizontalSectionRef.current, '#how-it-works')}
               className="group inline-flex items-center gap-2.5 rounded-none bg-[#0B0B0B] hover:bg-[#1A1A1A] text-[#FFFFFF] px-7 py-3.5 text-xs sm:text-sm font-semibold transition-all duration-200 active:scale-[0.98] shadow-md hover:shadow-xl cursor-pointer"
             >
               <span>See how it works</span>
@@ -646,7 +642,8 @@ export default function ServiceLandingPage({
         <section
           id="mission"
           ref={missionRef}
-          className="relative min-h-screen flex flex-col justify-center items-center py-20 px-6 sm:px-12 lg:px-16 border-b border-[#333333] bg-[#0B0B0B] bg-fabric overflow-hidden"
+          tabIndex={-1}
+          className="relative min-h-screen flex flex-col justify-center items-center py-20 px-6 sm:px-12 lg:px-16 border-b border-[#333333] bg-[#0B0B0B] bg-fabric overflow-hidden outline-none"
         >
           {/* Subtle traveling icon colliding into device animation (§7) */}
           <div
@@ -775,7 +772,8 @@ export default function ServiceLandingPage({
         <section
           id="how-it-works"
           ref={horizontalSectionRef}
-          className="relative min-h-screen md:h-[400vh] bg-[#0B0B0B] bg-fabric border-b border-[#333333]"
+          tabIndex={-1}
+          className="relative min-h-screen md:h-[400vh] bg-[#0B0B0B] bg-fabric border-b border-[#333333] outline-none"
         >
           <div className="min-h-screen py-16 md:py-0 md:sticky md:top-0 md:h-screen flex flex-col justify-center md:overflow-hidden w-full">
             {/* Header Caption */}
@@ -889,7 +887,6 @@ export default function ServiceLandingPage({
               src="/cta-banner.png"
               alt="Watch Later - Your next save starts here"
               fill
-              priority
               sizes="100vw"
               className="object-cover pointer-events-none select-none"
             />
@@ -898,10 +895,10 @@ export default function ServiceLandingPage({
             <button
               type="button"
               onClick={handleDownloadClick}
-              className="group absolute left-[12.2%] top-[80.1%] w-[16.5%] h-[9.1%] min-w-[100px] min-h-[32px] rounded-full bg-[#FFFFFF] hover:bg-[#EAEAEA] text-[#0B0B0B] font-bold text-[clamp(10px,1.3vw,18px)] flex items-center justify-center gap-1 sm:gap-2 px-2 shadow-[0_2px_15px_rgba(0,0,0,0.5)] cursor-pointer transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black z-10"
+              className="group absolute left-[12.2%] top-[80.1%] w-[16.5%] h-[9.1%] min-w-[100px] min-h-[32px] rounded-full bg-[#FFFFFF] hover:bg-[#EAEAEA] text-[#0B0B0B] font-bold text-[clamp(10px,1.3vw,18px)] hidden sm:flex items-center justify-center gap-1 sm:gap-2 px-2 shadow-[0_2px_15px_rgba(0,0,0,0.5)] cursor-pointer transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black z-10"
             >
               <span>
-                {downloadSuccess ? 'Downloaded ✓' : hasDownloaded ? 'Sign In' : 'Get the App'}
+                {hasDownloaded ? 'Sign In' : downloadSuccess ? 'Downloaded ✓' : 'Get the App'}
               </span>
               <ArrowRight className="w-[1em] h-[1em] text-[#0B0B0B] transition-transform duration-200 group-hover:translate-x-1 shrink-0" />
             </button>
@@ -915,7 +912,7 @@ export default function ServiceLandingPage({
               className="w-full max-w-sm rounded-full bg-[#FFFFFF] hover:bg-[#EAEAEA] text-[#0B0B0B] font-bold text-sm py-3.5 px-6 flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-all"
             >
               <span>
-                {downloadSuccess ? 'APK Downloaded ✓' : hasDownloaded ? 'Sign In to Watch Later' : `Get the App (${appVersion})`}
+                {hasDownloaded ? 'Sign In to Watch Later' : downloadSuccess ? 'APK Downloaded ✓' : `Get the App (${appVersion})`}
               </span>
               <ArrowRight className="w-4 h-4 text-[#0B0B0B]" />
             </button>
