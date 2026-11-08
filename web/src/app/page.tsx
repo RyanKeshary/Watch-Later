@@ -107,6 +107,32 @@ export default function App() {
 
   // Real-time toast arrival banner on dashboard
   const [incomingAlert, setIncomingAlert] = useState<string | null>(null);
+  const incomingAlertTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const showIncomingAlert = useCallback((msg: string) => {
+    if (incomingAlertTimerRef.current) {
+      clearTimeout(incomingAlertTimerRef.current);
+    }
+    setIncomingAlert(msg);
+    incomingAlertTimerRef.current = setTimeout(() => {
+      setIncomingAlert(null);
+      incomingAlertTimerRef.current = null;
+    }, 5000);
+  }, []);
+
+  const clearIncomingAlert = useCallback(() => {
+    if (incomingAlertTimerRef.current) {
+      clearTimeout(incomingAlertTimerRef.current);
+      incomingAlertTimerRef.current = null;
+    }
+    setIncomingAlert(null);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (incomingAlertTimerRef.current) clearTimeout(incomingAlertTimerRef.current);
+    };
+  }, []);
 
   // Data
   const [reels, setReels] = useState<Reel[]>([]);
@@ -188,24 +214,30 @@ export default function App() {
 
     if (item.type === 'reel') {
       const reelId = item.id || (item as any).reelId;
-      if (!reelId) return;
+      if (!reelId) {
+        setDraggedItem(null);
+        return;
+      }
 
       setReels(prev => prev.map(r => r.id === reelId ? { ...r, category_id: targetCatId } : r));
-      const targetCat = categories.find(c => c.id === targetCatId);
-      setIncomingAlert(`Moved reel into "${targetCat?.name || 'Category'}" ✓`);
-      setTimeout(() => setIncomingAlert(null), 5000);
 
       try {
         const { error } = await supabase.from('reels').update({ category_id: targetCatId }).eq('id', reelId);
         if (error) throw error;
+        const targetCat = categories.find(c => c.id === targetCatId);
+        showIncomingAlert(`Moved reel into "${targetCat?.name || 'Category'}" ✓`);
       } catch (err: any) {
+        clearIncomingAlert();
         console.error('Failed to move reel:', err);
         alert(`Failed to move reel: ${err.message || err}`);
         await loadData();
       }
     } else if (item.type === 'folder') {
       const folderId = item.id || (item as any).folderId;
-      if (!folderId || folderId === targetCatId) return;
+      if (!folderId || folderId === targetCatId) {
+        setDraggedItem(null);
+        return;
+      }
 
       // Reject if targetCatId is a descendant of folderId
       let curr: string | null = targetCatId;
@@ -219,19 +251,20 @@ export default function App() {
         curr = parentCat ? parentCat.parent_id : null;
       }
       if (isDescendant) {
+        setDraggedItem(null);
         alert('Cannot move a folder into its own subfolder.');
         return;
       }
 
       setCategories(prev => prev.map(c => c.id === folderId ? { ...c, parent_id: targetCatId } : c));
-      const targetCat = categories.find(c => c.id === targetCatId);
-      setIncomingAlert(`Nested folder inside "${targetCat?.name || 'Parent Folder'}" ✓`);
-      setTimeout(() => setIncomingAlert(null), 5000);
 
       try {
         const { error } = await supabase.from('categories').update({ parent_id: targetCatId }).eq('id', folderId);
         if (error) throw error;
+        const targetCat = categories.find(c => c.id === targetCatId);
+        showIncomingAlert(`Nested folder inside "${targetCat?.name || 'Parent Folder'}" ✓`);
       } catch (err: any) {
+        clearIncomingAlert();
         console.error('Failed to nest folder:', err);
         alert(`Failed to nest folder: ${err.message || err}`);
         await loadData();
@@ -567,8 +600,7 @@ export default function App() {
                 return [newReel, ...prev];
               });
               // Show instantaneous banner notification on dashboard
-              setIncomingAlert(newReel.url);
-              setTimeout(() => setIncomingAlert(null), 5000);
+              showIncomingAlert(newReel.url);
             } else if (payload.eventType === 'UPDATE') {
               const updated = payload.new as Reel;
               if (updated.is_failed || updated.processing_status === 'extraction_failed') {
@@ -632,7 +664,7 @@ export default function App() {
         supabase.removeChannel(channel);
       };
     }
-  }, [session, loadData]);
+  }, [session, loadData, showIncomingAlert]);
 
   // Purge expired archived reels
   useEffect(() => {
@@ -1170,7 +1202,7 @@ export default function App() {
             <p className="text-xs font-semibold text-ink">New Content Captured!</p>
             <p className="text-[11px] text-ink-subtle truncate max-w-xs">{incomingAlert}</p>
           </div>
-          <button onClick={() => setIncomingAlert(null)} className="text-ink-subtle hover:text-ink">✕</button>
+          <button onClick={clearIncomingAlert} className="text-ink-subtle hover:text-ink">✕</button>
         </div>
       )}
 
