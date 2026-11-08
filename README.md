@@ -61,6 +61,10 @@ Yet, **over 85% of saved reels are never opened again**. Why?
 
 ## 💡 What Watch Later Is
 
+> **What this repo does**: Watch Later is a personal Instagram bookmarking and organization system. A Node background worker polls Supabase to ingest Instagram reel/post URLs, extracts captions and media details, uses Groq to classify and summarize content, and feeds an interactive Next.js dashboard.
+>
+> **Assumed load**: Single user or small team saving 10–100 posts daily, with one background worker and a handful of browser tabs open.
+
 **Watch Later** replaces scattering and manual organization with **a single zero-friction action**:
 > **Share the Reel to "Watch Later" in the Android share sheet — and keep scrolling.**
 
@@ -403,7 +407,7 @@ This codebase is indexed by an automated AST knowledge graph engine (`.ua/knowle
 |---|---|---|
 | `layer:android-client` | **Android Application** | `ShareCaptureActivity`, `ReelSyncWorker`, `LocalReel`, `AppDatabase`, `UrlHelper` |
 | `layer:backend-api` | **Cloudflare Edge Worker** | `worker.js`, Supabase client, Groq AI Llama-3 extraction |
-| `layer:web-frontend` | **Web Dashboard & Showcase** | `ServiceLandingPage.tsx`, `SplashCursor.tsx`, `ProductionLaunchVideo.tsx` |
+| `layer:web-frontend` | **Web Dashboard & Showcase** | `ServiceLandingPage.tsx`, `SplashCursor.tsx`, `WatchLaterDashboard.tsx` |
 | `layer:media-production` | **Media Pipelines** | `render_video.swift`, `render_cinematic_brag.swift` |
 | `layer:configuration` | **Configs & Tooling** | `build.gradle.kts`, `tailwind.config.ts`, `next.config.mjs` |
 

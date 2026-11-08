@@ -543,19 +543,21 @@ async function cleanupEmptyCategories() {
 
         for (let i = 0; i < emptyIds.length; i += chunkSize) {
           const chunk = emptyIds.slice(i, i + chunkSize);
-          const { data: liveCheck, error: liveCheckErr } = await supabase
-            .from('reels')
-            .select('category_id, subcategory_id')
-            .or(`category_id.in.(${chunk.join(',')}),subcategory_id.in.(${chunk.join(',')})`);
+          const [catRes, subRes] = await Promise.all([
+            supabase.from('reels').select('category_id').in('category_id', chunk),
+            supabase.from('reels').select('subcategory_id').in('subcategory_id', chunk)
+          ]);
 
-          if (liveCheckErr) {
-            console.error('[Worker] Startup live-reels check failed:', liveCheckErr.message);
+          if (catRes.error || subRes.error) {
+            console.error('[Worker] Startup live-reels check failed:', catRes.error?.message || subRes.error?.message);
             chunkFailed = true;
             break;
           }
 
-          for (const r of liveCheck || []) {
+          for (const r of catRes.data || []) {
             if (r.category_id) liveActiveIds.add(r.category_id);
+          }
+          for (const r of subRes.data || []) {
             if (r.subcategory_id) liveActiveIds.add(r.subcategory_id);
           }
         }

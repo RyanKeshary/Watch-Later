@@ -16,6 +16,7 @@ import {
   Folder,
   Inbox,
   AlertTriangle,
+  Check,
   CheckCircle,
   Archive,
   Settings as SettingsIcon,
@@ -632,7 +633,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
       <aside
         onMouseEnter={handleSidebarMouseEnter}
         onMouseLeave={handleSidebarMouseLeave}
-        className={`${isEffectiveExpanded ? 'w-72 md:w-72 lg:w-76 xl:w-80' : 'w-72 md:w-16'
+        className={`${isEffectiveExpanded ? 'w-[250px] md:w-[250px] lg:w-[260px] xl:w-[270px]' : 'w-[250px] md:w-16'
           } ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
           } fixed md:static inset-y-0 left-0 z-40 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] border-r border-[#333333] bg-[#0B0B0B]/95 md:bg-[#0B0B0B]/85 backdrop-blur-xl px-2 py-3 flex flex-col justify-between select-none shrink-0 ${
             sidebarCollapsed && isSidebarHovered ? 'shadow-[0_20px_60px_rgba(0,0,0,0.85)] z-50' : ''
@@ -1113,23 +1114,37 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
 
                   if (nicheViewMode === 'bars') {
                     return (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                         {nicheCategories.map((cat, idx) => {
                           const count = reels.filter(r => r.category_id === cat.id).length;
                           const pct = reels.length > 0 ? Math.round((count / reels.length) * 100) : 0;
+                          const color = PIE_COLORS[idx % PIE_COLORS.length];
                           return (
-                            <div key={cat.id} className="flex items-center gap-3 px-3 py-2 rounded-xl border border-[#262626] bg-[#0B0B0B]/70 hover:bg-[#141414] transition">
-                              <span className="text-xs font-medium text-[#D9D9D9] w-28 sm:w-36 truncate">{cat.name}</span>
-                              <div className="flex-1 h-2 rounded-full bg-[#1A1A1A] overflow-hidden border border-[#333333]/40">
+                            <div
+                              key={cat.id}
+                              className="group/bar flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-white/5 bg-[#0D0D10]/80 hover:bg-[#141418] hover:border-white/15 transition-all duration-300 shadow-sm"
+                            >
+                              <div className="flex items-center gap-2 w-28 sm:w-36 min-w-0">
+                                <span
+                                  className="h-2 w-2 rounded-full shrink-0 shadow-[0_0_8px_currentColor] transition-transform duration-300 group-hover/bar:scale-125"
+                                  style={{ backgroundColor: color, color }}
+                                />
+                                <span className="text-xs font-medium text-zinc-300 group-hover/bar:text-white truncate transition-colors">
+                                  {cat.name}
+                                </span>
+                              </div>
+                              <div className="flex-1 h-2 rounded-full bg-black/60 overflow-hidden border border-white/5 p-px">
                                 <div
-                                  className="h-full bg-gradient-to-r from-zinc-400 to-white rounded-full transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)]"
+                                  className="h-full rounded-full transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] shadow-[0_0_10px_currentColor]"
                                   style={{
                                     width: barsAnimated ? `${pct}%` : '0%',
-                                    transitionDelay: `${Math.min(idx * 35, 450)}ms`
+                                    backgroundColor: color,
+                                    color,
+                                    transitionDelay: `${Math.min(idx * 40, 500)}ms`
                                   }}
                                 />
                               </div>
-                              <span className="font-mono-micro text-[#6B6B6B] w-24 text-right tabular-nums">
+                              <span className="font-mono-micro text-zinc-400 group-hover/bar:text-zinc-200 w-24 text-right tabular-nums transition-colors">
                                 <NumberTicker value={count} duration={900} /> (<NumberTicker value={pct} duration={900} />%)
                               </span>
                             </div>
@@ -1774,7 +1789,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
               ) : viewLayout === 'grid' ? (
                 <div className={
                   density === 'extra-compact'
-                    ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-3 sm:gap-4'
+                    ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-3.5 sm:gap-4'
                     : density === 'compact'
                       ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-5'
                       : density === 'spacious'
@@ -1823,9 +1838,13 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                           }
                           window.open(reel.url, '_blank', 'noopener,noreferrer');
                         }}
-                        className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-[#333333] bg-[#141414] hover:border-white/40 transform-gpu will-change-transform ${
+                        className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border ${
+                          isSaved
+                            ? 'border-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.12),inset_0_0_12px_rgba(16,185,129,0.06)]'
+                            : 'border-[#333333] hover:border-white/40 shadow-md'
+                        } bg-[#141414] transform-gpu will-change-transform ${
                           isDragAllowed ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
-                        } transition-all duration-500 shadow-md ${
+                        } transition-all duration-500 ${
                           density === 'extra-compact'
                             ? 'min-h-[320px] aspect-[9/16] p-2.5'
                             : density === 'compact'
@@ -1854,6 +1873,16 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                         {/* Card Top: Controls & Status */}
                         <div className="relative z-10 flex items-center justify-between gap-1.5 w-full mb-3">
                           <div className="flex items-center gap-1.5 flex-wrap">
+                            {/* Saved Micro Checkmark Pill */}
+                            {isSaved && (
+                              <div
+                                title="Saved"
+                                className="flex items-center justify-center h-5 w-5 rounded-full bg-emerald-950/80 border border-emerald-500/60 shadow-[0_0_10px_rgba(16,185,129,0.4)] animate-in zoom-in-75 fade-in duration-300"
+                              >
+                                <Check className="h-3 w-3 text-emerald-400 stroke-[3]" />
+                              </div>
+                            )}
+
                             {(reel.is_failed || reel.processing_status === 'extraction_failed') && (
                               <span className="rounded-full px-2 py-0.5 text-[10px] font-mono font-medium backdrop-blur-md shadow-sm bg-red-500/20 text-red-300 border border-red-500/30">
                                 Failed
@@ -1955,13 +1984,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
 
                         {/* Card Bottom: Content info */}
                         <div className="relative z-10 w-full mt-auto pt-3 transition-transform duration-500 ease-out transform group-hover:translate-y-16">
-                          <h3
-                            className={`font-sans font-bold leading-snug text-sm sm:text-base mb-1 line-clamp-2 group-hover:line-clamp-1 drop-shadow-sm transition-all ${
-                              isSaved
-                                ? 'text-white [-webkit-text-stroke:_0.45px_#10b981]'
-                                : 'text-white group-hover:text-zinc-100'
-                            }`}
-                          >
+                          <h3 className="font-sans font-bold leading-snug text-sm sm:text-base mb-1 line-clamp-2 group-hover:line-clamp-1 drop-shadow-sm transition-all text-white group-hover:text-zinc-100">
                             {reel.ai_title || 'Instagram Post'}
                           </h3>
                           <p className="text-xs text-zinc-300 line-clamp-2 leading-relaxed transition-opacity duration-300 group-hover:opacity-0 group-hover:pointer-events-none">
@@ -2036,7 +2059,11 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                           }
                           window.open(reel.url, '_blank', 'noopener,noreferrer');
                         }}
-                        className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-xl border border-[#333333] bg-[#1A1A1A]/90 transform-gpu will-change-transform ${
+                        className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-xl border ${
+                          isSaved
+                            ? 'border-emerald-500/50 shadow-[0_0_18px_rgba(16,185,129,0.12),inset_0_0_10px_rgba(16,185,129,0.05)]'
+                            : 'border-[#333333] hover:border-[#6B6B6B] shadow-sm'
+                        } bg-[#1A1A1A]/90 transform-gpu will-change-transform ${
                           density === 'extra-compact'
                             ? 'p-2 sm:py-1.5 sm:px-2.5'
                             : density === 'compact'
@@ -2046,7 +2073,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                                 : density === 'extra-spacious'
                                   ? 'p-5'
                                   : 'p-3'
-                          } backdrop-blur hover:border-[#6B6B6B] ${isDragAllowed ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} ${activeCardMenuId === reel.id ? 'relative z-20' : ''} ${searchQuery ? 'animate-in fade-in zoom-in-95 duration-150' : ''} transition shadow-sm`}
+                          } backdrop-blur ${isDragAllowed ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} ${activeCardMenuId === reel.id ? 'relative z-20' : ''} ${searchQuery ? 'animate-in fade-in zoom-in-95 duration-150' : ''} transition`}
                       >
                         <div className="flex items-center gap-3.5 min-w-0 flex-1 w-full sm:w-auto">
                           {isPending ? (
@@ -2067,6 +2094,14 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
 
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2 mb-1 flex-wrap">
+                              {isSaved && (
+                                <div
+                                  title="Saved"
+                                  className="flex items-center justify-center h-4 w-4 rounded-full bg-emerald-950/80 border border-emerald-500/60 shadow-[0_0_8px_rgba(16,185,129,0.35)] animate-in zoom-in-75 fade-in duration-300"
+                                >
+                                  <Check className="h-2.5 w-2.5 text-emerald-400 stroke-[3]" />
+                                </div>
+                              )}
                               {(reel.is_failed || reel.processing_status === 'extraction_failed') && (
                                 <span className="rounded px-1.5 py-0.5 font-mono-micro bg-red-950/60 text-red-400 border border-red-800/50">
                                   Failed
@@ -2080,13 +2115,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                               )}
                             </div>
 
-                            <h3
-                              className={`font-sans font-semibold leading-tight text-xs sm:text-sm truncate ${
-                                isSaved
-                                  ? 'text-white [-webkit-text-stroke:_0.45px_#10b981]'
-                                  : 'text-white'
-                              }`}
-                            >
+                            <h3 className="font-sans font-semibold leading-tight text-xs sm:text-sm truncate text-white">
                               {reel.ai_title || 'Instagram Post'}
                             </h3>
 
