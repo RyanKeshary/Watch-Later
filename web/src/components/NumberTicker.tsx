@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 interface NumberTickerProps {
   value: number;
@@ -17,16 +17,19 @@ export function NumberTicker({
   prefix = '',
   suffix = ''
 }: NumberTickerProps) {
-  const [displayValue, setDisplayValue] = useState(0);
+  const spanRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
+    const el = spanRef.current;
+    if (!el) return;
+
     let startTimestamp: number | null = null;
     let animId: number | null = null;
     const startValue = 0;
     const endValue = value;
 
     if (endValue === 0) {
-      setDisplayValue(0);
+      el.textContent = `${prefix}0${suffix}`;
       return;
     }
 
@@ -36,7 +39,7 @@ export function NumberTicker({
       // Ease out cubic
       const easedProgress = 1 - Math.pow(1 - progress, 3);
       const current = Math.round(startValue + (endValue - startValue) * easedProgress);
-      setDisplayValue(current);
+      el.textContent = `${prefix}${current}${suffix}`;
 
       if (progress < 1) {
         animId = window.requestAnimationFrame(step);
@@ -49,13 +52,11 @@ export function NumberTicker({
         window.cancelAnimationFrame(animId);
       }
     };
-  }, [value, duration]);
+  }, [value, duration, prefix, suffix]);
 
   return (
-    <span className={`tabular-nums ${className}`}>
-      {prefix}
-      {displayValue}
-      {suffix}
+    <span ref={spanRef} className={`tabular-nums ${className}`}>
+      {prefix}0{suffix}
     </span>
   );
 }

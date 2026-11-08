@@ -201,6 +201,95 @@ const renderCategoryIcon = (iconName?: string, className: string = 'h-10 w-10 te
   }
 };
 
+// Shared IntersectionObserver pool for card virtualization
+// Loads what is on screen and 20% of vh before & 20% after
+const cardObserverMap = new Map<Element, (inView: boolean) => void>();
+let sharedCardObserver: IntersectionObserver | null = null;
+
+function getSharedCardObserver(): IntersectionObserver | null {
+  if (typeof window === 'undefined') return null;
+  if (!sharedCardObserver) {
+    sharedCardObserver = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          const cb = cardObserverMap.get(entry.target);
+          if (cb) {
+            cb(entry.isIntersecting);
+          }
+        }
+      },
+      {
+        root: null, // viewport
+        rootMargin: '20% 0px 20% 0px', // exact 20% of vh before and 20% after
+      }
+    );
+  }
+  return sharedCardObserver;
+}
+
+function VirtualCardContainer({
+  children,
+  minHeight,
+  aspectRatio,
+  isForceMounted = false,
+  className = '',
+  placeholderClassName = '',
+}: {
+  children: React.ReactNode;
+  minHeight?: string;
+  aspectRatio?: string;
+  isForceMounted?: boolean;
+  className?: string;
+  placeholderClassName?: string;
+}) {
+  const [isInViewport, setIsInViewport] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const observer = getSharedCardObserver();
+    if (!observer) return;
+
+    const onIntersect = (inView: boolean) => {
+      setIsInViewport(inView);
+    };
+
+    cardObserverMap.set(el, onIntersect);
+    observer.observe(el);
+
+    return () => {
+      cardObserverMap.delete(el);
+      observer.unobserve(el);
+    };
+  }, []);
+
+  const shouldRender = isInViewport || isForceMounted;
+
+  return (
+    <div
+      ref={containerRef}
+      className={className}
+      style={{
+        minHeight,
+        aspectRatio,
+        contentVisibility: 'auto',
+        containIntrinsicSize: minHeight || '450px',
+      }}
+    >
+      {shouldRender ? (
+        children
+      ) : (
+        <div
+          className={`w-full h-full rounded-2xl border border-white/[0.04] bg-[#121212]/30 ${placeholderClassName}`}
+          aria-hidden="true"
+        />
+      )}
+    </div>
+  );
+}
+
 export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardProps) {
   const router = useRouter();
   const currentPage = activePage;
@@ -1278,9 +1367,25 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                     const isDragAllowed = currentPage === 'savelater' || currentPage === 'saves' || currentPage === 'categories';
 
                     return (
-                      <div
+                      <VirtualCardContainer
                         key={`${reel.id}-${searchQuery ? 's' : 'i'}`}
-                        draggable={isDragAllowed}
+                        minHeight={
+                          density === 'compact'
+                            ? '380px'
+                            : density === 'spacious'
+                              ? '500px'
+                              : '430px'
+                        }
+                        aspectRatio={
+                          density === 'compact'
+                            ? '9/16'
+                            : '9/15'
+                        }
+                        isForceMounted={activeCardMenuId === reel.id || detailReelId === reel.id}
+                        className="w-full h-full"
+                      >
+                        <div
+                          draggable={isDragAllowed}
                         onDragStart={(e) => {
                           if (!isDragAllowed) return;
                           setDraggedItem({ type: 'reel', id: reel.id, reelId: reel.id });
@@ -1436,8 +1541,9 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                           )}
                         </div>
                       </div>
-                    );
-                  })}
+                    </VirtualCardContainer>
+                  );
+                })}
                   <div ref={sentinelRef} className="col-span-full h-8 w-full flex items-center justify-center py-2">
                     {visibleCount < displayedReels.length && (
                       <div className="flex items-center gap-2 text-xs text-zinc-500 font-mono">
@@ -1463,9 +1569,15 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                     const isDragAllowed = currentPage === 'savelater' || currentPage === 'saves' || currentPage === 'categories';
 
                     return (
-                      <div
+                      <VirtualCardContainer
                         key={`${reel.id}-${searchQuery ? 's' : 'i'}`}
-                        draggable={isDragAllowed}
+                        minHeight={density === 'compact' ? '56px' : density === 'spacious' ? '76px' : '64px'}
+                        isForceMounted={activeCardMenuId === reel.id || detailReelId === reel.id}
+                        className="w-full"
+                        placeholderClassName="rounded-xl border border-white/[0.04] bg-[#121212]/30"
+                      >
+                        <div
+                          draggable={isDragAllowed}
                         onDragStart={(e) => {
                           if (!isDragAllowed) return;
                           setDraggedItem({ type: 'reel', id: reel.id, reelId: reel.id });
@@ -1614,8 +1726,9 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                           </div>
                         </div>
                       </div>
-                    );
-                  })}
+                    </VirtualCardContainer>
+                  );
+                })}
                   <div ref={sentinelRef} className="h-8 w-full flex items-center justify-center py-2">
                     {visibleCount < displayedReels.length && (
                       <div className="flex items-center gap-2 text-xs text-zinc-500 font-mono">
