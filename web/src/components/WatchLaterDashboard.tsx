@@ -221,6 +221,8 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
     counts,
     rootCategories,
     pinnedCategories,
+    savesFolders,
+    handleCreateSaveFolder,
     loadData,
     incomingAlert,
     lastMoveAction,
@@ -301,6 +303,10 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
     exportData
   } = useWatchLater();
 
+  // Saves page folder creation state
+  const [isCreatingSaveFolder, setIsCreatingSaveFolder] = useState(false);
+  const [newSaveFolderName, setNewSaveFolderName] = useState('');
+
   // If unauthenticated on a subpage, route to /
   useEffect(() => {
     if (!loading && !session && activePage !== 'home') {
@@ -375,9 +381,34 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
     });
   }, [reels, currentPage, selectedCategoryId, searchQuery, postTypeFilter, savedLaterIds]);
 
-  // Hover-expand state for collapsed navbar
+  // Hover-expand state for collapsed navbar with 0.35s intent delay
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);
   const isEffectiveExpanded = !sidebarCollapsed || isSidebarHovered;
+  const sidebarHoverTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleSidebarMouseEnter = () => {
+    if (!sidebarCollapsed) return;
+    if (sidebarHoverTimerRef.current) clearTimeout(sidebarHoverTimerRef.current);
+    sidebarHoverTimerRef.current = setTimeout(() => {
+      setIsSidebarHovered(true);
+    }, 350);
+  };
+
+  const handleSidebarMouseLeave = () => {
+    if (sidebarHoverTimerRef.current) {
+      clearTimeout(sidebarHoverTimerRef.current);
+      sidebarHoverTimerRef.current = null;
+    }
+    setIsSidebarHovered(false);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (sidebarHoverTimerRef.current) {
+        clearTimeout(sidebarHoverTimerRef.current);
+      }
+    };
+  }, []);
 
   // Windowed visible loading for instant response & 0-lag rendering
   const [visibleCount, setVisibleCount] = useState(24);
@@ -456,12 +487,8 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
       />
 
       <aside
-        onMouseEnter={() => {
-          if (sidebarCollapsed) setIsSidebarHovered(true);
-        }}
-        onMouseLeave={() => {
-          setIsSidebarHovered(false);
-        }}
+        onMouseEnter={handleSidebarMouseEnter}
+        onMouseLeave={handleSidebarMouseLeave}
         className={`${isEffectiveExpanded ? 'w-72 md:w-72 lg:w-76 xl:w-80' : 'w-72 md:w-20'
           } ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
           } fixed md:static inset-y-0 left-0 z-40 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] border-r border-[#333333] bg-[#0B0B0B]/95 md:bg-[#0B0B0B]/85 backdrop-blur-xl p-3 sm:p-3.5 flex flex-col justify-between select-none shrink-0 ${
@@ -469,155 +496,152 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
           }`}
       >
         <div className="overflow-y-auto overflow-x-hidden">
-          {/* Logo & Toggle */}
-          <div className="px-1.5 py-2 mb-2 flex items-center justify-between gap-2">
-            <button
-              onClick={() => { router.push('/'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
-              className={`flex items-center gap-2.5 cursor-pointer hover:opacity-90 transition text-left group min-w-0 ${
-                !isEffectiveExpanded ? 'mx-auto' : ''
-              }`}
-              title="Return to Home"
-            >
-              <img
-                src="/logo.png"
-                alt="Watch Later"
-                className={`${isEffectiveExpanded ? 'h-9 w-9 sm:h-10 sm:w-10' : 'h-8 w-8'} object-contain shrink-0 group-hover:scale-105 transition-all drop-shadow`}
-              />
-              {isEffectiveExpanded && (
+          {/* Logo & Toggle Header */}
+          {isEffectiveExpanded ? (
+            <div className="px-1.5 py-2 mb-2 flex items-center justify-between gap-2">
+              <button
+                onClick={() => { router.push('/'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
+                className="flex items-center gap-2.5 cursor-pointer hover:opacity-90 transition text-left group min-w-0"
+                title="Return to Home"
+              >
+                <img
+                  src="/logo.png"
+                  alt="Watch Later"
+                  className="h-8 w-8 sm:h-9 sm:w-9 object-contain shrink-0 group-hover:scale-105 transition-all drop-shadow"
+                />
                 <div className="min-w-0 transition-opacity duration-200">
-                  <span className="font-oughter text-lg sm:text-xl font-bold tracking-tight text-white block leading-none">
+                  <span className="font-oughter text-base sm:text-lg font-bold tracking-tight text-white block leading-none">
                     Watch Later
                   </span>
-                  <span className="text-[10px] text-[#7E7E7E] block leading-tight mt-0.5 truncate">
+                  <span className="text-[9px] text-[#7E7E7E] block leading-tight mt-0.5 truncate">
                     Never lose a reel worth revisiting.
                   </span>
                 </div>
-              )}
-            </button>
+              </button>
 
-            {/* Desktop Collapse / Expand Toggle */}
-            <div className={`flex items-center gap-1 shrink-0 ${!isEffectiveExpanded ? 'hidden' : 'flex'}`}>
-              <button
-                onClick={() => {
-                  setSidebarCollapsed(!sidebarCollapsed);
-                  setIsSidebarHovered(false);
-                }}
-                className="hidden md:inline-flex p-1.5 rounded-lg hover:bg-zinc-800/80 text-zinc-400 hover:text-white transition active:scale-95"
-                title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-              >
-                {sidebarCollapsed ? <PanelLeft className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
-              </button>
-              <button
-                onClick={() => setMobileMenuOpen(false)}
-                aria-label="Close navigation"
-                className="md:hidden p-1.5 rounded-lg hover:bg-zinc-800/80 text-zinc-400 hover:text-white transition"
-              >
-                <X className="h-5 w-5" />
-              </button>
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  onClick={() => {
+                    setSidebarCollapsed(!sidebarCollapsed);
+                    setIsSidebarHovered(false);
+                  }}
+                  className="hidden md:inline-flex p-1.5 rounded-lg hover:bg-zinc-800/80 text-zinc-400 hover:text-white transition active:scale-95"
+                  title="Collapse sidebar"
+                >
+                  <PanelLeftClose className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  onClick={() => setMobileMenuOpen(false)}
+                  aria-label="Close navigation"
+                  className="md:hidden p-1.5 rounded-lg hover:bg-zinc-800/80 text-zinc-400 hover:text-white transition"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             </div>
-
-            {!isEffectiveExpanded && (
+          ) : (
+            <div className="py-2 mb-2 flex items-center justify-center w-full">
               <button
                 onClick={() => {
                   setSidebarCollapsed(false);
                   setIsSidebarHovered(false);
                 }}
-                className="hidden md:inline-flex p-1.5 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-white transition active:scale-95 mx-auto"
+                className="hidden md:inline-flex p-1.5 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-white transition active:scale-95"
                 title="Expand sidebar"
               >
-                <PanelLeft className="h-4 w-4" />
+                <PanelLeft className="h-3.5 w-3.5" />
               </button>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Navigation Items */}
           <div className="space-y-1">
             <button
               onClick={() => { router.push('/'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
-              className={`flex w-full items-center ${!isEffectiveExpanded ? 'justify-start gap-2.5 md:justify-center' : 'gap-2.5'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'home' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
+              className={`flex w-full items-center ${!isEffectiveExpanded ? 'justify-start gap-2.5 md:justify-center' : 'gap-2.5'} rounded-lg px-2 py-1.5 text-[11px] font-medium transition ${currentPage === 'home' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
                 }`}
               title="Home (Stats & Insights)"
             >
-              <Home className="h-4 w-4 shrink-0 text-white" />
+              <Home className="h-3.5 w-3.5 shrink-0 text-white" />
               <span className={!isEffectiveExpanded ? 'inline md:hidden' : 'inline'}>Home</span>
             </button>
 
             <button
               onClick={() => { router.push('/allcontent'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
-              className={`flex w-full items-center ${!isEffectiveExpanded ? 'justify-between md:justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'all' && !selectedCategoryId ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
+              className={`flex w-full items-center ${!isEffectiveExpanded ? 'justify-between md:justify-center' : 'justify-between'} rounded-lg px-2 py-1.5 text-[11px] font-medium transition ${currentPage === 'all' && !selectedCategoryId ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
                 }`}
               title="All Content"
             >
               <div className="flex items-center gap-2.5">
-                <Film className="h-4 w-4 shrink-0" />
+                <Film className="h-3.5 w-3.5 shrink-0" />
                 <span className={!isEffectiveExpanded ? 'inline md:hidden' : 'inline'}>All Content</span>
               </div>
-              <span className={`font-mono-micro text-[#6B6B6B] ${!isEffectiveExpanded ? 'inline md:hidden' : 'inline'}`}>{counts.all}</span>
+              <span className={`font-mono text-[10px] text-[#6B6B6B] ${!isEffectiveExpanded ? 'inline md:hidden' : 'inline'}`}>{counts.all}</span>
             </button>
 
             {/* Categories Navigation */}
             <button
               onClick={() => { router.push('/categories'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
-              className={`flex w-full items-center ${!isEffectiveExpanded ? 'justify-between md:justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'categories' && !selectedCategoryId ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
+              className={`flex w-full items-center ${!isEffectiveExpanded ? 'justify-between md:justify-center' : 'justify-between'} rounded-lg px-2 py-1.5 text-[11px] font-medium transition ${currentPage === 'categories' && !selectedCategoryId ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
                 }`}
               title="Categories"
             >
               <div className="flex items-center gap-2.5">
-                <FolderTree className="h-4 w-4 shrink-0 text-white" />
+                <FolderTree className="h-3.5 w-3.5 shrink-0 text-white" />
                 <span className={!isEffectiveExpanded ? 'inline md:hidden' : 'inline'}>Categories</span>
               </div>
-              <span className={`font-mono-micro text-[#6B6B6B] ${!isEffectiveExpanded ? 'inline md:hidden' : 'inline'}`}>{counts.categories}</span>
+              <span className={`font-mono text-[10px] text-[#6B6B6B] ${!isEffectiveExpanded ? 'inline md:hidden' : 'inline'}`}>{counts.categories}</span>
             </button>
 
             {/* Saves Page */}
             <button
               onClick={() => { router.push('/saves'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
-              className={`flex w-full items-center ${!isEffectiveExpanded ? 'justify-between md:justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${(currentPage === 'savelater' || currentPage === 'saves') ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
+              className={`flex w-full items-center ${!isEffectiveExpanded ? 'justify-between md:justify-center' : 'justify-between'} rounded-lg px-2 py-1.5 text-[11px] font-medium transition ${(currentPage === 'savelater' || currentPage === 'saves') ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
                 }`}
               title="Saves"
             >
               <div className="flex items-center gap-2.5">
-                <Bookmark className="h-4 w-4 shrink-0" />
+                <Bookmark className="h-3.5 w-3.5 shrink-0" />
                 <span className={!isEffectiveExpanded ? 'inline md:hidden' : 'inline'}>Saves</span>
               </div>
-              <span className={`font-mono-micro text-[#6B6B6B] ${!isEffectiveExpanded ? 'inline md:hidden' : 'inline'}`}>{counts.savelater}</span>
+              <span className={`font-mono text-[10px] text-[#6B6B6B] ${!isEffectiveExpanded ? 'inline md:hidden' : 'inline'}`}>{counts.savelater}</span>
             </button>
 
             <button
               onClick={() => { router.push('/watched'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
-              className={`flex w-full items-center ${!isEffectiveExpanded ? 'justify-between md:justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'watched' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
+              className={`flex w-full items-center ${!isEffectiveExpanded ? 'justify-between md:justify-center' : 'justify-between'} rounded-lg px-2 py-1.5 text-[11px] font-medium transition ${currentPage === 'watched' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
                 }`}
               title="Watched"
             >
               <div className="flex items-center gap-2.5">
-                <CheckCircle className="h-4 w-4 shrink-0 text-[#D9D9D9]" />
+                <CheckCircle className="h-3.5 w-3.5 shrink-0 text-[#D9D9D9]" />
                 <span className={!isEffectiveExpanded ? 'inline md:hidden' : 'inline'}>Watched</span>
               </div>
-              <span className={`font-mono-micro text-[#6B6B6B] ${!isEffectiveExpanded ? 'inline md:hidden' : 'inline'}`}>{counts.watched}</span>
+              <span className={`font-mono text-[10px] text-[#6B6B6B] ${!isEffectiveExpanded ? 'inline md:hidden' : 'inline'}`}>{counts.watched}</span>
             </button>
 
             <button
               onClick={() => { router.push('/inbox'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
-              className={`flex w-full items-center ${!isEffectiveExpanded ? 'justify-between md:justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'inbox' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
+              className={`flex w-full items-center ${!isEffectiveExpanded ? 'justify-between md:justify-center' : 'justify-between'} rounded-lg px-2 py-1.5 text-[11px] font-medium transition ${currentPage === 'inbox' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
                 }`}
               title="Inbox"
             >
               <div className="flex items-center gap-2.5">
-                <Inbox className="h-4 w-4 shrink-0" />
+                <Inbox className="h-3.5 w-3.5 shrink-0" />
                 <span className={!isEffectiveExpanded ? 'inline md:hidden' : 'inline'}>Inbox</span>
               </div>
-              <span className={`font-mono-micro text-[#6B6B6B] ${!isEffectiveExpanded ? 'inline md:hidden' : 'inline'}`}>{counts.inbox}</span>
+              <span className={`font-mono text-[10px] text-[#6B6B6B] ${!isEffectiveExpanded ? 'inline md:hidden' : 'inline'}`}>{counts.inbox}</span>
             </button>
           </div>
 
           {/* Dedicated Pinned Categories Sub-Menu */}
           {pinnedCategories.length > 0 && (
-            <div className="mt-6 pt-4 border-t border-[#262626]">
+            <div className="mt-5 pt-3.5 border-t border-[#262626]">
               <div className="flex items-center justify-between px-2 mb-2">
-                <span className={`font-mono-micro text-[#6B6B6B] tracking-wider block ${!isEffectiveExpanded ? 'hidden' : 'block'}`}>
+                <span className={`font-mono text-[9px] text-[#6B6B6B] tracking-wider block ${!isEffectiveExpanded ? 'hidden' : 'block'}`}>
                   PINNED CATEGORIES
                 </span>
-                <Pin className={`h-3 w-3 text-[#6B6B6B] ${!isEffectiveExpanded ? 'mx-auto' : ''}`} />
+                <Pin className={`h-2.5 w-2.5 text-[#6B6B6B] ${!isEffectiveExpanded ? 'mx-auto' : ''}`} />
               </div>
 
               <div className="space-y-0.5">
@@ -644,7 +668,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                         setSelectedCategoryId(cat.id);
                         setMobileMenuOpen(false);
                       }}
-                      className={`flex w-full items-center ${!isEffectiveExpanded ? 'justify-center' : 'justify-between'} rounded-lg px-2.5 py-1.5 text-xs font-medium transition ${
+                      className={`flex w-full items-center ${!isEffectiveExpanded ? 'justify-center' : 'justify-between'} rounded-lg px-2 py-1 text-[11px] font-medium transition ${
                         dragOverCatId === cat.id
                           ? 'ring-2 ring-white border-white bg-[#262626] scale-105'
                           : isSelected
@@ -657,7 +681,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                         {renderCategoryIcon(catIcon, `h-3 w-3 ${theme.text}`)}
                         <span className={`truncate ${!isEffectiveExpanded ? 'hidden' : 'inline'}`}>{cat.name}</span>
                       </div>
-                      <span className={`font-mono-micro text-[#6B6B6B] ${!isEffectiveExpanded ? 'hidden' : 'inline'}`}>{count}</span>
+                      <span className={`font-mono text-[10px] text-[#6B6B6B] ${!isEffectiveExpanded ? 'hidden' : 'inline'}`}>{count}</span>
                     </button>
                   );
                 })}
@@ -667,17 +691,17 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
         </div>
 
         {/* User Account / Settings at Bottom of Sidebar */}
-        <div className="border-t border-[#333333] pt-3 mt-4 space-y-1">
+        <div className="border-t border-[#333333] pt-2.5 mt-3 space-y-1">
           <button
             onClick={() => {
               router.push('/settings');
               setMobileMenuOpen(false);
             }}
-            className={`flex w-full items-center ${!isEffectiveExpanded ? 'justify-center' : 'gap-2.5'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'settings' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
+            className={`flex w-full items-center ${!isEffectiveExpanded ? 'justify-center' : 'gap-2.5'} rounded-lg px-2 py-1.5 text-[11px] font-medium transition ${currentPage === 'settings' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
               }`}
             title="Settings & Retention"
           >
-            <SettingsIcon className="h-4 w-4 shrink-0 text-zinc-400" />
+            <SettingsIcon className="h-3.5 w-3.5 shrink-0 text-zinc-400" />
             <span className={!isEffectiveExpanded ? 'hidden' : 'inline'}>Settings</span>
           </button>
         </div>
@@ -1031,7 +1055,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                         dragOverCatId === '__root__' ? 'border-amber-400 bg-amber-950/40 text-amber-200 ring-2 ring-amber-400' : 'border-transparent text-[#D9D9D9] hover:underline'
                       }`}
                     >
-                      ← Back to Categories {(currentPage === 'savelater' || currentPage === 'saves' || currentPage === 'categories') && '(Drop to take out)'}
+                      ← Back to {currentPage === 'savelater' || currentPage === 'saves' ? 'Saves' : 'Categories'} {(currentPage === 'savelater' || currentPage === 'saves' || currentPage === 'categories') && '(Drop to take out)'}
                     </button>
                     <span className="text-[#6B6B6B]">/</span>
                     <span className="text-xs text-white font-semibold">
@@ -1039,11 +1063,11 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                     </span>
                   </div>
 
-                  {/* Subcategories inside this selected category */}
-                  {(() => {
+                  {/* Subcategories inside this selected category (Categories page only) */}
+                  {currentPage === 'categories' && (() => {
                     const subCats = categories.filter(c => c.parent_id === selectedCategoryId);
                     if (subCats.length === 0) return null;
-                    const isDragAllowed = currentPage === 'savelater' || currentPage === 'saves' || currentPage === 'categories';
+                    const isDragAllowed = true;
                     return (
                       <div className="p-3 rounded-xl border border-[#2E2E2E] bg-[#141414]/90 backdrop-blur space-y-2">
                         <span className="text-[10px] font-mono uppercase tracking-wider text-[#737373] block">
@@ -1093,84 +1117,123 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                 </div>
               )}
 
-              {/* Option to create and manage categories in Saves */}
+              {/* Saves Page Folders & Folder Creation (separate from global AI categories) */}
               {(currentPage === 'savelater' || currentPage === 'saves') && !selectedCategoryId && (
-                <div className="mb-4 space-y-3">
+                <div className="mb-5 space-y-3">
                   <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl border border-white/10 bg-[#141414]/80 backdrop-blur-md">
                     <div className="flex items-center gap-2.5">
                       <div className="p-1.5 rounded-lg bg-white/10 text-white">
-                        <FolderTree className="h-4 w-4" />
+                        <Folder className="h-4 w-4" />
                       </div>
                       <div>
-                        <span className="text-xs font-semibold text-white block">Saves Vault Categories</span>
-                        <span className="text-[11px] text-[#7E7E7E] block">Drop saved reels into categories or click to explore</span>
+                        <span className="text-xs font-semibold text-white block">Saves Folders</span>
+                        <span className="text-[11px] text-[#7E7E7E] block">
+                          {savesFolders.length === 0
+                            ? 'Create custom folders in Saves or drag saved videos directly into them.'
+                            : `${savesFolders.length} custom folder${savesFolders.length === 1 ? '' : 's'} in your Saves vault.`}
+                        </span>
                       </div>
                     </div>
                     <button
-                      onClick={() => setIsCreatingCategory(!isCreatingCategory)}
+                      onClick={() => setIsCreatingSaveFolder(!isCreatingSaveFolder)}
                       className="flex items-center gap-1.5 rounded-xl bg-white hover:bg-zinc-200 text-black px-3 py-1.5 text-xs font-semibold active:scale-95 transition shadow-sm"
                     >
                       <Plus className="h-3.5 w-3.5" />
-                      <span>New Category</span>
+                      <span>New Folder</span>
                     </button>
                   </div>
 
-                  {isCreatingCategory && (
-                    <form onSubmit={handleCreateCategory} className="p-3.5 rounded-2xl border border-white/15 bg-[#181818]/95 backdrop-blur-xl flex flex-wrap gap-2 animate-fade-up">
+                  {isCreatingSaveFolder && (
+                    <form
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        if (!newSaveFolderName.trim()) return;
+                        await handleCreateSaveFolder(newSaveFolderName.trim());
+                        setNewSaveFolderName('');
+                        setIsCreatingSaveFolder(false);
+                      }}
+                      className="p-3.5 rounded-2xl border border-white/15 bg-[#181818]/95 backdrop-blur-xl flex flex-wrap gap-2 animate-fade-up"
+                    >
                       <input
                         type="text"
                         required
-                        value={newCategoryName}
-                        onChange={(e) => setNewCategoryName(e.target.value)}
-                        placeholder="New category name..."
-                        className="flex-1 min-w-[180px] rounded-xl border border-white/20 bg-black/60 px-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:border-white focus:outline-none"
+                        value={newSaveFolderName}
+                        onChange={(e) => setNewSaveFolderName(e.target.value)}
+                        placeholder="Folder name (e.g. Travel, Workouts, Music)..."
+                        className="flex-1 min-w-[200px] rounded-xl border border-white/20 bg-black/60 px-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:border-white focus:outline-none"
+                        autoFocus
                       />
-                      <button type="submit" className="rounded-xl bg-white hover:bg-zinc-200 text-black px-3.5 py-1.5 text-xs font-semibold active:scale-95 transition">
-                        Create Category
+                      <button
+                        type="submit"
+                        disabled={categoryInsertPending}
+                        className="rounded-xl bg-white hover:bg-zinc-200 text-black px-3.5 py-1.5 text-xs font-semibold active:scale-95 transition disabled:opacity-50"
+                      >
+                        {categoryInsertPending ? 'Creating...' : 'Create Folder'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsCreatingSaveFolder(false)}
+                        className="rounded-xl border border-white/10 text-zinc-400 hover:text-white px-3 py-1.5 text-xs transition"
+                      >
+                        Cancel
                       </button>
                     </form>
                   )}
 
-                  {/* Horizontal generated category drop targets in Saves */}
-                  <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-                    {rootCategories.map(cat => {
-                      const count = reels.filter(r => r.category_id === cat.id && savedLaterIds.includes(r.id)).length;
-                      const isDragOver = dragOverCatId === cat.id;
-                      const iconName = categoryMetaMap[cat.id]?.icon || 'Folder';
-                      const theme = getCategoryTheme(iconName, categoryMetaMap[cat.id]?.color);
+                  {/* Render Saves Folders together with saved reels */}
+                  {savesFolders.length > 0 && (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 pt-1">
+                      {savesFolders.map((folder) => {
+                        const count = reels.filter(r => r.category_id === folder.id && savedLaterIds.includes(r.id)).length;
+                        const isDragOver = dragOverCatId === folder.id;
 
-                      return (
-                        <div
-                          key={cat.id}
-                          onDragOver={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setDragOverCatId(cat.id);
-                          }}
-                          onDragLeave={() => setDragOverCatId(null)}
-                          onDrop={(e) => {
-                            handleDropOnCategory(cat.id, e);
-                          }}
-                          onClick={() => setSelectedCategoryId(cat.id)}
-                          className={`group flex items-center gap-2 px-3 py-2 rounded-xl border transition-all cursor-pointer shrink-0 select-none ${
-                            isDragOver
-                              ? 'border-cyan-400 bg-cyan-950/40 text-cyan-200 ring-2 ring-cyan-400 scale-105'
-                              : 'border-white/10 bg-[#161616]/80 hover:bg-[#202020] hover:border-white/25 text-[#D9D9D9]'
-                          }`}
-                        >
-                          <div className={`p-1 rounded-lg ${theme.bg} ${theme.border} border`}>
-                            {renderCategoryIcon(iconName, `h-3.5 w-3.5 ${theme.text}`)}
+                        return (
+                          <div
+                            key={folder.id}
+                            onDragOver={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setDragOverCatId(folder.id);
+                            }}
+                            onDragLeave={() => setDragOverCatId(null)}
+                            onDrop={(e) => {
+                              handleDropOnCategory(folder.id, e);
+                            }}
+                            onClick={() => setSelectedCategoryId(folder.id)}
+                            className={`group relative flex flex-col justify-between p-3 rounded-2xl border transition-all cursor-pointer select-none backdrop-blur-xl ${
+                              isDragOver
+                                ? 'border-cyan-400 bg-cyan-950/40 text-cyan-200 ring-2 ring-cyan-400 scale-105'
+                                : 'border-white/10 bg-[#141414]/85 hover:bg-[#1E1E1E]/95 hover:border-white/25 text-white shadow-lg'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between mb-2.5">
+                              <div className="p-1.5 rounded-xl bg-white/10 border border-white/15 text-white group-hover:scale-105 transition-transform">
+                                <Folder className="h-3.5 w-3.5 text-cyan-400" />
+                              </div>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteCategory(folder.id, e);
+                                }}
+                                className="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-red-500/20 text-zinc-500 hover:text-red-400 transition"
+                                title="Delete folder"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            </div>
+                            <div>
+                              <span className="text-xs font-semibold text-white group-hover:text-cyan-200 transition-colors block truncate">
+                                {folder.name}
+                              </span>
+                              <span className="text-[10px] font-mono text-zinc-400 mt-0.5 block">
+                                {count} {count === 1 ? 'saved video' : 'saved videos'}
+                              </span>
+                            </div>
                           </div>
-                          <span className="text-xs font-medium text-white group-hover:text-cyan-200 transition-colors">
-                            {cat.name}
-                          </span>
-                          <span className="text-[10px] font-mono text-zinc-400 bg-white/5 px-1.5 py-0.5 rounded-full">
-                            {count}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
 

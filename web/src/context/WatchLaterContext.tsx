@@ -39,6 +39,9 @@ interface WatchLaterContextType {
   };
   rootCategories: Category[];
   pinnedCategories: Category[];
+  savesFolderIds: string[];
+  savesFolders: Category[];
+  handleCreateSaveFolder: (name: string) => Promise<void>;
   loadData: () => Promise<void>;
   incomingAlert: string | null;
   lastMoveAction: {
@@ -232,6 +235,21 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
   }, []);
 
   const [savedLaterIds, setSavedLaterIds] = useState<string[]>([]);
+
+  // Helper to load user-scoped savesFolderIds (separate from global AI categories)
+  const loadSavesFolderIdsForUser = useCallback((userId?: string): string[] => {
+    if (!userId) return [];
+    try {
+      const stored = localStorage.getItem(`watchlater_saves_folder_ids_${userId}`);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) return parsed.filter((id): id is string => typeof id === 'string');
+      }
+    } catch (e) { }
+    return [];
+  }, []);
+
+  const [savesFolderIds, setSavesFolderIds] = useState<string[]>([]);
 
   // Load UI preferences from localStorage on mount
   useEffect(() => {
@@ -464,11 +482,13 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
         setCategories([]);
         setDevices([]);
         setSavedLaterIds([]);
+        setSavesFolderIds([]);
       } else if (nextUserId !== prevUserId) {
         setReels([]);
         setCategories([]);
         setDevices([]);
         setSavedLaterIds(loadSavedLaterIdsForUser(nextUserId));
+        setSavesFolderIds(loadSavesFolderIdsForUser(nextUserId));
       }
 
       setSession(newSession);
@@ -476,7 +496,14 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
     });
 
     return () => subscription.unsubscribe();
-  }, [loadSavedLaterIdsForUser]);
+  }, [loadSavedLaterIdsForUser, loadSavesFolderIdsForUser]);
+
+  // Initial load of savesFolderIds when session is ready
+  useEffect(() => {
+    if (session?.user?.id) {
+      setSavesFolderIds(loadSavesFolderIdsForUser(session.user.id));
+    }
+  }, [session?.user?.id, loadSavesFolderIdsForUser]);
 
   // Persist savedLaterIds tied to active user
   useEffect(() => {
@@ -487,6 +514,16 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
       } catch (e) { }
     }
   }, [savedLaterIds, session?.user?.id, loading]);
+
+  // Persist savesFolderIds tied to active user
+  useEffect(() => {
+    const currentUserId = session?.user?.id;
+    if (currentUserId && !loading) {
+      try {
+        localStorage.setItem(`watchlater_saves_folder_ids_${currentUserId}`, JSON.stringify(savesFolderIds));
+      } catch (e) { }
+    }
+  }, [savesFolderIds, session?.user?.id, loading]);
 
   // Real-time synchronization
   const currentUserId = session?.user?.id;
@@ -757,11 +794,72 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
 
     setCategories(prev => prev.filter(c => c.id !== catId));
     if (selectedCategoryId === catId) setSelectedCategoryId(null);
+    if (savesFolderIds.includes(catId)) {
+      setSavesFolderIds(prev => {
+        const next = prev.filter(id => id !== catId);
+        if (session?.user?.id) {
+          try {
+            localStorage.setItem(`watchlater_saves_folder_ids_${session.user.id}`, JSON.stringify(next));
+          } catch (e) { }
+        }
+        return next;
+      });
+    }
 
     const { error } = await supabase.from('categories').delete().eq('id', catId);
     if (error) {
       alert(`Failed to delete folder: ${error.message}`);
       await loadData();
+    }
+  };
+
+  const handleCreateSaveFolder = async (name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const userId = session?.user?.id;
+    if (!userId) {
+      alert('You must be signed in to create a folder.');
+      return;
+    }
+
+    setCategoryInsertPending(true);
+    try {
+      const isDuplicate = categories.some(
+        c => c.name.toLowerCase() === trimmed.toLowerCase() && savesFolderIds.includes(c.id)
+      );
+      if (isDuplicate) {
+        alert('A folder with this name already exists in Saves.');
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('categories')
+        .insert({
+          name: trimmed,
+          user_id: userId,
+          parent_id: null
+        })
+        .select()
+        .single();
+
+      if (error) {
+        alert(`Error creating folder: ${error.message}`);
+        return;
+      }
+
+      if (data) {
+        setCategories(prev => [...prev, data as Category]);
+        setSavesFolderIds(prev => {
+          const next = [...prev, data.id];
+          try {
+            localStorage.setItem(`watchlater_saves_folder_ids_${userId}`, JSON.stringify(next));
+          } catch (e) { }
+          return next;
+        });
+        showIncomingAlert(`Created Saves folder "${trimmed}" ✓`);
+      }
+    } finally {
+      setCategoryInsertPending(false);
     }
   };
 
@@ -944,8 +1042,12 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
   };
 
   const rootCategories = useMemo(() => {
-    return categories.filter(c => !c.parent_id);
-  }, [categories]);
+    return categories.filter(c => !c.parent_id && !savesFolderIds.includes(c.id));
+  }, [categories, savesFolderIds]);
+
+  const savesFolders = useMemo(() => {
+    return categories.filter(c => savesFolderIds.includes(c.id));
+  }, [categories, savesFolderIds]);
 
   const pinnedCategories = useMemo(() => {
     return categories.filter(c => pinnedFolderIds.includes(c.id));
@@ -962,10 +1064,10 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
     const inbox = reels.filter(isInboxReel).length;
     const failed = reels.filter(r => r.is_failed || r.processing_status === 'extraction_failed').length;
     const archived = reels.filter(r => r.completion_status === 'archived').length;
-    const categoriesCount = categories.length;
+    const categoriesCount = categories.filter(c => !savesFolderIds.includes(c.id)).length;
 
     return { all, savelater, watched, inbox, failed, archived, categories: categoriesCount };
-  }, [reels, savedLaterIds, categories]);
+  }, [reels, savedLaterIds, categories, savesFolderIds]);
 
   const value: WatchLaterContextType = {
     session,
@@ -985,6 +1087,9 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
     counts,
     rootCategories,
     pinnedCategories,
+    savesFolderIds,
+    savesFolders,
+    handleCreateSaveFolder,
     loadData,
     incomingAlert,
     lastMoveAction,
