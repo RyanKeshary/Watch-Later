@@ -917,8 +917,8 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top Header */}
-        <header className="h-14 sm:h-16 border-b border-[#333333] bg-[#0B0B0B]/80 backdrop-blur px-4 sm:px-6 flex items-center justify-between gap-3 shrink-0">
-          <div className="flex items-center gap-3 flex-1 min-w-0">
+        <header className="sticky top-0 z-30 h-14 sm:h-16 border-b border-[#333333] bg-[#0B0B0B]/95 backdrop-blur-xl px-3 sm:px-6 flex items-center justify-between gap-2 sm:gap-3 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
             {/* Mobile Hamburger Toggle */}
             <button
               onClick={() => setMobileMenuOpen(true)}
@@ -930,12 +930,12 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
 
             {/* Page title */}
             <div
-              className={`overflow-hidden transition-all duration-300 ease-in-out shrink-0 ${isEffectiveExpanded
+              className={`overflow-hidden transition-all duration-300 ease-in-out shrink min-w-0 ${isEffectiveExpanded
                   ? 'max-w-0 opacity-0 pointer-events-none -translate-x-3'
-                  : 'max-w-[280px] sm:max-w-xs opacity-100 translate-x-0 mr-2.5'
+                  : 'max-w-[180px] sm:max-w-xs opacity-100 translate-x-0 mr-1 sm:mr-2.5'
                 }`}
             >
-              <h2 className="font-sans text-sm sm:text-base font-bold text-white tracking-tight whitespace-nowrap">
+              <h2 className="font-sans text-xs sm:text-base font-bold text-white tracking-tight truncate">
                 {currentPage === 'home' && 'Analytics & Intelligence'}
                 {currentPage === 'all' && 'All Saved Content'}
                 {currentPage === 'categories' && (selectedCategoryId ? categories.find(c => c.id === selectedCategoryId)?.name || 'Category' : 'Categories Directory')}
@@ -1000,46 +1000,46 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
         </header>
 
         {/* Dynamic Views */}
-        <div className="flex-1 overflow-y-auto p-6 sm:p-8 lg:p-10 animate-fade-up">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-3.5 sm:p-6 lg:p-10 animate-fade-up">
           {/* HOME VIEW: BENTO STATS & NICHE DISTRIBUTION */}
           {currentPage === 'home' && (
-            <div className="space-y-6 w-full">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="rounded-2xl border border-[#333333] bg-[#1A1A1A]/80 p-5 shadow-sm">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-mono-micro text-[#D9D9D9] font-medium tracking-wider">WATCHED</span>
+            <div className="space-y-4 sm:space-y-6 w-full">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                <div className="rounded-2xl border border-[#333333] bg-[#1A1A1A]/80 p-4 sm:p-5 shadow-sm">
+                  <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+                    <span className="font-mono-micro text-[#D9D9D9] font-medium tracking-wider text-[9px] sm:text-[10px]">WATCHED</span>
                     <Film className="h-4 w-4 text-[#D9D9D9]" />
                   </div>
-                  <div className="font-sans text-3xl font-bold text-white tracking-tight">
+                  <div className="font-sans text-2xl sm:text-3xl font-bold text-white tracking-tight">
                     <NumberTicker value={counts.watched} />
                   </div>
-                  <span className="font-mono-micro text-[#6B6B6B] mt-2 block">
+                  <span className="font-mono-micro text-[#6B6B6B] mt-1 sm:mt-2 block text-[9px] sm:text-[10px]">
                     <NumberTicker value={reels.length} /> total saved ({reels.length > 0 ? Math.round((counts.watched / reels.length) * 100) : 0}%)
                   </span>
                 </div>
 
-                <div className="rounded-2xl border border-[#333333] bg-[#1A1A1A]/80 p-5 shadow-sm">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-mono-micro text-[#D9D9D9] font-medium tracking-wider">CATEGORIES</span>
+                <div className="rounded-2xl border border-[#333333] bg-[#1A1A1A]/80 p-4 sm:p-5 shadow-sm">
+                  <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+                    <span className="font-mono-micro text-[#D9D9D9] font-medium tracking-wider text-[9px] sm:text-[10px]">CATEGORIES</span>
                     <FolderTree className="h-4 w-4 text-[#D9D9D9]" />
                   </div>
-                  <div className="font-sans text-3xl font-bold text-white tracking-tight">
+                  <div className="font-sans text-2xl sm:text-3xl font-bold text-white tracking-tight">
                     <NumberTicker value={categories.filter(c => !savesFolderIds.includes(c.id)).length} />
                   </div>
-                  <span className="font-mono-micro text-[#6B6B6B] mt-2 block">
+                  <span className="font-mono-micro text-[#6B6B6B] mt-1 sm:mt-2 block text-[9px] sm:text-[10px]">
                     <NumberTicker value={rootCategories.length} /> primary, <NumberTicker value={Math.max(0, categories.filter(c => !savesFolderIds.includes(c.id)).length - rootCategories.length)} /> sub-niches
                   </span>
                 </div>
 
-                <div className="rounded-2xl border border-[#333333] bg-[#1A1A1A]/80 p-5 shadow-sm">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-mono-micro text-[#D9D9D9] font-medium tracking-wider">CONNECTED DEVICES</span>
+                <div className="rounded-2xl border border-[#333333] bg-[#1A1A1A]/80 p-4 sm:p-5 shadow-sm sm:col-span-2 lg:col-span-1">
+                  <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+                    <span className="font-mono-micro text-[#D9D9D9] font-medium tracking-wider text-[9px] sm:text-[10px]">CONNECTED DEVICES</span>
                     <Smartphone className="h-4 w-4 text-[#D9D9D9]" />
                   </div>
-                  <div className="font-sans text-3xl font-bold text-white tracking-tight">
+                  <div className="font-sans text-2xl sm:text-3xl font-bold text-white tracking-tight">
                     <NumberTicker value={devices.length} />
                   </div>
-                  <span className="font-mono-micro text-[#6B6B6B] mt-2 block">
+                  <span className="font-mono-micro text-[#6B6B6B] mt-1 sm:mt-2 block text-[9px] sm:text-[10px]">
                     {devices.length > 0 ? (devices[0]?.device_name || 'Active Android / iOS') : 'No devices synced'}
                   </span>
                 </div>
@@ -1049,33 +1049,33 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
               {showPersonaInsights && (
                 isFirstTimePersona ? (
                   <div className="relative p-[1px] rounded-2xl bg-gradient-to-b from-white/30 via-white/10 to-white/5 shadow-[0_0_25px_rgba(255,255,255,0.08)] overflow-hidden transition-all duration-500">
-                    <div className="relative rounded-2xl bg-[#141414]/95 backdrop-blur-xl p-6 sm:p-7">
-                      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                    <div className="relative rounded-2xl bg-[#141414]/95 backdrop-blur-xl p-4 sm:p-7">
+                      <div className="flex flex-wrap items-center justify-between gap-3 mb-3 sm:mb-4">
                         <div className="flex items-center gap-2.5">
-                          <div className="p-2 rounded-xl bg-white/10 border border-white/20 text-white shadow-[0_0_12px_rgba(255,255,255,0.12)]">
+                          <div className="p-1.5 sm:p-2 rounded-xl bg-white/10 border border-white/20 text-white shadow-[0_0_12px_rgba(255,255,255,0.12)]">
                             <Sparkles className="h-4 w-4 text-white" />
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
-                              <h3 className="font-sans text-base font-bold text-white tracking-tight">Vault Intelligence Persona</h3>
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-white/10 text-zinc-200 border border-white/20">
+                              <h3 className="font-sans text-sm sm:text-base font-bold text-white tracking-tight">Vault Intelligence Persona</h3>
+                              <span className="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-mono font-semibold bg-white/10 text-zinc-200 border border-white/20">
                                 ✨ Synthesized
                               </span>
                             </div>
-                            <span className="text-[11px] text-[#888888]">Your taste profile is primed and ready</span>
+                            <span className="text-[10px] sm:text-[11px] text-[#888888]">Your taste profile is primed and ready</span>
                           </div>
                         </div>
 
                         <button
                           onClick={dismissFirstTimePersona}
-                          className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white border border-white/20 transition active:scale-95"
+                          className="text-xs font-semibold px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white border border-white/20 transition active:scale-95"
                           title="Dismiss celebration and keep standard view"
                         >
                           Got it ✓
                         </button>
                       </div>
 
-                      <p className="text-sm text-zinc-200 leading-relaxed font-sans mb-3 font-medium">
+                      <p className="text-xs sm:text-sm text-zinc-200 leading-relaxed font-sans mb-3 font-medium">
                         {userPersonaInsight}
                       </p>
 
@@ -1083,19 +1083,19 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                     </div>
                   </div>
                 ) : (
-                  <div className="rounded-2xl border border-white/15 bg-[#1A1A1A]/90 p-6 shadow-sm">
-                    <div className="flex items-center justify-between mb-3">
+                  <div className="rounded-2xl border border-white/15 bg-[#1A1A1A]/90 p-4 sm:p-6 shadow-sm">
+                    <div className="flex items-center justify-between mb-2 sm:mb-3">
                       <div className="flex items-center gap-2">
                         <Bookmark className="h-4 w-4 text-[#D9D9D9]" />
-                        <h3 className="font-sans text-sm font-bold text-white tracking-tight">Vault Intelligence Persona</h3>
+                        <h3 className="font-sans text-xs sm:text-sm font-bold text-white tracking-tight">Vault Intelligence Persona</h3>
                       </div>
                       {reels.length < 20 && (
-                        <span className="font-mono-micro text-[#6B6B6B] bg-[#0B0B0B] px-2.5 py-1 rounded-full border border-[#333333]">
+                        <span className="font-mono-micro text-[#6B6B6B] bg-[#0B0B0B] px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full border border-[#333333] text-[9px] sm:text-[10px]">
                           {reels.length} / 20 SAVED
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-[#D9D9D9] leading-relaxed font-sans">
+                    <p className="text-[11px] sm:text-xs text-[#D9D9D9] leading-relaxed font-sans">
                       {userPersonaInsight}
                     </p>
                   </div>
@@ -1103,9 +1103,9 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
               )}
 
               {/* Compressed Niche Category Distribution */}
-              <div className="rounded-2xl border border-[#333333] bg-[#1A1A1A]/80 p-5 shadow-sm">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-sans text-sm font-bold text-white tracking-tight flex items-center gap-2">
+              <div className="rounded-2xl border border-[#333333] bg-[#1A1A1A]/80 p-3.5 sm:p-5 shadow-sm overflow-hidden">
+                <div className="flex items-center justify-between mb-3 sm:mb-4">
+                  <h3 className="font-sans text-xs sm:text-sm font-bold text-white tracking-tight flex items-center gap-2">
                     <PieChart className="h-4 w-4 text-[#D9D9D9]" />
                     <span>Niche Category Breakdown</span>
                   </h3>
@@ -1119,22 +1119,22 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
 
                   if (nicheViewMode === 'bars') {
                     return (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-2.5">
                         {nicheCategories.map((cat, idx) => {
                           const count = reels.filter(r => r.category_id === cat.id).length;
                           const pct = reels.length > 0 ? Math.round((count / reels.length) * 100) : 0;
                           return (
                             <div
                               key={cat.id}
-                              className="group/bar flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-[#333333] bg-[#1A1A1A] hover:border-[#6B6B6B] hover:bg-[#1A1A1A]/90 transition-all duration-300 shadow-sm"
+                              className="group/bar flex items-center gap-2 sm:gap-3 px-2.5 sm:px-3.5 py-2 sm:py-2.5 rounded-xl border border-[#333333] bg-[#1A1A1A] hover:border-[#6B6B6B] hover:bg-[#1A1A1A]/90 transition-all duration-300 shadow-sm min-w-0"
                             >
-                              <div className="flex items-center gap-2.5 w-28 sm:w-36 min-w-0">
+                              <div className="flex items-center gap-1.5 sm:gap-2.5 w-24 sm:w-36 min-w-0 shrink-0">
                                 <span className="h-1.5 w-1.5 rounded-full shrink-0 bg-[#D9D9D9] transition-transform duration-300 group-hover/bar:scale-125" />
-                                <span className="text-xs font-medium text-[#D9D9D9] group-hover/bar:text-white truncate transition-colors">
+                                <span className="text-[11px] sm:text-xs font-medium text-[#D9D9D9] group-hover/bar:text-white truncate transition-colors">
                                   {cat.name}
                                 </span>
                               </div>
-                              <div className="flex-1 h-2 rounded-full bg-[#0B0B0B] overflow-hidden border border-[#333333] p-px">
+                              <div className="flex-1 min-w-[50px] h-1.5 sm:h-2 rounded-full bg-[#0B0B0B] overflow-hidden border border-[#333333] p-px">
                                 <div
                                   className="h-full rounded-full transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] bg-gradient-to-r from-[#6B6B6B] via-[#D9D9D9] to-[#FFFFFF]"
                                   style={{
@@ -1143,7 +1143,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                                   }}
                                 />
                               </div>
-                              <span className="font-mono-micro text-[#6B6B6B] group-hover/bar:text-[#D9D9D9] w-24 text-right tabular-nums transition-colors">
+                              <span className="font-mono-micro text-[#6B6B6B] group-hover/bar:text-[#D9D9D9] w-16 sm:w-24 text-right tabular-nums text-[9px] sm:text-[10px] transition-colors shrink-0">
                                 <NumberTicker value={count} duration={900} /> (<NumberTicker value={pct} duration={900} />%)
                               </span>
                             </div>
@@ -1201,10 +1201,10 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                     : null;
 
                   return (
-                    <div className="flex flex-col lg:flex-row items-center justify-center gap-8 py-4 px-2 max-w-5xl mx-auto">
-                      {/* Enhanced Larger Minimalist Pie with Dynamic Pointer Callout */}
-                      <div className="relative w-80 h-80 sm:w-96 sm:h-96 shrink-0 flex items-center justify-center">
-                        <svg viewBox="0 0 280 280" className="w-full h-full overflow-visible">
+                    <div className="flex flex-col lg:flex-row items-center justify-center gap-6 sm:gap-8 py-3 sm:py-4 px-1 sm:px-2 max-w-5xl mx-auto w-full">
+                      {/* Enhanced Responsive Pie with Dynamic Pointer Callout */}
+                      <div className="relative w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 shrink-0 flex items-center justify-center max-w-full">
+                        <svg viewBox="0 0 280 280" className="w-full h-full overflow-hidden sm:overflow-visible">
                           {/* Radial Slices (rotated inside group so pointer coordinates align) */}
                           <g className="-rotate-90 origin-[140px_140px] transform">
                             <circle
@@ -1250,15 +1250,15 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                             const x2 = cx + (sliceOuterR + 18) * Math.cos(activeHoveredSlice.midAngleRad);
                             const y2 = cy + (sliceOuterR + 18) * Math.sin(activeHoveredSlice.midAngleRad);
                             const isRight = Math.cos(activeHoveredSlice.midAngleRad) >= 0;
-                            const elbowLen = 24;
-                            const x3 = isRight ? x2 + elbowLen : x2 - elbowLen;
+                            const elbowLen = 18;
+                            const x3 = isRight ? Math.min(x2 + elbowLen, 260) : Math.max(x2 - elbowLen, 20);
                             const y3 = y2;
 
-                            // Label foreignObject positioned right at (x3, y3)
-                            const labelWidth = 140;
+                            // Label foreignObject positioned right at (x3, y3) with bounded placement
+                            const labelWidth = 120;
                             const labelHeight = 32;
-                            const foX = isRight ? x3 + 6 : x3 - labelWidth - 6;
-                            const foY = y3 - labelHeight / 2;
+                            const foX = isRight ? Math.min(x3 + 4, 280 - labelWidth) : Math.max(x3 - labelWidth - 4, 0);
+                            const foY = Math.max(4, Math.min(y3 - labelHeight / 2, 280 - labelHeight - 4));
 
                             return (
                               <g className="animate-in fade-in duration-200 pointer-events-none">
@@ -1295,7 +1295,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                       </div>
 
                       {/* Interactive Legend Grid */}
-                      <div className="grid grid-cols-2 gap-2 w-full max-h-56 overflow-y-auto pr-1">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-2 w-full max-h-56 overflow-y-auto pr-1">
                         {nicheCategories.map((cat, idx) => {
                           const count = reels.filter(r => r.category_id === cat.id).length;
                           const pct = totalNicheReels > 0 ? Math.round((count / totalNicheReels) * 100) : 0;
@@ -1307,7 +1307,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                               key={cat.id}
                               onMouseEnter={() => setHoveredPieCatId(cat.id)}
                               onMouseLeave={() => setHoveredPieCatId(null)}
-                              className={`flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg border text-xs transition cursor-pointer ${
+                              className={`flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg border text-xs transition cursor-pointer min-w-0 ${
                                 isHovered
                                   ? 'border-white/30 bg-white/10 text-white shadow-sm'
                                   : 'border-white/5 bg-[#0C0C0C]/80 hover:bg-[#141414] text-zinc-300'

@@ -504,7 +504,15 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
             setSavedLaterIds(prevSaved => prevSaved.filter(id => typeof id === 'string' && fetchedIds.has(id)));
           }
         }
-        if (catsRes.data) setCategories(catsRes.data as Category[]);
+        if (catsRes.data) {
+          const fetchedCats = catsRes.data as Category[];
+          setCategories(fetchedCats);
+          // Auto-reconcile Saves folders from database rows where is_system is true
+          const dbSavesFolderIds = fetchedCats.filter(c => c.is_system).map(c => c.id);
+          if (dbSavesFolderIds.length > 0) {
+            setSavesFolderIds(prev => Array.from(new Set([...prev, ...dbSavesFolderIds])));
+          }
+        }
         if (devsRes.data) setDevices(devsRes.data as Device[]);
       }
     } catch (err) {
@@ -769,9 +777,15 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
                 if (prev.some(c => c.id === newCat.id)) return prev;
                 return [...prev, newCat];
               });
+              if (newCat.is_system) {
+                setSavesFolderIds((prev) => prev.includes(newCat.id) ? prev : [...prev, newCat.id]);
+              }
             } else if (payload.eventType === 'DELETE') {
               const deletedId = (payload.old as { id?: string }).id;
               setCategories((prev) => prev.filter(c => c.id !== deletedId));
+              if (deletedId) {
+                setSavesFolderIds((prev) => prev.filter(id => id !== deletedId));
+              }
             } else if (payload.eventType === 'UPDATE') {
               const updated = payload.new as Category;
               setCategories((prev) => prev.map(c => c.id === updated.id ? updated : c));
@@ -1061,7 +1075,8 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
         .insert({
           name: trimmed,
           user_id: userId,
-          parent_id: null
+          parent_id: null,
+          is_system: true
         })
         .select()
         .single();

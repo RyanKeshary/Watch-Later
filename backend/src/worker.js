@@ -428,6 +428,7 @@ async function processReel(reel) {
       }
 
       const emptyIds = allUserCats.filter(cat => {
+        if (cat.is_system) return false;
         if (usedIds.has(cat.id)) return false;
         if (protectedRecentParentIds.has(cat.id)) {
           return false;
@@ -523,6 +524,7 @@ async function cleanupEmptyCategories() {
       }
 
       const emptyIds = allCats.filter(cat => {
+        if (cat.is_system) return false;
         if (usedIds.has(cat.id)) return false;
         if (cat.created_at && (now - new Date(cat.created_at).getTime()) < recentGracePeriodMs) {
           return false;
