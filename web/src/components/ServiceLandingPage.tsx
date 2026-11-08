@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import SplashCursor from '@/components/SplashCursor';
+import HeroParticleMesh from '@/components/HeroParticleMesh';
+import TiltCard from '@/components/TiltCard';
 
 interface ServicePageProps {
   onSignInSuccess?: () => void;
@@ -255,6 +257,9 @@ export default function ServiceLandingPage({
         ref={heroRef}
         className="relative min-h-dvh flex flex-col justify-center items-center px-6 sm:px-10 overflow-hidden pt-16 pb-24 border-b border-white/[0.08]"
       >
+        {/* Interactive WebGL / Canvas Reactive Mesh (§scroll-craft) */}
+        <HeroParticleMesh />
+
         {/* Subtle Depth Lighting */}
         <div
           className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center overflow-hidden"
@@ -525,11 +530,11 @@ export default function ServiceLandingPage({
             </div>
           </div>
 
-          {/* Interactive Horizontal Reel Rail */}
+          {/* Interactive Horizontal Reel Rail with 3D Tilt & Specular Reflections */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {showcaseCategory === 'design' && (
               <>
-                <div className="rounded-2xl border border-white/[0.08] bg-panel p-6 flex flex-col justify-between hover:border-cyanbrand/40 transition-colors">
+                <TiltCard className="rounded-2xl border border-white/[0.08] bg-panel p-6 flex flex-col justify-between hover:border-cyanbrand/40 transition-colors">
                   <div>
                     <div className="flex items-center justify-between text-xs text-ink-subtle mb-4">
                       <span>@studiodesign</span>
@@ -549,9 +554,9 @@ export default function ServiceLandingPage({
                     </span>
                     <span className="text-ink-tertiary tabular-nums">0:48 duration</span>
                   </div>
-                </div>
+                </TiltCard>
 
-                <div className="rounded-2xl border border-white/[0.08] bg-panel p-6 flex flex-col justify-between hover:border-cyanbrand/40 transition-colors">
+                <TiltCard className="rounded-2xl border border-white/[0.08] bg-panel p-6 flex flex-col justify-between hover:border-cyanbrand/40 transition-colors">
                   <div>
                     <div className="flex items-center justify-between text-xs text-ink-subtle mb-4">
                       <span>@motioncrafter</span>
@@ -571,9 +576,9 @@ export default function ServiceLandingPage({
                     </span>
                     <span className="text-ink-tertiary tabular-nums">1:12 duration</span>
                   </div>
-                </div>
+                </TiltCard>
 
-                <div className="rounded-2xl border border-white/[0.08] bg-panel p-6 flex flex-col justify-between hover:border-cyanbrand/40 transition-colors">
+                <TiltCard className="rounded-2xl border border-white/[0.08] bg-panel p-6 flex flex-col justify-between hover:border-cyanbrand/40 transition-colors">
                   <div>
                     <div className="flex items-center justify-between text-xs text-ink-subtle mb-4">
                       <span>@typefoundry</span>
@@ -593,13 +598,13 @@ export default function ServiceLandingPage({
                     </span>
                     <span className="text-ink-tertiary tabular-nums">0:56 duration</span>
                   </div>
-                </div>
+                </TiltCard>
               </>
             )}
 
             {showcaseCategory === 'cooking' && (
               <>
-                <div className="rounded-2xl border border-white/[0.08] bg-panel p-6 flex flex-col justify-between hover:border-amberbrand/40 transition-colors">
+                <TiltCard className="rounded-2xl border border-white/[0.08] bg-panel p-6 flex flex-col justify-between hover:border-amberbrand/40 transition-colors">
                   <div>
                     <div className="flex items-center justify-between text-xs text-ink-subtle mb-4">
                       <span>@pasta.craft</span>
@@ -619,9 +624,9 @@ export default function ServiceLandingPage({
                     </span>
                     <span className="text-ink-tertiary tabular-nums">0:45 duration</span>
                   </div>
-                </div>
+                </TiltCard>
 
-                <div className="rounded-2xl border border-white/[0.08] bg-panel p-6 flex flex-col justify-between hover:border-amberbrand/40 transition-colors">
+                <TiltCard className="rounded-2xl border border-white/[0.08] bg-panel p-6 flex flex-col justify-between hover:border-amberbrand/40 transition-colors">
                   <div>
                     <div className="flex items-center justify-between text-xs text-ink-subtle mb-4">
                       <span>@breadlab</span>
@@ -641,9 +646,9 @@ export default function ServiceLandingPage({
                     </span>
                     <span className="text-ink-tertiary tabular-nums">1:04 duration</span>
                   </div>
-                </div>
+                </TiltCard>
 
-                <div className="rounded-2xl border border-white/[0.08] bg-panel p-6 flex flex-col justify-between hover:border-amberbrand/40 transition-colors">
+                <TiltCard className="rounded-2xl border border-white/[0.08] bg-panel p-6 flex flex-col justify-between hover:border-amberbrand/40 transition-colors">
                   <div>
                     <div className="flex items-center justify-between text-xs text-ink-subtle mb-4">
                       <span>@culinarytechnique</span>
@@ -663,13 +668,13 @@ export default function ServiceLandingPage({
                     </span>
                     <span className="text-ink-tertiary tabular-nums">0:52 duration</span>
                   </div>
-                </div>
+                </TiltCard>
               </>
             )}
 
             {showcaseCategory === 'fitness' && (
               <>
-                <div className="rounded-2xl border border-white/[0.08] bg-panel p-6 flex flex-col justify-between hover:border-emerald-400/40 transition-colors">
+                <TiltCard className="rounded-2xl border border-white/[0.08] bg-panel p-6 flex flex-col justify-between hover:border-emerald-400/40 transition-colors">
                   <div>
                     <div className="flex items-center justify-between text-xs text-ink-subtle mb-4">
                       <span>@biomechanics</span>
@@ -689,9 +694,9 @@ export default function ServiceLandingPage({
                     </span>
                     <span className="text-ink-tertiary tabular-nums">0:39 duration</span>
                   </div>
-                </div>
+                </TiltCard>
 
-                <div className="rounded-2xl border border-white/[0.08] bg-panel p-6 flex flex-col justify-between hover:border-emerald-400/40 transition-colors">
+                <TiltCard className="rounded-2xl border border-white/[0.08] bg-panel p-6 flex flex-col justify-between hover:border-emerald-400/40 transition-colors">
                   <div>
                     <div className="flex items-center justify-between text-xs text-ink-subtle mb-4">
                       <span>@mobilityproject</span>
@@ -711,9 +716,9 @@ export default function ServiceLandingPage({
                     </span>
                     <span className="text-ink-tertiary tabular-nums">0:49 duration</span>
                   </div>
-                </div>
+                </TiltCard>
 
-                <div className="rounded-2xl border border-white/[0.08] bg-panel p-6 flex flex-col justify-between hover:border-emerald-400/40 transition-colors">
+                <TiltCard className="rounded-2xl border border-white/[0.08] bg-panel p-6 flex flex-col justify-between hover:border-emerald-400/40 transition-colors">
                   <div>
                     <div className="flex items-center justify-between text-xs text-ink-subtle mb-4">
                       <span>@rehabspecialist</span>
@@ -733,10 +738,101 @@ export default function ServiceLandingPage({
                     </span>
                     <span className="text-ink-tertiary tabular-nums">0:41 duration</span>
                   </div>
-                </div>
+                </TiltCard>
               </>
             )}
           </div>
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* 2.38 HORIZONTAL PLATFORM REEL STRIP (Curated drag & wheel inertia)        */}
+      {/* ========================================================================= */}
+      <section className="py-20 bg-canvas border-b border-white/[0.08] overflow-hidden">
+        <div className="mx-auto max-w-6xl px-6 sm:px-10 mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-panel border border-white/10 text-xs text-cyanbrand mb-3">
+                <span className="h-1.5 w-1.5 rounded-full bg-cyanbrand" />
+                <span>Cross-platform capture</span>
+              </div>
+              <h3 className="font-zolo text-2xl sm:text-3xl font-bold text-ink tracking-tight text-balance">
+                One library for every format you consume.
+              </h3>
+            </div>
+            <p className="text-xs text-ink-subtle">
+              Drag or scroll horizontally to explore formats
+            </p>
+          </div>
+        </div>
+
+        {/* Inertia Rail */}
+        <div className="flex gap-6 overflow-x-auto px-6 sm:px-10 pb-6 pt-2 snap-x snap-mandatory scrollbar-none cursor-grab active:cursor-grabbing">
+          {[
+            {
+              platform: 'Instagram Reels',
+              tag: 'Reels',
+              color: 'text-rose-400',
+              accent: 'border-rose-500/20',
+              sample: 'Visual recipes & restaurant techniques',
+              speed: '0.2s capture',
+              meta: 'Native share sheet hook'
+            },
+            {
+              platform: 'TikTok Videos',
+              tag: 'TikTok',
+              color: 'text-cyanbrand',
+              accent: 'border-cyanbrand/20',
+              sample: 'Engineering breakdowns & fast UI micro-tutorials',
+              speed: 'Immediate offline queue',
+              meta: 'Watermark-clean link ingestion'
+            },
+            {
+              platform: 'YouTube Shorts',
+              tag: 'Shorts',
+              color: 'text-red-400',
+              accent: 'border-red-500/20',
+              sample: 'Biomechanics, exercise form cues & strength setup',
+              speed: 'Transcript parsed',
+              meta: 'Closed caption sync'
+            },
+            {
+              platform: 'Longform YouTube',
+              tag: 'YouTube',
+              color: 'text-amberbrand',
+              accent: 'border-amberbrand/20',
+              sample: 'Deep architectural walkthroughs & podcast chapters',
+              speed: 'Chapter indexation',
+              meta: 'Full chaptering breakdown'
+            }
+          ].map((item) => (
+            <TiltCard
+              key={item.platform}
+              className={`w-[320px] sm:w-[360px] shrink-0 snap-center rounded-2xl border ${item.accent} bg-panel p-6 flex flex-col justify-between`}
+            >
+              <div>
+                <div className="flex items-center justify-between mb-6">
+                  <span className={`text-xs font-semibold ${item.color}`}>
+                    {item.tag}
+                  </span>
+                  <span className="text-[11px] text-ink-subtle bg-white/[0.05] px-2.5 py-0.5 rounded-full border border-white/5">
+                    {item.speed}
+                  </span>
+                </div>
+                <h4 className="font-zolo text-xl font-bold text-ink mb-2">
+                  {item.platform}
+                </h4>
+                <p className="text-xs text-ink-muted leading-relaxed">
+                  {item.sample}
+                </p>
+              </div>
+
+              <div className="mt-8 pt-4 border-t border-white/[0.06] flex items-center justify-between text-[11px] text-ink-subtle">
+                <span>{item.meta}</span>
+                <span className="text-ink-tertiary">Ready</span>
+              </div>
+            </TiltCard>
+          ))}
         </div>
       </section>
 
