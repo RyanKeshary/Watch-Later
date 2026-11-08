@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Reel, Category, Device } from '@/types/database';
-import { Loader2 } from 'lucide-react';
+import { Morph, Loading } from 'loading-dev';
 import ServiceLandingPage from '@/components/ServiceLandingPage';
 import GameOnboardingGuide from '@/components/GameOnboardingGuide';
 import { NumberTicker } from '@/components/NumberTicker';
@@ -1172,9 +1172,9 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-fabric text-[#D9D9D9]">
+      <div className="flex h-screen items-center justify-center bg-fabric text-white">
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-10 w-10 animate-spin text-[#A8A8A8]" />
+          <Loading size={48} />
         </div>
       </div>
     );
@@ -2007,9 +2007,9 @@ export default function App() {
                       >
                         {/* Full Card Length Thumbnail Background */}
                         {isPending ? (
-                          <div className="absolute inset-0 bg-[#0B0B0B] flex flex-col items-center justify-center gap-2 z-0">
-                            <Loader2 className="h-8 w-8 animate-spin text-[#6B6B6B]" />
-                            <span className="font-mono-micro text-[#6B6B6B] animate-pulse">PARSING REEL CONTENT...</span>
+                          <div className="absolute inset-0 bg-[#0B0B0B] flex flex-col items-center justify-center gap-3 z-0 text-white">
+                            <Morph size={48} />
+                            <span className="font-mono-micro text-[#A8A8A8] tracking-wider animate-pulse">PARSING REEL CONTENT...</span>
                           </div>
                         ) : showThumbnails && reel.thumbnail_url ? (
                           <img
@@ -2195,8 +2195,8 @@ export default function App() {
                       >
                         <div className="flex items-center gap-3.5 min-w-0 flex-1 w-full sm:w-auto">
                           {isPending ? (
-                            <div className="relative h-16 w-16 sm:h-14 sm:w-20 shrink-0 overflow-hidden rounded-lg bg-[#0B0B0B] border border-[#333333] flex items-center justify-center">
-                              <Loader2 className="h-6 w-6 animate-spin text-[#6B6B6B]" />
+                            <div className="relative h-16 w-16 sm:h-14 sm:w-20 shrink-0 overflow-hidden rounded-lg bg-[#0B0B0B] border border-[#333333] flex items-center justify-center text-white">
+                              <Morph size={32} />
                             </div>
                           ) : showThumbnails && reel.thumbnail_url ? (
                             <div className="relative h-16 w-16 sm:h-14 sm:w-20 shrink-0 overflow-hidden rounded-lg bg-[#0B0B0B] border border-[#333333] group/thumb">
@@ -2832,6 +2832,11 @@ export default function App() {
                         <Play className="h-5 w-5 fill-black ml-0.5" />
                       </div>
                     </a>
+                  </div>
+                ) : (detailReel.processing_status === 'pending' || detailReel.processing_status === 'resolving') ? (
+                  <div className="aspect-video w-full rounded-xl bg-[#0B0B0B] border border-[#333333] flex flex-col items-center justify-center gap-3 text-white">
+                    <Morph size={48} />
+                    <span className="font-mono-micro text-[#A8A8A8] tracking-wider animate-pulse">PARSING REEL CONTENT...</span>
                   </div>
                 ) : (
                   <div className="aspect-video w-full rounded-xl bg-[#0B0B0B] border border-[#333333] flex items-center justify-center text-[#6B6B6B] text-xs font-mono-micro">
