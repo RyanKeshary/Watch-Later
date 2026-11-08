@@ -634,25 +634,27 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
         onMouseLeave={handleSidebarMouseLeave}
         className={`${isEffectiveExpanded ? 'w-72 md:w-72 lg:w-76 xl:w-80' : 'w-72 md:w-16'
           } ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
-          } fixed md:static inset-y-0 left-0 z-40 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] border-r border-[#333333] bg-[#0B0B0B]/95 md:bg-[#0B0B0B]/85 backdrop-blur-xl p-2.5 sm:p-3 flex flex-col justify-between select-none shrink-0 ${
+          } fixed md:static inset-y-0 left-0 z-40 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] border-r border-[#333333] bg-[#0B0B0B]/95 md:bg-[#0B0B0B]/85 backdrop-blur-xl px-2 py-3 flex flex-col justify-between select-none shrink-0 ${
             sidebarCollapsed && isSidebarHovered ? 'shadow-[0_20px_60px_rgba(0,0,0,0.85)] z-50' : ''
           }`}
       >
-        <div className="overflow-y-auto overflow-x-hidden">
+        <div className="overflow-y-auto overflow-x-hidden flex flex-col">
           {/* Logo & Toggle Header */}
-          <div className="px-1 py-1.5 mb-2 flex items-center justify-between gap-1.5 min-h-[40px]">
+          <div className="mb-3 flex items-center justify-between min-h-[44px] px-1">
             <button
               onClick={() => { router.push('/'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
-              className="flex items-center gap-2 cursor-pointer hover:opacity-90 transition text-left group min-w-0"
+              className="flex items-center gap-2.5 cursor-pointer hover:opacity-90 transition text-left group min-w-0"
               title="Return to Home"
             >
-              <img
-                src="/logo.png"
-                alt="Watch Later"
-                className="h-7 w-7 sm:h-8 sm:w-8 object-contain shrink-0 group-hover:scale-105 transition-all drop-shadow"
-              />
+              <div className="w-10 h-10 flex items-center justify-center shrink-0">
+                <img
+                  src="/logo.png"
+                  alt="Watch Later"
+                  className="h-8 w-8 object-contain shrink-0 group-hover:scale-105 transition-all drop-shadow"
+                />
+              </div>
               <div className={`min-w-0 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-hidden whitespace-nowrap ${
-                isEffectiveExpanded ? 'max-w-[150px] opacity-100' : 'max-w-0 opacity-0 pointer-events-none'
+                isEffectiveExpanded ? 'max-w-[150px] opacity-100 ml-1' : 'max-w-0 opacity-0 pointer-events-none'
               }`}>
                 <span className="font-oughter text-base sm:text-lg font-bold tracking-tight text-white block leading-none">
                   Watch Later
@@ -672,7 +674,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                 className={`hidden md:inline-flex p-1.5 rounded-lg hover:bg-zinc-800/80 text-zinc-400 hover:text-white transition active:scale-95 ${!isEffectiveExpanded ? '!hidden' : ''}`}
                 title="Collapse sidebar"
               >
-                <PanelLeftClose className="h-3.5 w-3.5" />
+                <PanelLeftClose className="h-4 w-4" />
               </button>
               <button
                 onClick={() => setMobileMenuOpen(false)}
@@ -685,29 +687,39 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
           </div>
 
           {/* Navigation Items */}
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             <button
               onClick={() => { router.push('/'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
-              className={`flex w-full items-center ${!isEffectiveExpanded ? 'justify-center' : 'justify-start gap-2.5'} rounded-lg px-2 py-1.5 text-[11px] font-medium transition ${currentPage === 'home' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
-                }`}
+              className={`flex w-full items-center ${!isEffectiveExpanded ? 'justify-center px-0' : 'justify-start px-2.5 gap-3'} rounded-xl py-2 text-xs font-medium transition-all ${
+                currentPage === 'home'
+                  ? 'bg-white/10 text-white font-semibold border border-white/20 shadow-[0_0_15px_rgba(255,255,255,0.06)] animate-in fade-in duration-200'
+                  : 'text-[#888888] hover:bg-[#1A1A1A] hover:text-[#D9D9D9] border border-transparent'
+              }`}
               title="Home (Stats & Insights)"
             >
-              <Home className="h-3.5 w-3.5 shrink-0 text-white" />
+              <div className="w-10 h-7 flex items-center justify-center shrink-0">
+                <Home className={`h-5 w-5 transition-transform duration-200 ${currentPage === 'home' ? 'text-white scale-110 drop-shadow-[0_0_6px_rgba(255,255,255,0.4)]' : 'text-[#888888]'}`} />
+              </div>
               <span className={`transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] whitespace-nowrap overflow-hidden ${
-                isEffectiveExpanded ? 'max-w-[120px] opacity-100 ml-2.5' : 'max-w-0 opacity-0 pointer-events-none'
+                isEffectiveExpanded ? 'max-w-[120px] opacity-100' : 'max-w-0 opacity-0 pointer-events-none'
               }`}>Home</span>
             </button>
 
             <button
               onClick={() => { router.push('/allcontent'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
-              className={`flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-[11px] font-medium transition ${currentPage === 'all' && !selectedCategoryId ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
-                }`}
+              className={`flex w-full items-center ${!isEffectiveExpanded ? 'justify-center px-0' : 'justify-between px-2.5'} rounded-xl py-2 text-xs font-medium transition-all ${
+                currentPage === 'all' && !selectedCategoryId
+                  ? 'bg-white/10 text-white font-semibold border border-white/20 shadow-[0_0_15px_rgba(255,255,255,0.06)] animate-in fade-in duration-200'
+                  : 'text-[#888888] hover:bg-[#1A1A1A] hover:text-[#D9D9D9] border border-transparent'
+              }`}
               title="All Content"
             >
               <div className="flex items-center min-w-0">
-                <Film className="h-3.5 w-3.5 shrink-0" />
+                <div className="w-10 h-7 flex items-center justify-center shrink-0">
+                  <Film className={`h-5 w-5 transition-transform duration-200 ${currentPage === 'all' && !selectedCategoryId ? 'text-white scale-110 drop-shadow-[0_0_6px_rgba(255,255,255,0.4)]' : 'text-[#888888]'}`} />
+                </div>
                 <span className={`transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] whitespace-nowrap overflow-hidden ${
-                  isEffectiveExpanded ? 'max-w-[120px] opacity-100 ml-2.5' : 'max-w-0 opacity-0 pointer-events-none'
+                  isEffectiveExpanded ? 'max-w-[120px] opacity-100 ml-3' : 'max-w-0 opacity-0 pointer-events-none'
                 }`}>All Content</span>
               </div>
               <span className={`font-mono text-[10px] text-[#6B6B6B] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-hidden whitespace-nowrap ${
@@ -718,14 +730,19 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
             {/* Categories Navigation */}
             <button
               onClick={() => { router.push('/categories'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
-              className={`flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-[11px] font-medium transition ${currentPage === 'categories' && !selectedCategoryId ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
-                }`}
+              className={`flex w-full items-center ${!isEffectiveExpanded ? 'justify-center px-0' : 'justify-between px-2.5'} rounded-xl py-2 text-xs font-medium transition-all ${
+                currentPage === 'categories' && !selectedCategoryId
+                  ? 'bg-white/10 text-white font-semibold border border-white/20 shadow-[0_0_15px_rgba(255,255,255,0.06)] animate-in fade-in duration-200'
+                  : 'text-[#888888] hover:bg-[#1A1A1A] hover:text-[#D9D9D9] border border-transparent'
+              }`}
               title="Categories"
             >
               <div className="flex items-center min-w-0">
-                <FolderTree className="h-3.5 w-3.5 shrink-0 text-white" />
+                <div className="w-10 h-7 flex items-center justify-center shrink-0">
+                  <FolderTree className={`h-5 w-5 transition-transform duration-200 ${currentPage === 'categories' && !selectedCategoryId ? 'text-white scale-110 drop-shadow-[0_0_6px_rgba(255,255,255,0.4)]' : 'text-[#888888]'}`} />
+                </div>
                 <span className={`transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] whitespace-nowrap overflow-hidden ${
-                  isEffectiveExpanded ? 'max-w-[120px] opacity-100 ml-2.5' : 'max-w-0 opacity-0 pointer-events-none'
+                  isEffectiveExpanded ? 'max-w-[120px] opacity-100 ml-3' : 'max-w-0 opacity-0 pointer-events-none'
                 }`}>Categories</span>
               </div>
               <span className={`font-mono text-[10px] text-[#6B6B6B] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-hidden whitespace-nowrap ${
@@ -736,14 +753,19 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
             {/* Saves Page */}
             <button
               onClick={() => { router.push('/saves'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
-              className={`flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-[11px] font-medium transition ${(currentPage === 'savelater' || currentPage === 'saves') ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
-                }`}
+              className={`flex w-full items-center ${!isEffectiveExpanded ? 'justify-center px-0' : 'justify-between px-2.5'} rounded-xl py-2 text-xs font-medium transition-all ${
+                (currentPage === 'savelater' || currentPage === 'saves')
+                  ? 'bg-white/10 text-white font-semibold border border-white/20 shadow-[0_0_15px_rgba(255,255,255,0.06)] animate-in fade-in duration-200'
+                  : 'text-[#888888] hover:bg-[#1A1A1A] hover:text-[#D9D9D9] border border-transparent'
+              }`}
               title="Saves"
             >
               <div className="flex items-center min-w-0">
-                <Bookmark className="h-3.5 w-3.5 shrink-0" />
+                <div className="w-10 h-7 flex items-center justify-center shrink-0">
+                  <Bookmark className={`h-5 w-5 transition-transform duration-200 ${(currentPage === 'savelater' || currentPage === 'saves') ? 'text-white scale-110 drop-shadow-[0_0_6px_rgba(255,255,255,0.4)]' : 'text-[#888888]'}`} />
+                </div>
                 <span className={`transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] whitespace-nowrap overflow-hidden ${
-                  isEffectiveExpanded ? 'max-w-[120px] opacity-100 ml-2.5' : 'max-w-0 opacity-0 pointer-events-none'
+                  isEffectiveExpanded ? 'max-w-[120px] opacity-100 ml-3' : 'max-w-0 opacity-0 pointer-events-none'
                 }`}>Saves</span>
               </div>
               <span className={`font-mono text-[10px] text-[#6B6B6B] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-hidden whitespace-nowrap ${
@@ -753,14 +775,19 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
 
             <button
               onClick={() => { router.push('/watched'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
-              className={`flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-[11px] font-medium transition ${currentPage === 'watched' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
-                }`}
+              className={`flex w-full items-center ${!isEffectiveExpanded ? 'justify-center px-0' : 'justify-between px-2.5'} rounded-xl py-2 text-xs font-medium transition-all ${
+                currentPage === 'watched'
+                  ? 'bg-white/10 text-white font-semibold border border-white/20 shadow-[0_0_15px_rgba(255,255,255,0.06)] animate-in fade-in duration-200'
+                  : 'text-[#888888] hover:bg-[#1A1A1A] hover:text-[#D9D9D9] border border-transparent'
+              }`}
               title="Watched"
             >
               <div className="flex items-center min-w-0">
-                <CheckCircle className="h-3.5 w-3.5 shrink-0 text-[#D9D9D9]" />
+                <div className="w-10 h-7 flex items-center justify-center shrink-0">
+                  <CheckCircle className={`h-5 w-5 transition-transform duration-200 ${currentPage === 'watched' ? 'text-white scale-110 drop-shadow-[0_0_6px_rgba(255,255,255,0.4)]' : 'text-[#888888]'}`} />
+                </div>
                 <span className={`transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] whitespace-nowrap overflow-hidden ${
-                  isEffectiveExpanded ? 'max-w-[120px] opacity-100 ml-2.5' : 'max-w-0 opacity-0 pointer-events-none'
+                  isEffectiveExpanded ? 'max-w-[120px] opacity-100 ml-3' : 'max-w-0 opacity-0 pointer-events-none'
                 }`}>Watched</span>
               </div>
               <span className={`font-mono text-[10px] text-[#6B6B6B] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-hidden whitespace-nowrap ${
@@ -770,14 +797,19 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
 
             <button
               onClick={() => { router.push('/inbox'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
-              className={`flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-[11px] font-medium transition ${currentPage === 'inbox' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
-                }`}
+              className={`flex w-full items-center ${!isEffectiveExpanded ? 'justify-center px-0' : 'justify-between px-2.5'} rounded-xl py-2 text-xs font-medium transition-all ${
+                currentPage === 'inbox'
+                  ? 'bg-white/10 text-white font-semibold border border-white/20 shadow-[0_0_15px_rgba(255,255,255,0.06)] animate-in fade-in duration-200'
+                  : 'text-[#888888] hover:bg-[#1A1A1A] hover:text-[#D9D9D9] border border-transparent'
+              }`}
               title="Inbox"
             >
               <div className="flex items-center min-w-0">
-                <Inbox className="h-3.5 w-3.5 shrink-0" />
+                <div className="w-10 h-7 flex items-center justify-center shrink-0">
+                  <Inbox className={`h-5 w-5 transition-transform duration-200 ${currentPage === 'inbox' ? 'text-white scale-110 drop-shadow-[0_0_6px_rgba(255,255,255,0.4)]' : 'text-[#888888]'}`} />
+                </div>
                 <span className={`transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] whitespace-nowrap overflow-hidden ${
-                  isEffectiveExpanded ? 'max-w-[120px] opacity-100 ml-2.5' : 'max-w-0 opacity-0 pointer-events-none'
+                  isEffectiveExpanded ? 'max-w-[120px] opacity-100 ml-3' : 'max-w-0 opacity-0 pointer-events-none'
                 }`}>Inbox</span>
               </div>
               <span className={`font-mono text-[10px] text-[#6B6B6B] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-hidden whitespace-nowrap ${
@@ -795,10 +827,12 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                 }`}>
                   PINNED CATEGORIES
                 </span>
-                <Pin className={`h-2.5 w-2.5 text-[#6B6B6B] ${!isEffectiveExpanded ? 'mx-auto' : ''}`} />
+                <div className="w-10 flex items-center justify-center shrink-0">
+                  <Pin className="h-3 w-3 text-[#6B6B6B]" />
+                </div>
               </div>
 
-              <div className="space-y-0.5">
+              <div className="space-y-1">
                 {pinnedCategories.map((cat) => {
                   const count = reels.filter(r => r.category_id === cat.id).length;
                   const catIcon = categoryMetaMap[cat.id]?.icon || 'Folder';
@@ -822,19 +856,21 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                         setSelectedCategoryId(cat.id);
                         setMobileMenuOpen(false);
                       }}
-                      className={`flex w-full items-center justify-between rounded-lg px-2 py-1 text-[11px] font-medium transition ${
+                      className={`flex w-full items-center ${!isEffectiveExpanded ? 'justify-center px-0' : 'justify-between px-2.5'} rounded-xl py-1.5 text-xs font-medium transition-all ${
                         dragOverCatId === cat.id
                           ? 'ring-2 ring-white border-white bg-[#262626] scale-105'
                           : isSelected
-                            ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]'
-                            : 'text-[#888888] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
+                            ? 'bg-white/10 text-white font-semibold border border-white/20 shadow-[0_0_12px_rgba(255,255,255,0.06)]'
+                            : 'text-[#888888] hover:bg-[#1A1A1A] hover:text-[#D9D9D9] border border-transparent'
                       }`}
                       title={cat.name}
                     >
                       <div className="flex items-center min-w-0">
-                        {renderCategoryIcon(catIcon, `h-3 w-3 shrink-0 ${theme.text}`)}
+                        <div className="w-10 h-6 flex items-center justify-center shrink-0">
+                          {renderCategoryIcon(catIcon, `h-4 w-4 shrink-0 ${theme.text} ${isSelected ? 'scale-110 drop-shadow-[0_0_4px_currentColor]' : ''}`)}
+                        </div>
                         <span className={`transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] whitespace-nowrap overflow-hidden ${
-                          isEffectiveExpanded ? 'max-w-[110px] opacity-100 ml-2 truncate' : 'max-w-0 opacity-0 pointer-events-none'
+                          isEffectiveExpanded ? 'max-w-[110px] opacity-100 ml-2.5 truncate' : 'max-w-0 opacity-0 pointer-events-none'
                         }`}>{cat.name}</span>
                       </div>
                       <span className={`font-mono text-[10px] text-[#6B6B6B] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-hidden whitespace-nowrap ${
@@ -855,13 +891,18 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
               router.push('/settings');
               setMobileMenuOpen(false);
             }}
-            className={`flex w-full items-center ${!isEffectiveExpanded ? 'justify-center' : 'justify-start gap-2.5'} rounded-lg px-2 py-1.5 text-[11px] font-medium transition ${currentPage === 'settings' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
-              }`}
+            className={`flex w-full items-center ${!isEffectiveExpanded ? 'justify-center px-0' : 'justify-start px-2.5 gap-3'} rounded-xl py-2 text-xs font-medium transition-all ${
+              currentPage === 'settings'
+                ? 'bg-white/10 text-white font-semibold border border-white/20 shadow-[0_0_15px_rgba(255,255,255,0.06)] animate-in fade-in duration-200'
+                : 'text-[#888888] hover:bg-[#1A1A1A] hover:text-[#D9D9D9] border border-transparent'
+            }`}
             title="Settings & Retention"
           >
-            <SettingsIcon className="h-3.5 w-3.5 shrink-0 text-zinc-400" />
+            <div className="w-10 h-7 flex items-center justify-center shrink-0">
+              <SettingsIcon className={`h-5 w-5 transition-transform duration-200 ${currentPage === 'settings' ? 'text-white scale-110 drop-shadow-[0_0_6px_rgba(255,255,255,0.4)]' : 'text-zinc-400'}`} />
+            </div>
             <span className={`transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] whitespace-nowrap overflow-hidden ${
-              isEffectiveExpanded ? 'max-w-[120px] opacity-100 ml-2.5' : 'max-w-0 opacity-0 pointer-events-none'
+              isEffectiveExpanded ? 'max-w-[120px] opacity-100' : 'max-w-0 opacity-0 pointer-events-none'
             }`}>Settings</span>
           </button>
         </div>
@@ -1125,6 +1166,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                       const sliceLength = slicePercent * circumference;
                       const currentOffset = accumulatedOffset;
                       accumulatedOffset += sliceLength;
+                      // In SVG stroke-dasharray rotated by -90deg (-PI/2), strokeDashoffset starts at top (angle -PI/2) and goes clockwise
                       const startAngle = (currentOffset / circumference) * 2 * Math.PI - Math.PI / 2;
                       const endAngle = ((currentOffset + sliceLength) / circumference) * 2 * Math.PI - Math.PI / 2;
                       const midAngleRad = (startAngle + endAngle) / 2;
@@ -1147,13 +1189,13 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                   return (
                     <div className="flex flex-col lg:flex-row items-center justify-center gap-8 py-4 px-2 max-w-5xl mx-auto">
                       {/* Enhanced Larger Minimalist Pie with Dynamic Pointer Callout */}
-                      <div className="relative w-72 h-72 sm:w-80 sm:h-80 shrink-0 flex items-center justify-center">
-                        <svg viewBox="0 0 240 240" className="w-full h-full overflow-visible">
+                      <div className="relative w-80 h-80 sm:w-96 sm:h-96 shrink-0 flex items-center justify-center">
+                        <svg viewBox="0 0 280 280" className="w-full h-full overflow-visible">
                           {/* Radial Slices (rotated inside group so pointer coordinates align) */}
-                          <g className="-rotate-90 origin-[120px_120px] transform">
+                          <g className="-rotate-90 origin-[140px_140px] transform">
                             <circle
-                              cx="120"
-                              cy="120"
+                              cx="140"
+                              cy="140"
                               r={radius}
                               fill="#0E0E10"
                               stroke="#1A1A1E"
@@ -1165,8 +1207,8 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                               return (
                                 <circle
                                   key={slice.cat.id}
-                                  cx="120"
-                                  cy="120"
+                                  cx="140"
+                                  cy="140"
                                   r={radius}
                                   fill="transparent"
                                   stroke={slice.color}
@@ -1175,7 +1217,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                                   strokeDashoffset={-slice.offset}
                                   className="transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer"
                                   style={{
-                                    filter: isHovered ? `drop-shadow(0 0 12px ${slice.color})` : undefined,
+                                    filter: isHovered ? `drop-shadow(0 0 14px ${slice.color})` : undefined,
                                   }}
                                   onMouseEnter={() => setHoveredPieCatId(slice.cat.id)}
                                   onMouseLeave={() => setHoveredPieCatId(null)}
@@ -1186,63 +1228,56 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
 
                           {/* Dynamic Minimalist Arrow / Line Indicator pointing directly to hovered segment */}
                           {activeHoveredSlice && (() => {
-                            const cx = 120;
-                            const cy = 120;
-                            const innerR = 86;
-                            const outerR = 106;
-                            const x1 = cx + innerR * Math.cos(activeHoveredSlice.midAngleRad);
-                            const y1 = cy + innerR * Math.sin(activeHoveredSlice.midAngleRad);
-                            const x2 = cx + outerR * Math.cos(activeHoveredSlice.midAngleRad);
-                            const y2 = cy + outerR * Math.sin(activeHoveredSlice.midAngleRad);
+                            const cx = 140;
+                            const cy = 140;
+                            const sliceOuterR = 90;
+                            const x1 = cx + (sliceOuterR - 4) * Math.cos(activeHoveredSlice.midAngleRad);
+                            const y1 = cy + (sliceOuterR - 4) * Math.sin(activeHoveredSlice.midAngleRad);
+                            const x2 = cx + (sliceOuterR + 18) * Math.cos(activeHoveredSlice.midAngleRad);
+                            const y2 = cy + (sliceOuterR + 18) * Math.sin(activeHoveredSlice.midAngleRad);
                             const isRight = Math.cos(activeHoveredSlice.midAngleRad) >= 0;
-                            const x3 = isRight ? x2 + 20 : x2 - 20;
+                            const elbowLen = 24;
+                            const x3 = isRight ? x2 + elbowLen : x2 - elbowLen;
+                            const y3 = y2;
+
+                            // Label foreignObject positioned right at (x3, y3)
+                            const labelWidth = 140;
+                            const labelHeight = 32;
+                            const foX = isRight ? x3 + 6 : x3 - labelWidth - 6;
+                            const foY = y3 - labelHeight / 2;
 
                             return (
                               <g className="animate-in fade-in duration-200 pointer-events-none">
                                 <circle cx={x1} cy={y1} r="3" fill={activeHoveredSlice.color} className="animate-ping" />
                                 <circle cx={x1} cy={y1} r="2.5" fill={activeHoveredSlice.color} />
                                 <polyline
-                                  points={`${x1},${y1} ${x2},${y2} ${x3},${y2}`}
+                                  points={`${x1},${y1} ${x2},${y2} ${x3},${y3}`}
                                   fill="none"
                                   stroke={activeHoveredSlice.color}
                                   strokeWidth="1.5"
                                   strokeLinecap="round"
                                   strokeLinejoin="round"
                                 />
+                                <foreignObject x={foX} y={foY} width={labelWidth} height={labelHeight}>
+                                  <div className="flex items-center">
+                                    <div className="rounded-xl px-2.5 py-1 bg-[#0A0A0C]/95 backdrop-blur-xl border border-white/20 shadow-[0_8px_24px_rgba(0,0,0,0.9)] flex items-center gap-1.5 whitespace-nowrap">
+                                      <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: activeHoveredSlice.color }} />
+                                      <span className="text-[11px] font-semibold text-white truncate max-w-[68px]">
+                                        {activeHoveredSlice.cat.name}
+                                      </span>
+                                      <span className="text-[11px] font-mono font-bold text-white tabular-nums">
+                                        {activeHoveredSlice.count}
+                                      </span>
+                                      <span className="text-[10px] font-mono font-bold text-emerald-400 tabular-nums">
+                                        ({activeHoveredSlice.pct}%)
+                                      </span>
+                                    </div>
+                                  </div>
+                                </foreignObject>
                               </g>
                             );
                           })()}
                         </svg>
-
-                        {/* Positioned Data Pill Floating Above the Pointer */}
-                        {activeHoveredSlice ? (() => {
-                          const angle = activeHoveredSlice.midAngleRad;
-                          const isRight = Math.cos(angle) >= 0;
-                          const isTop = Math.sin(angle) < 0;
-
-                          return (
-                            <div
-                              className="absolute pointer-events-none select-none z-20 animate-in fade-in zoom-in-95 duration-200"
-                              style={{
-                                left: isRight ? '70%' : '5%',
-                                top: isTop ? '8%' : '72%',
-                              }}
-                            >
-                              <div className="rounded-xl px-2.5 py-1.5 bg-[#0A0A0C]/95 backdrop-blur-xl border border-white/20 shadow-[0_12px_36px_rgba(0,0,0,0.9)] flex items-center gap-2 whitespace-nowrap">
-                                <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: activeHoveredSlice.color }} />
-                                <span className="text-[11px] font-semibold text-white truncate max-w-[100px]">
-                                  {activeHoveredSlice.cat.name}
-                                </span>
-                                <span className="text-[11px] font-mono font-bold text-white tabular-nums">
-                                  {activeHoveredSlice.count}
-                                </span>
-                                <span className="text-[10px] font-mono font-bold text-emerald-400 tabular-nums">
-                                  ({activeHoveredSlice.pct}%)
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        })() : null}
                       </div>
 
                       {/* Interactive Legend Grid */}
