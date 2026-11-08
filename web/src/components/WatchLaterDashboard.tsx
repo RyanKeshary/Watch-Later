@@ -253,7 +253,9 @@ function VirtualCardContainer({
     if (!observer) return;
 
     const onIntersect = (inView: boolean) => {
-      setIsInViewport(inView);
+      if (inView) {
+        setIsInViewport(true);
+      }
     };
 
     cardObserverMap.set(el, onIntersect);
@@ -272,10 +274,8 @@ function VirtualCardContainer({
       ref={containerRef}
       className={className}
       style={{
-        minHeight,
-        aspectRatio,
-        contentVisibility: 'auto',
-        containIntrinsicSize: minHeight || '450px',
+        ...(minHeight ? { minHeight } : {}),
+        ...(aspectRatio ? { aspectRatio } : {}),
       }}
     >
       {shouldRender ? (
@@ -1369,20 +1369,14 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                     return (
                       <VirtualCardContainer
                         key={`${reel.id}-${searchQuery ? 's' : 'i'}`}
-                        minHeight={
-                          density === 'compact'
-                            ? '380px'
-                            : density === 'spacious'
-                              ? '500px'
-                              : '430px'
-                        }
-                        aspectRatio={
-                          density === 'compact'
-                            ? '9/16'
-                            : '9/15'
-                        }
                         isForceMounted={activeCardMenuId === reel.id || detailReelId === reel.id}
-                        className="w-full h-full"
+                        className={`w-full ${
+                          density === 'compact'
+                            ? 'min-h-[380px] aspect-[9/16]'
+                            : density === 'spacious'
+                              ? 'min-h-[500px] aspect-[9/15]'
+                              : 'min-h-[430px] sm:min-h-[450px] aspect-[9/15]'
+                        }`}
                       >
                         <div
                           draggable={isDragAllowed}
@@ -1574,7 +1568,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                         minHeight={density === 'compact' ? '56px' : density === 'spacious' ? '76px' : '64px'}
                         isForceMounted={activeCardMenuId === reel.id || detailReelId === reel.id}
                         className="w-full"
-                        placeholderClassName="rounded-xl border border-white/[0.04] bg-[#121212]/30"
+                        placeholderClassName="rounded-xl"
                       >
                         <div
                           draggable={isDragAllowed}

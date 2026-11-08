@@ -723,7 +723,7 @@ export default function ServiceLandingPage({
       {/* ========================================================================= */}
       {/* 2.38 HORIZONTAL PLATFORM REEL STRIP (Curated drag & wheel inertia)        */}
       {/* ========================================================================= */}
-      <section style={{ contentVisibility: 'auto', containIntrinsicSize: '500px' }} className="py-20 bg-canvas border-b border-white/[0.08] overflow-hidden">
+      <section style={{ contentVisibility: 'auto', containIntrinsicSize: '600px' }} className="py-20 bg-canvas border-b border-white/[0.08] overflow-hidden">
         <div className="mx-auto max-w-6xl px-6 sm:px-10 mb-8">
           <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4">
             <div>
@@ -878,7 +878,7 @@ export default function ServiceLandingPage({
       {/* ========================================================================= */}
       {/* 2.5 FINAL CTA: Flagship Download Card & Create Account                    */}
       {/* ========================================================================= */}
-      <section style={{ contentVisibility: 'auto', containIntrinsicSize: '500px' }} className="py-28 px-6 sm:px-10 border-t border-white/[0.08] bg-canvas text-center relative overflow-hidden">
+      <section style={{ contentVisibility: 'auto', containIntrinsicSize: '600px' }} className="py-28 px-6 sm:px-10 border-t border-white/[0.08] bg-canvas text-center relative overflow-hidden">
         <div className="mx-auto max-w-2xl flex flex-col items-center">
           {/* Hardware & Release Chip */}
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-panel border border-white/10 text-xs text-ink-muted mb-6">
