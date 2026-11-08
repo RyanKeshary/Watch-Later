@@ -663,13 +663,13 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
               </div>
             </button>
 
-            <div className={`flex items-center gap-1 shrink-0 ${!isEffectiveExpanded ? 'hidden' : 'flex'}`}>
+            <div className="flex items-center gap-1 shrink-0">
               <button
                 onClick={() => {
                   setSidebarCollapsed(!sidebarCollapsed);
                   setIsSidebarHovered(false);
                 }}
-                className="hidden md:inline-flex p-1.5 rounded-lg hover:bg-zinc-800/80 text-zinc-400 hover:text-white transition active:scale-95"
+                className={`hidden md:inline-flex p-1.5 rounded-lg hover:bg-zinc-800/80 text-zinc-400 hover:text-white transition active:scale-95 ${!isEffectiveExpanded ? '!hidden' : ''}`}
                 title="Collapse sidebar"
               >
                 <PanelLeftClose className="h-3.5 w-3.5" />
@@ -677,7 +677,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
               <button
                 onClick={() => setMobileMenuOpen(false)}
                 aria-label="Close navigation"
-                className="md:hidden p-1.5 rounded-lg hover:bg-zinc-800/80 text-zinc-400 hover:text-white transition"
+                className={`md:hidden p-1.5 rounded-lg hover:bg-zinc-800/80 text-zinc-400 hover:text-white transition ${mobileMenuOpen ? '!inline-flex' : ''}`}
               >
                 <X className="h-4 w-4" />
               </button>
@@ -1102,89 +1102,147 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                   const totalNicheReels = nicheCategories.reduce(
                     (acc, c) => acc + reels.filter(r => r.category_id === c.id).length, 0
                   );
-                  const radius = 35;
+                  const radius = 45;
                   const circumference = 2 * Math.PI * radius;
                   let accumulatedOffset = 0;
 
-                  const hoveredCat = nicheCategories.find(c => c.id === hoveredPieCatId);
-                  const hoveredCount = hoveredCat ? reels.filter(r => r.category_id === hoveredCat.id).length : 0;
-                  const hoveredPct = hoveredCat && totalNicheReels > 0 ? Math.round((hoveredCount / totalNicheReels) * 100) : 0;
+                  // Precalculate slice angles and callout pointer line coordinates
+                  const sliceMetaList: {
+                    cat: typeof nicheCategories[0];
+                    count: number;
+                    pct: number;
+                    color: string;
+                    midAngleRad: number;
+                    sliceLength: number;
+                    offset: number;
+                  }[] = [];
+
+                  if (totalNicheReels > 0) {
+                    nicheCategories.forEach((cat, idx) => {
+                      const count = reels.filter(r => r.category_id === cat.id).length;
+                      if (count === 0) return;
+                      const slicePercent = count / totalNicheReels;
+                      const sliceLength = slicePercent * circumference;
+                      const currentOffset = accumulatedOffset;
+                      accumulatedOffset += sliceLength;
+                      const startAngle = (currentOffset / circumference) * 2 * Math.PI - Math.PI / 2;
+                      const endAngle = ((currentOffset + sliceLength) / circumference) * 2 * Math.PI - Math.PI / 2;
+                      const midAngleRad = (startAngle + endAngle) / 2;
+                      sliceMetaList.push({
+                        cat,
+                        count,
+                        pct: Math.round(slicePercent * 100),
+                        color: PIE_COLORS[idx % PIE_COLORS.length],
+                        midAngleRad,
+                        sliceLength,
+                        offset: currentOffset,
+                      });
+                    });
+                  }
+
+                  const activeHoveredSlice = hoveredPieCatId
+                    ? sliceMetaList.find(s => s.cat.id === hoveredPieCatId)
+                    : null;
 
                   return (
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-7 py-3 px-2 max-w-4xl mx-auto">
-                      {/* Solid Pie with radial segments to core */}
-                      <div className="relative w-56 h-56 sm:w-60 sm:h-60 shrink-0 flex items-center justify-center">
-                        <svg viewBox="0 0 160 160" className="w-full h-full -rotate-90 transform overflow-visible">
-                          <circle
-                            cx="80"
-                            cy="80"
-                            r={radius}
-                            fill="#111111"
-                            stroke="#1A1A1A"
-                            strokeWidth="70"
-                          />
-                          {totalNicheReels > 0 && nicheCategories.map((cat, idx) => {
-                            const count = reels.filter(r => r.category_id === cat.id).length;
-                            if (count === 0) return null;
-                            const slicePercent = count / totalNicheReels;
-                            const sliceLength = slicePercent * circumference;
-                            const currentOffset = accumulatedOffset;
-                            accumulatedOffset += sliceLength;
-                            const color = PIE_COLORS[idx % PIE_COLORS.length];
-                            const isHovered = hoveredPieCatId === cat.id;
+                    <div className="flex flex-col lg:flex-row items-center justify-center gap-8 py-4 px-2 max-w-5xl mx-auto">
+                      {/* Enhanced Larger Minimalist Pie with Dynamic Pointer Callout */}
+                      <div className="relative w-72 h-72 sm:w-80 sm:h-80 shrink-0 flex items-center justify-center">
+                        <svg viewBox="0 0 240 240" className="w-full h-full overflow-visible">
+                          {/* Radial Slices (rotated inside group so pointer coordinates align) */}
+                          <g className="-rotate-90 origin-[120px_120px] transform">
+                            <circle
+                              cx="120"
+                              cy="120"
+                              r={radius}
+                              fill="#0E0E10"
+                              stroke="#1A1A1E"
+                              strokeWidth="90"
+                            />
+                            {totalNicheReels > 0 && sliceMetaList.map((slice) => {
+                              const isHovered = hoveredPieCatId === slice.cat.id;
+
+                              return (
+                                <circle
+                                  key={slice.cat.id}
+                                  cx="120"
+                                  cy="120"
+                                  r={radius}
+                                  fill="transparent"
+                                  stroke={slice.color}
+                                  strokeWidth={isHovered ? 94 : 90}
+                                  strokeDasharray={pieAnimated ? `${slice.sliceLength} ${circumference}` : `0 ${circumference}`}
+                                  strokeDashoffset={-slice.offset}
+                                  className="transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer"
+                                  style={{
+                                    filter: isHovered ? `drop-shadow(0 0 12px ${slice.color})` : undefined,
+                                  }}
+                                  onMouseEnter={() => setHoveredPieCatId(slice.cat.id)}
+                                  onMouseLeave={() => setHoveredPieCatId(null)}
+                                />
+                              );
+                            })}
+                          </g>
+
+                          {/* Dynamic Minimalist Arrow / Line Indicator pointing directly to hovered segment */}
+                          {activeHoveredSlice && (() => {
+                            const cx = 120;
+                            const cy = 120;
+                            const innerR = 86;
+                            const outerR = 106;
+                            const x1 = cx + innerR * Math.cos(activeHoveredSlice.midAngleRad);
+                            const y1 = cy + innerR * Math.sin(activeHoveredSlice.midAngleRad);
+                            const x2 = cx + outerR * Math.cos(activeHoveredSlice.midAngleRad);
+                            const y2 = cy + outerR * Math.sin(activeHoveredSlice.midAngleRad);
+                            const isRight = Math.cos(activeHoveredSlice.midAngleRad) >= 0;
+                            const x3 = isRight ? x2 + 20 : x2 - 20;
 
                             return (
-                              <circle
-                                key={cat.id}
-                                cx="80"
-                                cy="80"
-                                r={radius}
-                                fill="transparent"
-                                stroke={color}
-                                strokeWidth={isHovered ? 74 : 70}
-                                strokeDasharray={pieAnimated ? `${sliceLength} ${circumference}` : `0 ${circumference}`}
-                                strokeDashoffset={-currentOffset}
-                                className="transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer"
-                                style={{
-                                  filter: isHovered ? `drop-shadow(0 0 10px ${color})` : undefined,
-                                }}
-                                onMouseEnter={() => setHoveredPieCatId(cat.id)}
-                                onMouseLeave={() => setHoveredPieCatId(null)}
-                              />
+                              <g className="animate-in fade-in duration-200 pointer-events-none">
+                                <circle cx={x1} cy={y1} r="3" fill={activeHoveredSlice.color} className="animate-ping" />
+                                <circle cx={x1} cy={y1} r="2.5" fill={activeHoveredSlice.color} />
+                                <polyline
+                                  points={`${x1},${y1} ${x2},${y2} ${x3},${y2}`}
+                                  fill="none"
+                                  stroke={activeHoveredSlice.color}
+                                  strokeWidth="1.5"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </g>
                             );
-                          })}
+                          })()}
                         </svg>
 
-                        {/* Pie Center Tooltip Pill (glass floating over solid pie) */}
-                        <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-3 pointer-events-none select-none">
-                          <div className="rounded-2xl px-3 py-2 bg-black/85 backdrop-blur-md border border-white/20 shadow-[0_8px_30px_rgba(0,0,0,0.8)] flex flex-col items-center">
-                            {hoveredCat ? (
-                              <>
-                                <span className="text-[10px] font-mono uppercase text-zinc-400 truncate max-w-[100px]">
-                                  {hoveredCat.name}
+                        {/* Positioned Data Pill Floating Above the Pointer */}
+                        {activeHoveredSlice ? (() => {
+                          const angle = activeHoveredSlice.midAngleRad;
+                          const isRight = Math.cos(angle) >= 0;
+                          const isTop = Math.sin(angle) < 0;
+
+                          return (
+                            <div
+                              className="absolute pointer-events-none select-none z-20 animate-in fade-in zoom-in-95 duration-200"
+                              style={{
+                                left: isRight ? '70%' : '5%',
+                                top: isTop ? '8%' : '72%',
+                              }}
+                            >
+                              <div className="rounded-xl px-2.5 py-1.5 bg-[#0A0A0C]/95 backdrop-blur-xl border border-white/20 shadow-[0_12px_36px_rgba(0,0,0,0.9)] flex items-center gap-2 whitespace-nowrap">
+                                <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: activeHoveredSlice.color }} />
+                                <span className="text-[11px] font-semibold text-white truncate max-w-[100px]">
+                                  {activeHoveredSlice.cat.name}
                                 </span>
-                                <span className="text-lg font-bold text-white tabular-nums leading-tight">
-                                  {hoveredCount}
+                                <span className="text-[11px] font-mono font-bold text-white tabular-nums">
+                                  {activeHoveredSlice.count}
                                 </span>
-                                <span className="text-xs font-semibold text-emerald-400 font-mono tabular-nums">
-                                  {hoveredPct}%
+                                <span className="text-[10px] font-mono font-bold text-emerald-400 tabular-nums">
+                                  ({activeHoveredSlice.pct}%)
                                 </span>
-                              </>
-                            ) : (
-                              <>
-                                <span className="text-[10px] font-mono uppercase text-zinc-500">
-                                  Total
-                                </span>
-                                <span className="text-xl font-bold text-white tabular-nums leading-tight">
-                                  <NumberTicker value={totalNicheReels} />
-                                </span>
-                                <span className="text-[10px] text-zinc-400">
-                                  Saved Posts
-                                </span>
-                              </>
-                            )}
-                          </div>
-                        </div>
+                              </div>
+                            </div>
+                          );
+                        })() : null}
                       </div>
 
                       {/* Interactive Legend Grid */}
@@ -1320,7 +1378,12 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                         <h4 className="font-semibold text-xs text-white group-hover:text-zinc-100 transition truncate max-w-full">
                           {cat.name}
                         </h4>
-                        <span className="font-mono text-[10px] text-[#888888] mt-0.5 tabular-nums">
+                        {categoryMetaMap[cat.id]?.description ? (
+                          <p className="text-[10px] text-[#7E7E7E] mt-1 line-clamp-2 leading-relaxed max-w-full px-1">
+                            {categoryMetaMap[cat.id]?.description?.slice(0, 80)}
+                          </p>
+                        ) : null}
+                        <span className="font-mono text-[10px] text-[#888888] mt-1 tabular-nums block">
                           {count} post{count === 1 ? '' : 's'}
                         </span>
                       </button>
@@ -1383,6 +1446,14 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                               <div
                                 key={sub.id}
                                 draggable={isDragAllowed}
+                                role="button"
+                                tabIndex={0}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    setSelectedCategoryId(sub.id);
+                                  }
+                                }}
                                 onDragStart={(e) => {
                                   if (!isDragAllowed) { e.preventDefault(); return; }
                                   setDraggedItem({ type: 'folder', id: sub.id, folderId: sub.id });
@@ -1402,7 +1473,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                                   handleDropOnCategory(sub.id, e);
                                 }}
                                 onClick={() => setSelectedCategoryId(sub.id)}
-                                className={`group relative flex flex-col justify-between p-3.5 rounded-2xl border transition-all cursor-grab active:cursor-grabbing select-none backdrop-blur-xl ${
+                                className={`group relative flex flex-col justify-between p-3.5 rounded-2xl border transition-all cursor-grab active:cursor-grabbing select-none backdrop-blur-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-white ${
                                   isOver
                                     ? 'border-white bg-[#262626] ring-2 ring-white scale-105'
                                     : 'border-white/10 bg-[#141414]/85 hover:bg-[#1E1E1E]/95 hover:border-white/25 text-white shadow-lg'
@@ -1417,7 +1488,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                                       e.stopPropagation();
                                       handleDeleteCategory(sub.id, e);
                                     }}
-                                    className="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-red-500/20 text-zinc-500 hover:text-red-400 transition"
+                                    className="opacity-100 [@media(hover:hover)]:opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 p-1 rounded-lg hover:bg-red-500/20 text-zinc-500 hover:text-red-400 transition"
                                     title="Delete category"
                                   >
                                     <Trash2 className="h-3 w-3" />
@@ -1456,6 +1527,14 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                               <div
                                 key={sub.id}
                                 draggable={true}
+                                role="button"
+                                tabIndex={0}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    setSelectedCategoryId(sub.id);
+                                  }
+                                }}
                                 onDragStart={(e) => {
                                   setDraggedItem({ type: 'folder', id: sub.id, folderId: sub.id });
                                   e.dataTransfer.setData('application/json', JSON.stringify({ type: 'folder', id: sub.id, folderId: sub.id }));
@@ -1472,7 +1551,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                                   handleDropOnCategory(sub.id, e);
                                 }}
                                 onClick={() => setSelectedCategoryId(sub.id)}
-                                className={`group relative flex flex-col justify-between p-3.5 rounded-2xl border transition-all cursor-grab active:cursor-grabbing select-none backdrop-blur-xl ${
+                                className={`group relative flex flex-col justify-between p-3.5 rounded-2xl border transition-all cursor-grab active:cursor-grabbing select-none backdrop-blur-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 ${
                                   isOver
                                     ? 'border-cyan-400 bg-cyan-950/40 text-cyan-200 ring-2 ring-cyan-400 scale-105'
                                     : 'border-white/10 bg-[#141414]/85 hover:bg-[#1E1E1E]/95 hover:border-white/25 text-white shadow-lg'
@@ -1487,7 +1566,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                                       e.stopPropagation();
                                       handleDeleteCategory(sub.id, e);
                                     }}
-                                    className="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-red-500/20 text-zinc-500 hover:text-red-400 transition"
+                                    className="opacity-100 [@media(hover:hover)]:opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 p-1 rounded-lg hover:bg-red-500/20 text-zinc-500 hover:text-red-400 transition"
                                     title="Delete folder"
                                   >
                                     <Trash2 className="h-3 w-3" />
@@ -1585,6 +1664,14 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                           <div
                             key={folder.id}
                             draggable={true}
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                setSelectedCategoryId(folder.id);
+                              }
+                            }}
                             onDragStart={(e) => {
                               setDraggedItem({ type: 'folder', id: folder.id, folderId: folder.id });
                               e.dataTransfer.setData('application/json', JSON.stringify({ type: 'folder', id: folder.id, folderId: folder.id }));
@@ -1601,7 +1688,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                               handleDropOnCategory(folder.id, e);
                             }}
                             onClick={() => setSelectedCategoryId(folder.id)}
-                            className={`group relative flex flex-col justify-between p-3.5 rounded-2xl border transition-all cursor-grab active:cursor-grabbing select-none backdrop-blur-xl ${
+                            className={`group relative flex flex-col justify-between p-3.5 rounded-2xl border transition-all cursor-grab active:cursor-grabbing select-none backdrop-blur-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 ${
                               isDragOver
                                 ? 'border-cyan-400 bg-cyan-950/40 text-cyan-200 ring-2 ring-cyan-400 scale-105'
                                 : 'border-white/10 bg-[#141414]/85 hover:bg-[#1E1E1E]/95 hover:border-white/25 text-white shadow-lg'
@@ -1616,7 +1703,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                                   e.stopPropagation();
                                   handleDeleteCategory(folder.id, e);
                                 }}
-                                className="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-red-500/20 text-zinc-500 hover:text-red-400 transition"
+                                className="opacity-100 [@media(hover:hover)]:opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 p-1 rounded-lg hover:bg-red-500/20 text-zinc-500 hover:text-red-400 transition"
                                 title="Delete folder"
                               >
                                 <Trash2 className="h-3 w-3" />
@@ -1820,7 +1907,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                         <div className="relative z-10 w-full mt-auto pt-3 transition-transform duration-500 ease-out transform group-hover:translate-y-16">
                           <h3 className={`font-sans font-bold leading-snug text-sm sm:text-base mb-1 line-clamp-2 group-hover:line-clamp-1 drop-shadow-sm transition-all ${
                             isSaved
-                              ? 'text-emerald-300 ring-1 ring-emerald-500/80 [text-shadow:_0_0_2px_#10b981,_0_0_10px_rgba(16,185,129,0.5)] rounded-lg px-2 py-0.5 bg-emerald-950/40 inline-block shadow-[0_0_12px_rgba(16,185,129,0.35)]'
+                              ? 'text-emerald-300 border border-emerald-400/80 [text-shadow:_0_0_1px_#10b981,_0_0_8px_rgba(16,185,129,0.4)] rounded-lg px-2 py-0.5 bg-transparent inline-block'
                               : 'text-white group-hover:text-zinc-100'
                           }`}>
                             {reel.ai_title || 'Instagram Post'}
@@ -1924,7 +2011,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
 
                             <h3 className={`font-sans font-semibold leading-tight text-xs sm:text-sm truncate ${
                               isSaved
-                                ? 'text-emerald-300 ring-1 ring-emerald-500/80 [text-shadow:_0_0_2px_#10b981,_0_0_10px_rgba(16,185,129,0.5)] rounded-md px-1.5 py-0.5 bg-emerald-950/40 inline-block shadow-[0_0_12px_rgba(16,185,129,0.35)]'
+                                ? 'text-emerald-300 border border-emerald-400/80 [text-shadow:_0_0_1px_#10b981,_0_0_8px_rgba(16,185,129,0.4)] rounded-md px-1.5 py-0.5 bg-transparent inline-block'
                                 : 'text-white'
                             }`}>
                               {reel.ai_title || 'Instagram Post'}
