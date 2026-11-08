@@ -57,7 +57,7 @@ export function NumberTicker({
   return (
     <span className={`tabular-nums ${className}`}>
       {prefix}
-      <span ref={numberRef} />
+      <span ref={numberRef}>0</span>
       {suffix}
     </span>
   );

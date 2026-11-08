@@ -220,7 +220,7 @@ function getSharedCardObserver(): IntersectionObserver | null {
       },
       {
         root: null, // viewport
-        rootMargin: '20% 0px 20% 0px', // exact 20% of vh before and 20% after
+        rootMargin: '20px 0px 20px 0px', // instantly load/unload as it comes/goes of screen
       }
     );
   }
@@ -253,9 +253,7 @@ function VirtualCardContainer({
     if (!observer) return;
 
     const onIntersect = (inView: boolean) => {
-      if (inView) {
-        setIsInViewport(true);
-      }
+      setIsInViewport(inView);
     };
 
     cardObserverMap.set(el, onIntersect);
@@ -282,9 +280,27 @@ function VirtualCardContainer({
         children
       ) : (
         <div
-          className={`w-full h-full rounded-2xl border border-white/[0.04] bg-[#121212]/30 ${placeholderClassName}`}
+          className={`w-full h-full rounded-2xl border border-white/[0.08] bg-[#141414] p-4 flex flex-col justify-between overflow-hidden shadow-sm animate-pulse ${placeholderClassName}`}
           aria-hidden="true"
-        />
+        >
+          {/* Top Bar Skeleton */}
+          <div className="flex items-center justify-between w-full">
+            <div className="h-4 w-14 rounded-full bg-white/[0.08]" />
+            <div className="h-6 w-6 rounded-lg bg-white/[0.08]" />
+          </div>
+
+          {/* Middle Media Silhouette */}
+          <div className="my-auto flex items-center justify-center">
+            <div className="h-10 w-10 rounded-full bg-white/[0.04]" />
+          </div>
+
+          {/* Bottom Title & Summary Bones */}
+          <div className="w-full space-y-2 pt-2">
+            <div className="h-3.5 w-4/5 rounded bg-white/[0.12]" />
+            <div className="h-2.5 w-full rounded bg-white/[0.06]" />
+            <div className="h-2.5 w-3/5 rounded bg-white/[0.06]" />
+          </div>
+        </div>
       )}
     </div>
   );
@@ -310,6 +326,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
     counts,
     rootCategories,
     pinnedCategories,
+    savesFolderIds,
     savesFolders,
     handleCreateSaveFolder,
     toggleSaveReel,
@@ -462,7 +479,12 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
           return isAllContentReel(reel);
         case 'savelater':
         case 'saves':
-          return savedLaterIds.includes(reel.id);
+          if (!savedLaterIds.includes(reel.id)) return false;
+          if (selectedCategoryId) {
+            return reel.category_id === selectedCategoryId || reel.subcategory_id === selectedCategoryId;
+          }
+          // Cut from root: only show reels not moved into any saves folder
+          return !reel.category_id || !savesFolderIds.includes(reel.category_id);
         case 'watched':
           return reel.completion_status === 'completed';
         case 'inbox':
@@ -478,9 +500,9 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
           return true;
       }
     });
-  }, [reels, currentPage, selectedCategoryId, searchQuery, postTypeFilter, savedLaterIds]);
+  }, [reels, currentPage, selectedCategoryId, searchQuery, postTypeFilter, savedLaterIds, savesFolderIds]);
 
-  // Hover-expand state for collapsed navbar with 0.35s intent delay
+  // Hover-expand state for collapsed navbar with 0.25s intent delay
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);
   const isEffectiveExpanded = !sidebarCollapsed || isSidebarHovered;
   const sidebarHoverTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -490,7 +512,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
     if (sidebarHoverTimerRef.current) clearTimeout(sidebarHoverTimerRef.current);
     sidebarHoverTimerRef.current = setTimeout(() => {
       setIsSidebarHovered(true);
-    }, 350);
+    }, 250);
   };
 
   const handleSidebarMouseLeave = () => {
@@ -892,7 +914,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
         </header>
 
         {/* Dynamic Views */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 animate-fade-up">
+        <div className="flex-1 overflow-y-auto p-6 sm:p-8 lg:p-10 animate-fade-up">
           {/* HOME VIEW: BENTO STATS & NICHE DISTRIBUTION */}
           {currentPage === 'home' && (
             <div className="space-y-6 w-full">
@@ -1003,7 +1025,9 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                   </h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  {rootCategories.map((cat, idx) => {
+                  {rootCategories
+                    .filter(cat => !savesFolderIds.includes(cat.id) && cat.name.toLowerCase() !== 'saves' && cat.name.toLowerCase() !== 'save later')
+                    .map((cat, idx) => {
                     const count = reels.filter(r => r.category_id === cat.id).length;
                     const pct = reels.length > 0 ? Math.round((count / reels.length) * 100) : 0;
                     return (
@@ -1063,7 +1087,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
               )}
 
               {/* Minimalist Category Tiles */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-3.5">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-5">
                 {rootCategories.map(cat => {
                   const count = reels.filter(r => r.category_id === cat.id).length;
                   const isPinned = pinnedFolderIds.includes(cat.id);
@@ -1287,7 +1311,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
 
                   {/* Render Saves Folders together with saved reels */}
                   {savesFolders.length > 0 && (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 pt-1">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-5 pt-2">
                       {savesFolders.map((folder) => {
                         const count = reels.filter(r => r.category_id === folder.id && savedLaterIds.includes(r.id)).length;
                         const isDragOver = dragOverCatId === folder.id;
@@ -1295,6 +1319,13 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                         return (
                           <div
                             key={folder.id}
+                            draggable={true}
+                            onDragStart={(e) => {
+                              setDraggedItem({ type: 'folder', id: folder.id, folderId: folder.id });
+                              e.dataTransfer.setData('application/json', JSON.stringify({ type: 'folder', id: folder.id, folderId: folder.id }));
+                              e.dataTransfer.effectAllowed = 'move';
+                            }}
+                            onDragEnd={() => setDraggedItem(null)}
                             onDragOver={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
@@ -1305,7 +1336,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                               handleDropOnCategory(folder.id, e);
                             }}
                             onClick={() => setSelectedCategoryId(folder.id)}
-                            className={`group relative flex flex-col justify-between p-3 rounded-2xl border transition-all cursor-pointer select-none backdrop-blur-xl ${
+                            className={`group relative flex flex-col justify-between p-3.5 rounded-2xl border transition-all cursor-grab active:cursor-grabbing select-none backdrop-blur-xl ${
                               isDragOver
                                 ? 'border-cyan-400 bg-cyan-950/40 text-cyan-200 ring-2 ring-cyan-400 scale-105'
                                 : 'border-white/10 bg-[#141414]/85 hover:bg-[#1E1E1E]/95 hover:border-white/25 text-white shadow-lg'
@@ -1353,10 +1384,10 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
               ) : viewLayout === 'grid' ? (
                 <div className={
                   density === 'compact'
-                    ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3'
+                    ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-5'
                     : density === 'spacious'
-                      ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'
-                      : 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4'
+                      ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 sm:gap-9'
+                      : 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-6 sm:gap-7'
                 }>
                   {renderedReels.map((reel) => {
                     const extractionErr = Array.isArray(reel.extracted_content)
@@ -1365,6 +1396,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                     const isPending = reel.processing_status === 'pending' || reel.processing_status === 'resolving';
                     const isThisRetrying = retryingId === reel.id || isPending;
                     const isDragAllowed = currentPage === 'savelater' || currentPage === 'saves' || currentPage === 'categories';
+                    const isSaved = savedLaterIds.includes(reel.id);
 
                     return (
                       <VirtualCardContainer
@@ -1393,7 +1425,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                           }
                           window.open(reel.url, '_blank', 'noopener,noreferrer');
                         }}
-                        className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-[#333333] bg-[#141414] hover:border-white/40 ${
+                        className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-[#333333] bg-[#141414] hover:border-white/40 transform-gpu will-change-transform ${
                           isDragAllowed ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
                         } transition-all duration-500 shadow-md ${
                           density === 'compact'
@@ -1521,7 +1553,11 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
 
                         {/* Card Bottom: Content info */}
                         <div className="relative z-10 w-full mt-auto pt-3 transition-transform duration-500 ease-out transform group-hover:translate-y-16">
-                          <h3 className="font-sans font-bold text-white leading-snug text-sm sm:text-base mb-1 line-clamp-2 group-hover:line-clamp-1 drop-shadow-sm group-hover:text-zinc-100 transition-all">
+                          <h3 className={`font-sans font-bold leading-snug text-sm sm:text-base mb-1 line-clamp-2 group-hover:line-clamp-1 drop-shadow-sm transition-all ${
+                            isSaved
+                              ? 'text-amber-200 ring-1 ring-amber-400/60 [text-shadow:_0_0_1.5px_#f59e0b,_0_0_8px_rgba(245,158,11,0.5)] rounded-lg px-2 py-0.5 bg-amber-500/15 inline-block shadow-[0_0_10px_rgba(245,158,11,0.25)]'
+                              : 'text-white group-hover:text-zinc-100'
+                          }`}>
                             {reel.ai_title || 'Instagram Post'}
                           </h3>
                           <p className="text-xs text-zinc-300 line-clamp-2 leading-relaxed transition-opacity duration-300 group-hover:opacity-0 group-hover:pointer-events-none">
@@ -1549,7 +1585,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                 </div>
               ) : (
                 /* Dedicated List View */
-                <div className="space-y-2.5">
+                <div className="space-y-3.5">
                   {renderedReels.map((reel) => {
                     const extractionErr = Array.isArray(reel.extracted_content)
                       ? reel.extracted_content[0]?.extraction_error
@@ -1561,6 +1597,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                     const subObj = categories.find(c => c.id === reel.subcategory_id);
 
                     const isDragAllowed = currentPage === 'savelater' || currentPage === 'saves' || currentPage === 'categories';
+                    const isSaved = savedLaterIds.includes(reel.id);
 
                     return (
                       <VirtualCardContainer
@@ -1585,7 +1622,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                           }
                           window.open(reel.url, '_blank', 'noopener,noreferrer');
                         }}
-                        className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-xl border border-[#333333] bg-[#1A1A1A]/90 ${density === 'compact' ? 'p-2.5 sm:py-2 sm:px-3' : density === 'spacious' ? 'p-4' : 'p-3'
+                        className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-xl border border-[#333333] bg-[#1A1A1A]/90 transform-gpu will-change-transform ${density === 'compact' ? 'p-2.5 sm:py-2 sm:px-3' : density === 'spacious' ? 'p-4' : 'p-3'
                           } backdrop-blur hover:border-[#6B6B6B] ${isDragAllowed ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} ${activeCardMenuId === reel.id ? 'relative z-20' : ''} ${searchQuery ? 'animate-in fade-in zoom-in-95 duration-150' : ''} transition shadow-sm`}
                       >
                         <div className="flex items-center gap-3.5 min-w-0 flex-1 w-full sm:w-auto">
@@ -1620,7 +1657,11 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                               )}
                             </div>
 
-                            <h3 className="font-sans font-semibold text-white leading-tight text-xs sm:text-sm truncate">
+                            <h3 className={`font-sans font-semibold leading-tight text-xs sm:text-sm truncate ${
+                              isSaved
+                                ? 'text-amber-200 ring-1 ring-amber-400/60 [text-shadow:_0_0_1.5px_#f59e0b,_0_0_8px_rgba(245,158,11,0.5)] rounded-md px-1.5 py-0.5 bg-amber-500/15 inline-block shadow-[0_0_10px_rgba(245,158,11,0.25)]'
+                                : 'text-white'
+                            }`}>
                               {reel.ai_title || 'Instagram Post'}
                             </h3>
 
