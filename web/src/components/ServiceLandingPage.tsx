@@ -49,6 +49,18 @@ export default function ServiceLandingPage({
   // Hero Download CTA state
   const [hasDownloaded, setHasDownloaded] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
+  const [appVersion, setAppVersion] = useState<string>('v1.0.1');
+
+  useEffect(() => {
+    fetch('/version.json')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.versionName) {
+          setAppVersion(`v${data.versionName}`);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // 3D Hero Phone pointer & scroll tracking
   const heroRef = useRef<HTMLDivElement>(null);
@@ -432,7 +444,7 @@ export default function ServiceLandingPage({
                     className="group relative inline-flex items-center justify-center gap-2.5 rounded-full bg-[#FFFFFF] px-8 py-4 text-sm font-bold text-[#0B0B0B] shadow-[0_0_30px_rgba(255,255,255,0.15)] hover:bg-[#D9D9D9] hover:scale-[1.02] transition-all duration-200 active:scale-[0.98]"
                   >
                     <Download className="h-4 w-4 text-[#0B0B0B] transition-transform group-hover:translate-y-0.5" />
-                    <span>Download the app (APK)</span>
+                    <span>Download the app ({appVersion})</span>
                   </button>
                 )}
 
