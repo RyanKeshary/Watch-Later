@@ -399,7 +399,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
     );
     observer.observe(sentinelRef.current);
     return () => observer.disconnect();
-  }, [displayedReels.length]);
+  }, [displayedReels.length, visibleCount, viewLayout]);
 
   const renderedReels = useMemo(() => {
     return displayedReels.slice(0, visibleCount);
@@ -789,7 +789,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
 
                 <div className="rounded-2xl border border-[#333333] bg-[#1A1A1A]/80 p-5 shadow-sm">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="font-mono-micro text-[#D9D9D9] font-medium tracking-wider">FOLDERS</span>
+                    <span className="font-mono-micro text-[#D9D9D9] font-medium tracking-wider">CATEGORIES</span>
                     <FolderTree className="h-4 w-4 text-[#D9D9D9]" />
                   </div>
                   <div className="font-sans text-3xl font-bold text-white tracking-tight">
@@ -1059,8 +1059,8 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                                 draggable={isDragAllowed}
                                 onDragStart={(e) => {
                                   if (!isDragAllowed) { e.preventDefault(); return; }
-                                  setDraggedItem({ type: 'category', id: sub.id, categoryId: sub.id });
-                                  e.dataTransfer.setData('application/json', JSON.stringify({ type: 'category', id: sub.id, categoryId: sub.id }));
+                                  setDraggedItem({ type: 'folder', id: sub.id, folderId: sub.id });
+                                  e.dataTransfer.setData('application/json', JSON.stringify({ type: 'folder', id: sub.id, folderId: sub.id }));
                                   e.dataTransfer.effectAllowed = 'move';
                                 }}
                                 onDragEnd={() => setDraggedItem(null)}
