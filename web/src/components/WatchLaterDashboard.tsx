@@ -436,9 +436,11 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
 
   // Animation state for Niche Category Breakdown bars & counters
   const [barsAnimated, setBarsAnimated] = useState(false);
+  const [pieAnimated, setPieAnimated] = useState(false);
   useEffect(() => {
     const timer = setTimeout(() => {
       setBarsAnimated(true);
+      setPieAnimated(true);
     }, 60);
     return () => clearTimeout(timer);
   }, []);
@@ -638,140 +640,153 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
       >
         <div className="overflow-y-auto overflow-x-hidden">
           {/* Logo & Toggle Header */}
-          {isEffectiveExpanded ? (
-            <div className="px-1.5 py-2 mb-2 flex items-center justify-between gap-2">
-              <button
-                onClick={() => { router.push('/'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
-                className="flex items-center gap-2.5 cursor-pointer hover:opacity-90 transition text-left group min-w-0"
-                title="Return to Home"
-              >
-                <img
-                  src="/logo.png"
-                  alt="Watch Later"
-                  className="h-8 w-8 sm:h-9 sm:w-9 object-contain shrink-0 group-hover:scale-105 transition-all drop-shadow"
-                />
-                <div className="min-w-0 transition-opacity duration-200">
-                  <span className="font-oughter text-base sm:text-lg font-bold tracking-tight text-white block leading-none">
-                    Watch Later
-                  </span>
-                  <span className="text-[9px] text-[#7E7E7E] block leading-tight mt-0.5 truncate">
-                    Never lose a reel worth revisiting.
-                  </span>
-                </div>
-              </button>
-
-              <div className="flex items-center gap-1 shrink-0">
-                <button
-                  onClick={() => {
-                    setSidebarCollapsed(!sidebarCollapsed);
-                    setIsSidebarHovered(false);
-                  }}
-                  className="hidden md:inline-flex p-1.5 rounded-lg hover:bg-zinc-800/80 text-zinc-400 hover:text-white transition active:scale-95"
-                  title="Collapse sidebar"
-                >
-                  <PanelLeftClose className="h-3.5 w-3.5" />
-                </button>
-                <button
-                  onClick={() => setMobileMenuOpen(false)}
-                  aria-label="Close navigation"
-                  className="md:hidden p-1.5 rounded-lg hover:bg-zinc-800/80 text-zinc-400 hover:text-white transition"
-                >
-                  <X className="h-4 w-4" />
-                </button>
+          <div className="px-1.5 py-2 mb-2 flex items-center justify-between gap-2 min-h-[44px]">
+            <button
+              onClick={() => { router.push('/'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
+              className="flex items-center gap-2.5 cursor-pointer hover:opacity-90 transition text-left group min-w-0"
+              title="Return to Home"
+            >
+              <img
+                src="/logo.png"
+                alt="Watch Later"
+                className="h-8 w-8 sm:h-9 sm:w-9 object-contain shrink-0 group-hover:scale-105 transition-all drop-shadow"
+              />
+              <div className={`min-w-0 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-hidden whitespace-nowrap ${
+                isEffectiveExpanded ? 'max-w-[160px] opacity-100' : 'max-w-0 opacity-0 pointer-events-none'
+              }`}>
+                <span className="font-oughter text-base sm:text-lg font-bold tracking-tight text-white block leading-none">
+                  Watch Later
+                </span>
+                <span className="text-[9px] text-[#7E7E7E] block leading-tight mt-0.5 truncate">
+                  Never lose a reel worth revisiting.
+                </span>
               </div>
-            </div>
-          ) : (
-            <div className="py-2 mb-2 flex items-center justify-center w-full">
+            </button>
+
+            <div className="flex items-center gap-1 shrink-0">
               <button
                 onClick={() => {
-                  setSidebarCollapsed(false);
+                  setSidebarCollapsed(!sidebarCollapsed);
                   setIsSidebarHovered(false);
                 }}
-                className="hidden md:inline-flex p-1.5 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-white transition active:scale-95"
-                title="Expand sidebar"
+                className="hidden md:inline-flex p-1.5 rounded-lg hover:bg-zinc-800/80 text-zinc-400 hover:text-white transition active:scale-95"
+                title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
               >
-                <PanelLeft className="h-3.5 w-3.5" />
+                {sidebarCollapsed ? (
+                  <PanelLeft className="h-3.5 w-3.5" />
+                ) : (
+                  <PanelLeftClose className="h-3.5 w-3.5" />
+                )}
+              </button>
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                aria-label="Close navigation"
+                className="md:hidden p-1.5 rounded-lg hover:bg-zinc-800/80 text-zinc-400 hover:text-white transition"
+              >
+                <X className="h-4 w-4" />
               </button>
             </div>
-          )}
+          </div>
 
           {/* Navigation Items */}
           <div className="space-y-1">
             <button
               onClick={() => { router.push('/'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
-              className={`flex w-full items-center ${!isEffectiveExpanded ? 'justify-start gap-2.5 md:justify-center' : 'gap-2.5'} rounded-lg px-2 py-1.5 text-[11px] font-medium transition ${currentPage === 'home' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
+              className={`flex w-full items-center ${!isEffectiveExpanded ? 'justify-center' : 'justify-start gap-2.5'} rounded-lg px-2 py-1.5 text-[11px] font-medium transition ${currentPage === 'home' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
                 }`}
               title="Home (Stats & Insights)"
             >
               <Home className="h-3.5 w-3.5 shrink-0 text-white" />
-              <span className={!isEffectiveExpanded ? 'inline md:hidden' : 'inline'}>Home</span>
+              <span className={`transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] whitespace-nowrap overflow-hidden ${
+                isEffectiveExpanded ? 'max-w-[120px] opacity-100 ml-2.5' : 'max-w-0 opacity-0 pointer-events-none'
+              }`}>Home</span>
             </button>
 
             <button
               onClick={() => { router.push('/allcontent'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
-              className={`flex w-full items-center ${!isEffectiveExpanded ? 'justify-between md:justify-center' : 'justify-between'} rounded-lg px-2 py-1.5 text-[11px] font-medium transition ${currentPage === 'all' && !selectedCategoryId ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
+              className={`flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-[11px] font-medium transition ${currentPage === 'all' && !selectedCategoryId ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
                 }`}
               title="All Content"
             >
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center min-w-0">
                 <Film className="h-3.5 w-3.5 shrink-0" />
-                <span className={!isEffectiveExpanded ? 'inline md:hidden' : 'inline'}>All Content</span>
+                <span className={`transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] whitespace-nowrap overflow-hidden ${
+                  isEffectiveExpanded ? 'max-w-[120px] opacity-100 ml-2.5' : 'max-w-0 opacity-0 pointer-events-none'
+                }`}>All Content</span>
               </div>
-              <span className={`font-mono text-[10px] text-[#6B6B6B] ${!isEffectiveExpanded ? 'inline md:hidden' : 'inline'}`}>{counts.all}</span>
+              <span className={`font-mono text-[10px] text-[#6B6B6B] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-hidden whitespace-nowrap ${
+                isEffectiveExpanded ? 'max-w-[40px] opacity-100' : 'max-w-0 opacity-0 pointer-events-none'
+              }`}>{counts.all}</span>
             </button>
 
             {/* Categories Navigation */}
             <button
               onClick={() => { router.push('/categories'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
-              className={`flex w-full items-center ${!isEffectiveExpanded ? 'justify-between md:justify-center' : 'justify-between'} rounded-lg px-2 py-1.5 text-[11px] font-medium transition ${currentPage === 'categories' && !selectedCategoryId ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
+              className={`flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-[11px] font-medium transition ${currentPage === 'categories' && !selectedCategoryId ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
                 }`}
               title="Categories"
             >
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center min-w-0">
                 <FolderTree className="h-3.5 w-3.5 shrink-0 text-white" />
-                <span className={!isEffectiveExpanded ? 'inline md:hidden' : 'inline'}>Categories</span>
+                <span className={`transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] whitespace-nowrap overflow-hidden ${
+                  isEffectiveExpanded ? 'max-w-[120px] opacity-100 ml-2.5' : 'max-w-0 opacity-0 pointer-events-none'
+                }`}>Categories</span>
               </div>
-              <span className={`font-mono text-[10px] text-[#6B6B6B] ${!isEffectiveExpanded ? 'inline md:hidden' : 'inline'}`}>{counts.categories}</span>
+              <span className={`font-mono text-[10px] text-[#6B6B6B] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-hidden whitespace-nowrap ${
+                isEffectiveExpanded ? 'max-w-[40px] opacity-100' : 'max-w-0 opacity-0 pointer-events-none'
+              }`}>{counts.categories}</span>
             </button>
 
             {/* Saves Page */}
             <button
               onClick={() => { router.push('/saves'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
-              className={`flex w-full items-center ${!isEffectiveExpanded ? 'justify-between md:justify-center' : 'justify-between'} rounded-lg px-2 py-1.5 text-[11px] font-medium transition ${(currentPage === 'savelater' || currentPage === 'saves') ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
+              className={`flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-[11px] font-medium transition ${(currentPage === 'savelater' || currentPage === 'saves') ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
                 }`}
               title="Saves"
             >
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center min-w-0">
                 <Bookmark className="h-3.5 w-3.5 shrink-0" />
-                <span className={!isEffectiveExpanded ? 'inline md:hidden' : 'inline'}>Saves</span>
+                <span className={`transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] whitespace-nowrap overflow-hidden ${
+                  isEffectiveExpanded ? 'max-w-[120px] opacity-100 ml-2.5' : 'max-w-0 opacity-0 pointer-events-none'
+                }`}>Saves</span>
               </div>
-              <span className={`font-mono text-[10px] text-[#6B6B6B] ${!isEffectiveExpanded ? 'inline md:hidden' : 'inline'}`}>{counts.savelater}</span>
+              <span className={`font-mono text-[10px] text-[#6B6B6B] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-hidden whitespace-nowrap ${
+                isEffectiveExpanded ? 'max-w-[40px] opacity-100' : 'max-w-0 opacity-0 pointer-events-none'
+              }`}>{counts.savelater}</span>
             </button>
 
             <button
               onClick={() => { router.push('/watched'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
-              className={`flex w-full items-center ${!isEffectiveExpanded ? 'justify-between md:justify-center' : 'justify-between'} rounded-lg px-2 py-1.5 text-[11px] font-medium transition ${currentPage === 'watched' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
+              className={`flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-[11px] font-medium transition ${currentPage === 'watched' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
                 }`}
               title="Watched"
             >
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center min-w-0">
                 <CheckCircle className="h-3.5 w-3.5 shrink-0 text-[#D9D9D9]" />
-                <span className={!isEffectiveExpanded ? 'inline md:hidden' : 'inline'}>Watched</span>
+                <span className={`transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] whitespace-nowrap overflow-hidden ${
+                  isEffectiveExpanded ? 'max-w-[120px] opacity-100 ml-2.5' : 'max-w-0 opacity-0 pointer-events-none'
+                }`}>Watched</span>
               </div>
-              <span className={`font-mono text-[10px] text-[#6B6B6B] ${!isEffectiveExpanded ? 'inline md:hidden' : 'inline'}`}>{counts.watched}</span>
+              <span className={`font-mono text-[10px] text-[#6B6B6B] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-hidden whitespace-nowrap ${
+                isEffectiveExpanded ? 'max-w-[40px] opacity-100' : 'max-w-0 opacity-0 pointer-events-none'
+              }`}>{counts.watched}</span>
             </button>
 
             <button
               onClick={() => { router.push('/inbox'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
-              className={`flex w-full items-center ${!isEffectiveExpanded ? 'justify-between md:justify-center' : 'justify-between'} rounded-lg px-2 py-1.5 text-[11px] font-medium transition ${currentPage === 'inbox' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
+              className={`flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-[11px] font-medium transition ${currentPage === 'inbox' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
                 }`}
               title="Inbox"
             >
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center min-w-0">
                 <Inbox className="h-3.5 w-3.5 shrink-0" />
-                <span className={!isEffectiveExpanded ? 'inline md:hidden' : 'inline'}>Inbox</span>
+                <span className={`transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] whitespace-nowrap overflow-hidden ${
+                  isEffectiveExpanded ? 'max-w-[120px] opacity-100 ml-2.5' : 'max-w-0 opacity-0 pointer-events-none'
+                }`}>Inbox</span>
               </div>
-              <span className={`font-mono text-[10px] text-[#6B6B6B] ${!isEffectiveExpanded ? 'inline md:hidden' : 'inline'}`}>{counts.inbox}</span>
+              <span className={`font-mono text-[10px] text-[#6B6B6B] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-hidden whitespace-nowrap ${
+                isEffectiveExpanded ? 'max-w-[40px] opacity-100' : 'max-w-0 opacity-0 pointer-events-none'
+              }`}>{counts.inbox}</span>
             </button>
           </div>
 
@@ -779,7 +794,9 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
           {pinnedCategories.length > 0 && (
             <div className="mt-5 pt-3.5 border-t border-[#262626]">
               <div className="flex items-center justify-between px-2 mb-2">
-                <span className={`font-mono text-[9px] text-[#6B6B6B] tracking-wider block ${!isEffectiveExpanded ? 'hidden' : 'block'}`}>
+                <span className={`font-mono text-[9px] text-[#6B6B6B] tracking-wider block transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] whitespace-nowrap overflow-hidden ${
+                  isEffectiveExpanded ? 'max-w-[120px] opacity-100' : 'max-w-0 opacity-0 pointer-events-none'
+                }`}>
                   PINNED CATEGORIES
                 </span>
                 <Pin className={`h-2.5 w-2.5 text-[#6B6B6B] ${!isEffectiveExpanded ? 'mx-auto' : ''}`} />
@@ -809,7 +826,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                         setSelectedCategoryId(cat.id);
                         setMobileMenuOpen(false);
                       }}
-                      className={`flex w-full items-center ${!isEffectiveExpanded ? 'justify-center' : 'justify-between'} rounded-lg px-2 py-1 text-[11px] font-medium transition ${
+                      className={`flex w-full items-center justify-between rounded-lg px-2 py-1 text-[11px] font-medium transition ${
                         dragOverCatId === cat.id
                           ? 'ring-2 ring-white border-white bg-[#262626] scale-105'
                           : isSelected
@@ -818,11 +835,15 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                       }`}
                       title={cat.name}
                     >
-                      <div className="flex items-center gap-2 truncate">
-                        {renderCategoryIcon(catIcon, `h-3 w-3 ${theme.text}`)}
-                        <span className={`truncate ${!isEffectiveExpanded ? 'hidden' : 'inline'}`}>{cat.name}</span>
+                      <div className="flex items-center min-w-0">
+                        {renderCategoryIcon(catIcon, `h-3 w-3 shrink-0 ${theme.text}`)}
+                        <span className={`transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] whitespace-nowrap overflow-hidden ${
+                          isEffectiveExpanded ? 'max-w-[110px] opacity-100 ml-2 truncate' : 'max-w-0 opacity-0 pointer-events-none'
+                        }`}>{cat.name}</span>
                       </div>
-                      <span className={`font-mono text-[10px] text-[#6B6B6B] ${!isEffectiveExpanded ? 'hidden' : 'inline'}`}>{count}</span>
+                      <span className={`font-mono text-[10px] text-[#6B6B6B] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-hidden whitespace-nowrap ${
+                        isEffectiveExpanded ? 'max-w-[30px] opacity-100' : 'max-w-0 opacity-0 pointer-events-none'
+                      }`}>{count}</span>
                     </button>
                   );
                 })}
@@ -838,12 +859,14 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
               router.push('/settings');
               setMobileMenuOpen(false);
             }}
-            className={`flex w-full items-center ${!isEffectiveExpanded ? 'justify-center' : 'gap-2.5'} rounded-lg px-2 py-1.5 text-[11px] font-medium transition ${currentPage === 'settings' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
+            className={`flex w-full items-center ${!isEffectiveExpanded ? 'justify-center' : 'justify-start gap-2.5'} rounded-lg px-2 py-1.5 text-[11px] font-medium transition ${currentPage === 'settings' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
               }`}
             title="Settings & Retention"
           >
             <SettingsIcon className="h-3.5 w-3.5 shrink-0 text-zinc-400" />
-            <span className={!isEffectiveExpanded ? 'hidden' : 'inline'}>Settings</span>
+            <span className={`transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] whitespace-nowrap overflow-hidden ${
+              isEffectiveExpanded ? 'max-w-[120px] opacity-100 ml-2.5' : 'max-w-0 opacity-0 pointer-events-none'
+            }`}>Settings</span>
           </button>
         </div>
       </aside>
@@ -864,7 +887,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
 
             {/* Page title */}
             <div
-              className={`overflow-hidden transition-all duration-300 ease-in-out shrink-0 ${!sidebarCollapsed
+              className={`overflow-hidden transition-all duration-300 ease-in-out shrink-0 ${isEffectiveExpanded
                   ? 'max-w-0 opacity-0 pointer-events-none -translate-x-3'
                   : 'max-w-[280px] sm:max-w-xs opacity-100 translate-x-0 mr-2.5'
                 }`}
@@ -958,10 +981,10 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                     <FolderTree className="h-4 w-4 text-[#D9D9D9]" />
                   </div>
                   <div className="font-sans text-3xl font-bold text-white tracking-tight">
-                    <NumberTicker value={categories.length} />
+                    <NumberTicker value={categories.filter(c => !savesFolderIds.includes(c.id)).length} />
                   </div>
                   <span className="font-mono-micro text-[#6B6B6B] mt-2 block">
-                    <NumberTicker value={rootCategories.length} /> primary, <NumberTicker value={categories.length - rootCategories.length} /> sub-niches
+                    <NumberTicker value={rootCategories.length} /> primary, <NumberTicker value={Math.max(0, categories.filter(c => !savesFolderIds.includes(c.id)).length - rootCategories.length)} /> sub-niches
                   </span>
                 </div>
 
@@ -1043,28 +1066,6 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                     <PieChart className="h-4 w-4 text-[#D9D9D9]" />
                     <span>Niche Category Breakdown</span>
                   </h3>
-
-                  {/* Switch between Bars & Dynamic Pie */}
-                  <div className="flex items-center gap-1 p-0.5 rounded-xl border border-white/10 bg-[#0B0B0B]">
-                    <button
-                      onClick={() => updateNicheViewMode('bars')}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition ${
-                        nicheViewMode === 'bars' ? 'bg-white/15 text-white font-semibold' : 'text-zinc-500 hover:text-zinc-300'
-                      }`}
-                      title="Bar distribution view"
-                    >
-                      Bars
-                    </button>
-                    <button
-                      onClick={() => updateNicheViewMode('pie')}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition ${
-                        nicheViewMode === 'pie' ? 'bg-white/15 text-white font-semibold' : 'text-zinc-500 hover:text-zinc-300'
-                      }`}
-                      title="Interactive pie chart view"
-                    >
-                      Pie Chart
-                    </button>
-                  </div>
                 </div>
 
                 {(() => {
@@ -1082,12 +1083,12 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                           return (
                             <div key={cat.id} className="flex items-center gap-3 px-3 py-2 rounded-xl border border-[#262626] bg-[#0B0B0B]/70 hover:bg-[#141414] transition">
                               <span className="text-xs font-medium text-[#D9D9D9] w-28 sm:w-36 truncate">{cat.name}</span>
-                              <div className="flex-1 h-1.5 rounded-full bg-[#1A1A1A] overflow-hidden border border-[#333333]/40">
+                              <div className="flex-1 h-2 rounded-full bg-[#1A1A1A] overflow-hidden border border-[#333333]/40">
                                 <div
                                   className="h-full bg-gradient-to-r from-zinc-400 to-white rounded-full transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)]"
                                   style={{
                                     width: barsAnimated ? `${pct}%` : '0%',
-                                    transitionDelay: `${Math.min(idx * 30, 400)}ms`
+                                    transitionDelay: `${Math.min(idx * 35, 450)}ms`
                                   }}
                                 />
                               </div>
@@ -1101,11 +1102,11 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                     );
                   }
 
-                  // Dynamic Pie / Donut View
+                  // Dynamic Pie / Donut View (Enhanced, Larger & Circular Loading Animation)
                   const totalNicheReels = nicheCategories.reduce(
                     (acc, c) => acc + reels.filter(r => r.category_id === c.id).length, 0
                   );
-                  const radius = 54;
+                  const radius = 62;
                   const circumference = 2 * Math.PI * radius;
                   let accumulatedOffset = 0;
 
@@ -1114,17 +1115,17 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                   const hoveredPct = hoveredCat && totalNicheReels > 0 ? Math.round((hoveredCount / totalNicheReels) * 100) : 0;
 
                   return (
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-6 py-2 px-2 max-w-3xl mx-auto">
-                      {/* Compact Donut */}
-                      <div className="relative w-44 h-44 sm:w-48 sm:h-48 shrink-0 flex items-center justify-center">
-                        <svg viewBox="0 0 140 140" className="w-full h-full -rotate-90 transform">
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-7 py-3 px-2 max-w-4xl mx-auto">
+                      {/* Enhanced Larger Donut/Pie */}
+                      <div className="relative w-56 h-56 sm:w-60 sm:h-60 shrink-0 flex items-center justify-center">
+                        <svg viewBox="0 0 160 160" className="w-full h-full -rotate-90 transform overflow-visible">
                           <circle
-                            cx="70"
-                            cy="70"
+                            cx="80"
+                            cy="80"
                             r={radius}
-                            fill="transparent"
-                            stroke="#222222"
-                            strokeWidth="16"
+                            fill="#111111"
+                            stroke="#1E1E1E"
+                            strokeWidth="24"
                           />
                           {totalNicheReels > 0 && nicheCategories.map((cat, idx) => {
                             const count = reels.filter(r => r.category_id === cat.id).length;
@@ -1139,17 +1140,17 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                             return (
                               <circle
                                 key={cat.id}
-                                cx="70"
-                                cy="70"
+                                cx="80"
+                                cy="80"
                                 r={radius}
                                 fill="transparent"
                                 stroke={color}
-                                strokeWidth={isHovered ? 20 : 16}
-                                strokeDasharray={`${sliceLength} ${circumference}`}
+                                strokeWidth={isHovered ? 28 : 24}
+                                strokeDasharray={pieAnimated ? `${sliceLength} ${circumference}` : `0 ${circumference}`}
                                 strokeDashoffset={-currentOffset}
-                                className="transition-all duration-300 cursor-pointer"
+                                className="transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer"
                                 style={{
-                                  filter: isHovered ? `drop-shadow(0 0 6px ${color})` : undefined,
+                                  filter: isHovered ? `drop-shadow(0 0 8px ${color})` : undefined,
                                 }}
                                 onMouseEnter={() => setHoveredPieCatId(cat.id)}
                                 onMouseLeave={() => setHoveredPieCatId(null)}
@@ -1159,16 +1160,16 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                         </svg>
 
                         {/* Donut Center Display */}
-                        <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-2 pointer-events-none select-none">
+                        <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-3 pointer-events-none select-none">
                           {hoveredCat ? (
                             <>
-                              <span className="text-[10px] font-mono uppercase text-zinc-400 truncate max-w-[85px]">
+                              <span className="text-[10px] font-mono uppercase text-zinc-400 truncate max-w-[105px]">
                                 {hoveredCat.name}
                               </span>
-                              <span className="text-base font-bold text-white tabular-nums leading-tight">
+                              <span className="text-xl font-bold text-white tabular-nums leading-tight">
                                 {hoveredCount}
                               </span>
-                              <span className="text-[11px] font-semibold text-cyan-300 font-mono tabular-nums">
+                              <span className="text-xs font-semibold text-cyan-300 font-mono tabular-nums">
                                 {hoveredPct}%
                               </span>
                             </>
@@ -1177,8 +1178,8 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                               <span className="text-[10px] font-mono uppercase text-zinc-500">
                                 Total
                               </span>
-                              <span className="text-lg font-bold text-white tabular-nums leading-tight">
-                                {totalNicheReels}
+                              <span className="text-2xl font-bold text-white tabular-nums leading-tight">
+                                <NumberTicker value={totalNicheReels} />
                               </span>
                               <span className="text-[10px] text-zinc-400">
                                 Saved Posts
@@ -1189,7 +1190,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                       </div>
 
                       {/* Interactive Legend Grid */}
-                      <div className="grid grid-cols-2 gap-2 w-full max-h-48 overflow-y-auto pr-1">
+                      <div className="grid grid-cols-2 gap-2 w-full max-h-56 overflow-y-auto pr-1">
                         {nicheCategories.map((cat, idx) => {
                           const count = reels.filter(r => r.category_id === cat.id).length;
                           const pct = totalNicheReels > 0 ? Math.round((count / totalNicheReels) * 100) : 0;
@@ -1366,7 +1367,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
 
                   {/* Subcategories inside this selected category (Categories page only) */}
                   {currentPage === 'categories' && (() => {
-                    const subCats = categories.filter(c => c.parent_id === selectedCategoryId);
+                    const subCats = categories.filter(c => c.parent_id === selectedCategoryId && !savesFolderIds.includes(c.id));
                     if (subCats.length === 0) return null;
                     const isDragAllowed = true;
                     return (
@@ -1408,6 +1409,54 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                                 <Folder className="h-3.5 w-3.5 text-zinc-400" />
                                 <span>{sub.name}</span>
                                 <span className="font-mono text-[10px] text-[#737373]">({subCount})</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Nested Folders inside this selected Saves folder (Saves page only) */}
+                  {(currentPage === 'savelater' || currentPage === 'saves') && (() => {
+                    const nestedSaves = savesFolders.filter(f => f.parent_id === selectedCategoryId);
+                    if (nestedSaves.length === 0) return null;
+                    return (
+                      <div className="p-3 rounded-xl border border-white/10 bg-[#141414]/90 backdrop-blur space-y-2">
+                        <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400 block">
+                          Nested Folders ({nestedSaves.length})
+                        </span>
+                        <div className="flex flex-wrap gap-2">
+                          {nestedSaves.map(sub => {
+                            const subCount = reels.filter(r => r.category_id === sub.id && savedLaterIds.includes(r.id)).length;
+                            const isOver = dragOverCatId === sub.id;
+                            return (
+                              <button
+                                key={sub.id}
+                                draggable={true}
+                                onDragStart={(e) => {
+                                  setDraggedItem({ type: 'folder', id: sub.id, folderId: sub.id });
+                                  e.dataTransfer.setData('application/json', JSON.stringify({ type: 'folder', id: sub.id, folderId: sub.id }));
+                                  e.dataTransfer.effectAllowed = 'move';
+                                }}
+                                onDragEnd={() => setDraggedItem(null)}
+                                onDragOver={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setDragOverCatId(sub.id);
+                                }}
+                                onDragLeave={() => setDragOverCatId(null)}
+                                onDrop={(e) => {
+                                  handleDropOnCategory(sub.id, e);
+                                }}
+                                onClick={() => setSelectedCategoryId(sub.id)}
+                                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs text-white transition ${
+                                  isOver ? 'ring-2 ring-cyan-400 border-cyan-400 bg-cyan-950/40 text-cyan-200' : 'border-white/10 bg-[#0A0A0A] hover:bg-[#1A1A1A] hover:border-white/30'
+                                }`}
+                              >
+                                <Folder className="h-3.5 w-3.5 text-cyan-400" />
+                                <span>{sub.name}</span>
+                                <span className="font-mono text-[10px] text-zinc-400">({subCount})</span>
                               </button>
                             );
                           })}
@@ -1481,10 +1530,10 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                     </form>
                   )}
 
-                  {/* Render Saves Folders together with saved reels */}
-                  {savesFolders.length > 0 && (
+                  {/* Render Saves Folders together with saved reels (Cut from root: only root folders without parent_id) */}
+                  {savesFolders.filter(f => !f.parent_id).length > 0 && (
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-5 pt-2">
-                      {savesFolders.map((folder) => {
+                      {savesFolders.filter(f => !f.parent_id).map((folder) => {
                         const count = reels.filter(r => r.category_id === folder.id && savedLaterIds.includes(r.id)).length;
                         const isDragOver = dragOverCatId === folder.id;
 
