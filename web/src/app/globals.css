@@ -3,7 +3,8 @@
 @tailwind utilities;
 
 :root {
-  --font-zolo: 'Space Grotesk', -apple-system, sans-serif;
+  --font-oughter: var(--font-oughter, 'Oughter', sans-serif);
+  --font-zolo: var(--font-oughter, 'Oughter', sans-serif);
   --font-mono: 'JetBrains Mono', monospace;
 
   /* Hallmark Theme Tokens */
@@ -23,20 +24,32 @@ html, body {
   overflow-x: clip;
 }
 
+/* Subtle continuous top-to-bottom motion for abstract dotted background */
+@keyframes moveDottedBg {
+  0% {
+    background-position: 0 0, 5px 5px;
+  }
+  100% {
+    background-position: 0 400px, 5px 405px;
+  }
+}
+
 /* Fabric Micro-Texture Background Pattern */
 .bg-fabric {
   background-color: #0B0B0B;
   background-image: 
-    radial-gradient(rgba(255, 255, 255, 0.09) 1px, transparent 1px),
-    radial-gradient(rgba(255, 255, 255, 0.05) 1px, #0B0B0B 1px);
+    radial-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px),
+    radial-gradient(rgba(255, 255, 255, 0.06) 1px, #0B0B0B 1px);
   background-size: 20px 20px, 10px 10px;
   background-position: 0 0, 5px 5px;
+  animation: moveDottedBg 25s linear infinite;
 }
 
 /* Subtle border sheen & typography */
+.font-oughter,
 .font-zolo {
-  font-family: var(--font-zolo), sans-serif;
-  letter-spacing: -0.04em;
+  font-family: var(--font-oughter), var(--font-zolo), sans-serif;
+  letter-spacing: -0.02em;
 }
 
 .font-mono-micro {

@@ -23,7 +23,8 @@ const config: Config = {
         amberbrand: "var(--accent-amber)",
       },
       fontFamily: {
-        zolo: ["var(--font-zolo)", "sans-serif"],
+        oughter: ["var(--font-oughter)", "var(--font-zolo)", "sans-serif"],
+        zolo: ["var(--font-oughter)", "var(--font-zolo)", "sans-serif"],
         mono: ["var(--font-mono)", "monospace"],
         sans: ["var(--font-sans)", "sans-serif"],
       }

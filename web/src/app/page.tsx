@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { Reel, Category, Device } from '@/types/database';
 import { Loader2 } from 'lucide-react';
 import ServiceLandingPage from '@/components/ServiceLandingPage';
+import GameOnboardingGuide from '@/components/GameOnboardingGuide';
 import { NumberTicker } from '@/components/NumberTicker';
 import {
   Home,
@@ -46,6 +47,8 @@ import {
   Filter,
   LayoutGrid,
   List as ListIcon,
+  MoreVertical,
+  Info,
   Edit2,
   BookmarkCheck,
   Compass,
@@ -162,6 +165,59 @@ export default function App() {
   const [categoryMetaMap, setCategoryMetaMap] = useState<Record<string, { icon?: string; color?: string; description?: string }>>({});
   const [metaLoaded, setMetaLoaded] = useState(false);
   const [isFirstTimePersona, setIsFirstTimePersona] = useState(false);
+  const [showGameGuide, setShowGameGuide] = useState(false);
+  const [activeCardMenuId, setActiveCardMenuId] = useState<string | null>(null);
+
+  // Drag and drop state for reels and folders
+  const [dragOverCatId, setDragOverCatId] = useState<string | null>(null);
+  const [draggedItem, setDraggedItem] = useState<{ type: 'reel' | 'folder'; id: string; reelId?: string; folderId?: string } | null>(null);
+
+  const handleDropOnCategory = async (targetCatId: string, e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverCatId(null);
+
+    let data: { type: 'reel' | 'folder'; id?: string; reelId?: string; folderId?: string } | null = null;
+    try {
+      const raw = e.dataTransfer.getData('application/json') || e.dataTransfer.getData('text/plain');
+      if (raw) data = JSON.parse(raw);
+    } catch (err) {}
+
+    const item = data || draggedItem;
+    if (!item) return;
+
+    if (item.type === 'reel') {
+      const reelId = item.id || (item as any).reelId;
+      if (!reelId) return;
+
+      setReels(prev => prev.map(r => r.id === reelId ? { ...r, category_id: targetCatId } : r));
+      const targetCat = categories.find(c => c.id === targetCatId);
+      setIncomingAlert(`Moved reel into "${targetCat?.name || 'Category'}" ✓`);
+
+      try {
+        const { error } = await supabase.from('reels').update({ category_id: targetCatId }).eq('id', reelId);
+        if (error) throw error;
+      } catch (err: any) {
+        console.error('Failed to move reel:', err);
+      }
+    } else if (item.type === 'folder') {
+      const folderId = item.id || (item as any).folderId;
+      if (!folderId || folderId === targetCatId) return;
+
+      setCategories(prev => prev.map(c => c.id === folderId ? { ...c, parent_id: targetCatId } : c));
+      const targetCat = categories.find(c => c.id === targetCatId);
+      setIncomingAlert(`Nested folder inside "${targetCat?.name || 'Parent Folder'}" ✓`);
+
+      try {
+        const { error } = await supabase.from('categories').update({ parent_id: targetCatId }).eq('id', folderId);
+        if (error) throw error;
+      } catch (err: any) {
+        console.error('Failed to nest folder:', err);
+      }
+    }
+
+    setDraggedItem(null);
+  };
 
   // Sync category metadata to localStorage whenever state updates after initial load
   useEffect(() => {
@@ -191,6 +247,21 @@ export default function App() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [detailReelId, categoryLightbox, editingCategory, showClearHistoryLightbox, isClearingHistory]);
+
+  // Close active 3-dot card menu on outside click or Escape
+  useEffect(() => {
+    if (!activeCardMenuId) return;
+    const handleOutsideClick = () => setActiveCardMenuId(null);
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setActiveCardMenuId(null);
+    };
+    window.addEventListener('click', handleOutsideClick);
+    window.addEventListener('keydown', handleEsc);
+    return () => {
+      window.removeEventListener('click', handleOutsideClick);
+      window.removeEventListener('keydown', handleEsc);
+    };
+  }, [activeCardMenuId]);
 
   // Load preferences from localStorage
   useEffect(() => {
@@ -239,6 +310,10 @@ export default function App() {
       if (!seen) {
         setIsFirstTimePersona(true);
       }
+      const guideCompleted = localStorage.getItem(`watchlater_guide_completed_${session.user.id}`);
+      if (!guideCompleted) {
+        setShowGameGuide(true);
+      }
     }
   }, [session]);
 
@@ -247,6 +322,13 @@ export default function App() {
       localStorage.setItem(`watchlater_persona_celebrated_${session.user.id}`, 'true');
     }
     setIsFirstTimePersona(false);
+  };
+
+  const dismissGameGuide = () => {
+    if (session?.user?.id) {
+      localStorage.setItem(`watchlater_guide_completed_${session.user.id}`, 'true');
+    }
+    setShowGameGuide(false);
   };
 
   // Category state reconciliation
@@ -1087,15 +1169,24 @@ export default function App() {
           <div className="flex items-center justify-between px-2 py-3 mb-2">
             <a
               href="/"
-              className={`flex items-center gap-2.5 cursor-pointer hover:opacity-85 transition ${sidebarCollapsed ? 'flex md:hidden' : 'flex'}`}
+              className={`flex items-center gap-3 cursor-pointer hover:opacity-85 transition ${sidebarCollapsed ? 'flex md:hidden' : 'flex'}`}
               title="Return to Landing Page"
             >
-              <img src="/logo.jpg" alt="Watch Later" className="h-7 w-7 rounded-lg object-cover" />
+              <img src="/logo.jpg" alt="Watch Later" className="h-11 w-11 sm:h-12 sm:w-12 rounded-xl object-cover shadow-md border border-white/15 shrink-0" />
               <div>
-                <span className="font-zolo text-base font-bold tracking-tight text-white block leading-none">Watch Later</span>
-                <span className="text-[9px] text-[#6B6B6B] block leading-tight mt-0.5">Never lose a reel worth revisiting.</span>
+                <span className="font-oughter text-xl font-bold tracking-tight text-white block leading-none">Watch Later</span>
+                <span className="text-[11px] text-[#7E7E7E] block leading-tight mt-1">Never lose a reel worth revisiting.</span>
               </div>
             </a>
+            {sidebarCollapsed && (
+              <a
+                href="/"
+                className="hidden md:flex items-center justify-center py-1 hover:opacity-85 transition"
+                title="Return to Landing Page"
+              >
+                <img src="/logo.jpg" alt="Watch Later" className="h-10 w-10 rounded-xl object-cover shadow-md border border-white/15" />
+              </a>
+            )}
             <div className="flex items-center gap-1">
               <button
                 onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
@@ -1161,10 +1252,10 @@ export default function App() {
               title="Save Later (Bookmarks)"
             >
               <div className="flex items-center gap-2.5">
-                <Bookmark className="h-4 w-4 shrink-0 text-amber-400" />
+                <Bookmark className="h-4 w-4 shrink-0" />
                 <span className={sidebarCollapsed ? 'inline md:hidden' : 'inline'}>Save Later</span>
               </div>
-              <span className={`font-mono-micro text-amber-400 font-semibold ${sidebarCollapsed ? 'inline md:hidden' : 'inline'}`}>{counts.savelater}</span>
+              <span className={`font-mono-micro text-[#6B6B6B] ${sidebarCollapsed ? 'inline md:hidden' : 'inline'}`}>{counts.savelater}</span>
             </button>
 
             <button
@@ -1207,14 +1298,31 @@ export default function App() {
               return (
                 <button
                   key={cat.id}
+                  draggable
+                  onDragStart={(e) => {
+                    setDraggedItem({ type: 'folder', id: cat.id });
+                    e.dataTransfer.setData('application/json', JSON.stringify({ type: 'folder', id: cat.id }));
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setDragOverCatId(cat.id);
+                  }}
+                  onDragLeave={() => setDragOverCatId(null)}
+                  onDrop={(e) => handleDropOnCategory(cat.id, e)}
                   onClick={() => {
                     setCurrentPage('categories');
                     setSelectedCategoryId(cat.id);
                     setMobileMenuOpen(false);
                   }}
-                  className={`flex w-full items-center ${sidebarCollapsed ? 'justify-between md:justify-center' : 'justify-between'} rounded-lg px-2.5 py-1.5 text-xs font-medium transition group ${currentPage === 'categories' && selectedCategoryId === cat.id ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#999999] hover:bg-[#1A1A1A] hover:text-white'
-                    }`}
-                  title={cat.name}
+                  className={`flex w-full items-center ${sidebarCollapsed ? 'justify-between md:justify-center' : 'justify-between'} rounded-lg px-2.5 py-1.5 text-xs font-medium transition group ${
+                    dragOverCatId === cat.id
+                      ? 'bg-[#2E2E2E] ring-1 ring-white/50 text-white shadow-md'
+                      : currentPage === 'categories' && selectedCategoryId === cat.id
+                        ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]'
+                        : 'text-[#999999] hover:bg-[#1A1A1A] hover:text-white'
+                  }`}
+                  title={`${cat.name} (Click to open, or drop items here)`}
                 >
                   <div className="flex items-center gap-2 truncate">
                     <span className={`p-1 rounded-md ${theme.bg} ${theme.text} ${theme.border} border shrink-0`}>
@@ -1266,13 +1374,12 @@ export default function App() {
 
             {/* Page title: smoothly hidden when sidebar is extended (!sidebarCollapsed), smoothly brings title when sidebar is collapsed (sidebarCollapsed) */}
             <div
-              className={`overflow-hidden transition-all duration-300 ease-in-out shrink-0 ${
-                !sidebarCollapsed
+              className={`overflow-hidden transition-all duration-300 ease-in-out shrink-0 ${!sidebarCollapsed
                   ? 'max-w-0 opacity-0 pointer-events-none -translate-x-3'
                   : 'max-w-[280px] sm:max-w-xs opacity-100 translate-x-0 mr-2.5'
-              }`}
+                }`}
             >
-              <h2 className="font-zolo text-sm sm:text-base font-bold text-white tracking-tight whitespace-nowrap">
+              <h2 className="font-oughter text-sm sm:text-base font-bold text-white tracking-tight whitespace-nowrap">
                 {currentPage === 'home' && 'Analytics & Intelligence'}
                 {currentPage === 'all' && 'All Saved Content'}
                 {currentPage === 'categories' && (selectedCategoryId ? categories.find(c => c.id === selectedCategoryId)?.name || 'Category' : 'Categories Directory')}
@@ -1289,9 +1396,8 @@ export default function App() {
             {currentPage !== 'home' && currentPage !== 'settings' && !(currentPage === 'categories' && !selectedCategoryId) && (
               <div className="flex items-center gap-2.5 flex-1 w-full transition-all duration-300">
                 <div className="relative flex-1">
-                  <div className={`flex items-center gap-2.5 bg-[#1A1A1A] px-3.5 py-2 rounded-xl border transition-all duration-300 ease-out ${
-                    isSearchFocused ? 'border-white shadow-[0_0_20px_rgba(255,255,255,0.08)] bg-[#202020]' : 'border-[#333333] hover:border-[#444444]'
-                  }`}>
+                  <div className={`flex items-center gap-2.5 bg-[#1A1A1A] px-3.5 py-2 rounded-xl border transition-all duration-300 ease-out ${isSearchFocused ? 'border-white shadow-[0_0_20px_rgba(255,255,255,0.08)] bg-[#202020]' : 'border-[#333333] hover:border-[#444444]'
+                    }`}>
                     <Search className={`h-4 w-4 shrink-0 transition-colors ${isSearchFocused ? 'text-white' : 'text-[#6B6B6B]'}`} />
                     <input
                       type="text"
@@ -1314,9 +1420,8 @@ export default function App() {
                 </div>
 
                 {/* View Layout Toggle Beside Search Bar */}
-                <div className={`flex items-center bg-[#1A1A1A] p-0.5 rounded-xl border border-[#333333] transition-all duration-200 shrink-0 ${
-                  isSearchFocused ? 'opacity-0 pointer-events-none scale-90 w-0 p-0 overflow-hidden border-0' : 'opacity-100 scale-100'
-                }`}>
+                <div className={`flex items-center bg-[#1A1A1A] p-0.5 rounded-xl border border-[#333333] transition-all duration-200 shrink-0 ${isSearchFocused ? 'opacity-0 pointer-events-none scale-90 w-0 p-0 overflow-hidden border-0' : 'opacity-100 scale-100'
+                  }`}>
                   <button
                     onClick={() => updateViewLayout('grid')}
                     className={`p-1.5 rounded-lg transition ${viewLayout === 'grid' ? 'bg-[#333333] text-white' : 'text-[#6B6B6B] hover:text-white'}`}
@@ -1334,6 +1439,16 @@ export default function App() {
                 </div>
               </div>
             )}
+
+            {/* Apple Liquid Glass "How to Play" Guide Trigger */}
+            <button
+              onClick={() => setShowGameGuide(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-white/20 bg-white/[0.08] hover:bg-white/[0.16] text-xs font-semibold text-white transition active:scale-95 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3)] backdrop-blur-xl shrink-0"
+              title="How to Play / Interactive Guide"
+            >
+              <Gamepad2 className="h-3.5 w-3.5 text-cyan-300" />
+              <span className="hidden sm:inline">How to Play</span>
+            </button>
           </div>
         </header>
 
@@ -1348,7 +1463,7 @@ export default function App() {
                     <span className="font-mono-micro text-[#D9D9D9] font-medium tracking-wider">WATCHED</span>
                     <Film className="h-4 w-4 text-[#D9D9D9]" />
                   </div>
-                  <div className="font-zolo text-3xl font-bold text-white tracking-tight">
+                  <div className="font-oughter text-3xl font-bold text-white tracking-tight">
                     <NumberTicker value={counts.watched} />
                   </div>
                   <span className="font-mono-micro text-[#6B6B6B] mt-2 block">
@@ -1361,7 +1476,7 @@ export default function App() {
                     <span className="font-mono-micro text-[#D9D9D9] font-medium tracking-wider">CATEGORIES</span>
                     <FolderTree className="h-4 w-4 text-[#D9D9D9]" />
                   </div>
-                  <div className="font-zolo text-3xl font-bold text-white tracking-tight">
+                  <div className="font-oughter text-3xl font-bold text-white tracking-tight">
                     <NumberTicker value={categories.length} />
                   </div>
                   <span className="font-mono-micro text-[#6B6B6B] mt-2 block">
@@ -1374,7 +1489,7 @@ export default function App() {
                     <span className="font-mono-micro text-[#D9D9D9] font-medium tracking-wider">CONNECTED DEVICES</span>
                     <Smartphone className="h-4 w-4 text-[#D9D9D9]" />
                   </div>
-                  <div className="font-zolo text-3xl font-bold text-white tracking-tight">
+                  <div className="font-oughter text-3xl font-bold text-white tracking-tight">
                     <NumberTicker value={devices.length} />
                   </div>
                   <span className="font-mono-micro text-[#6B6B6B] mt-2 block">
@@ -1395,7 +1510,7 @@ export default function App() {
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
-                              <h3 className="font-zolo text-base font-bold text-white tracking-tight">Vault Intelligence Persona</h3>
+                              <h3 className="font-oughter text-base font-bold text-white tracking-tight">Vault Intelligence Persona</h3>
                               <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-emerald-400/10 text-emerald-300 border border-emerald-400/30">
                                 ✨ Synthesized
                               </span>
@@ -1416,7 +1531,7 @@ export default function App() {
                       <p className="text-sm text-zinc-200 leading-relaxed font-sans mb-3 font-medium">
                         {userPersonaInsight}
                       </p>
-                      
+
                       <div className="h-1 w-full rounded-full bg-gradient-to-r from-emerald-400 via-cyan-400 to-purple-400 opacity-60" />
                     </div>
                   </div>
@@ -1425,7 +1540,7 @@ export default function App() {
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
                         <Bookmark className="h-4 w-4 text-[#D9D9D9]" />
-                        <h3 className="font-zolo text-sm font-bold text-white tracking-tight">Vault Intelligence Persona</h3>
+                        <h3 className="font-oughter text-sm font-bold text-white tracking-tight">Vault Intelligence Persona</h3>
                       </div>
                       {reels.length < 20 && (
                         <span className="font-mono-micro text-[#6B6B6B] bg-[#0B0B0B] px-2.5 py-1 rounded-full border border-[#333333]">
@@ -1443,7 +1558,7 @@ export default function App() {
               {/* Compressed Niche Category Distribution */}
               <div className="rounded-2xl border border-[#333333] bg-[#1A1A1A]/80 p-5 shadow-sm">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-zolo text-sm font-bold text-white tracking-tight flex items-center gap-2">
+                  <h3 className="font-oughter text-sm font-bold text-white tracking-tight flex items-center gap-2">
                     <PieChart className="h-4 w-4 text-[#D9D9D9]" />
                     <span>Niche Category Breakdown</span>
                   </h3>
@@ -1474,7 +1589,7 @@ export default function App() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-zolo text-sm sm:text-base font-bold text-white tracking-tight">Categories Directory</h3>
+                  <h3 className="font-oughter text-sm sm:text-base font-bold text-white tracking-tight">Categories Directory</h3>
                   <p className="text-[11px] sm:text-xs text-[#6B6B6B]">Click any category to open and explore saved posts directly.</p>
                 </div>
                 <button
@@ -1507,11 +1622,28 @@ export default function App() {
                 {rootCategories.map(cat => {
                   const count = reels.filter(r => r.category_id === cat.id).length;
                   const isPinned = pinnedFolderIds.includes(cat.id);
+                  const isDragOver = dragOverCatId === cat.id;
 
                   return (
                     <div
                       key={cat.id}
-                      className="group relative rounded-xl border border-[#333333] bg-[#1A1A1A]/80 hover:bg-[#1A1A1A] hover:border-[#6B6B6B] transition shadow-sm overflow-hidden"
+                      draggable
+                      onDragStart={(e) => {
+                        setDraggedItem({ type: 'folder', id: cat.id });
+                        e.dataTransfer.setData('application/json', JSON.stringify({ type: 'folder', id: cat.id, folderId: cat.id }));
+                        e.dataTransfer.effectAllowed = 'move';
+                      }}
+                      onDragEnd={() => setDraggedItem(null)}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setDragOverCatId(cat.id);
+                      }}
+                      onDragLeave={() => setDragOverCatId(null)}
+                      onDrop={(e) => handleDropOnCategory(cat.id, e)}
+                      className={`group relative rounded-xl border transition shadow-sm overflow-hidden ${
+                        isDragOver ? 'ring-2 ring-white border-white bg-[#262626] scale-105' : 'border-[#333333] bg-[#1A1A1A]/80 hover:bg-[#1A1A1A] hover:border-[#6B6B6B]'
+                      }`}
                     >
                       {/* Top Action Buttons (Pin, Edit & Delete) as Sibling Interactive Elements */}
                       <div className="absolute top-1.5 right-1.5 flex items-center gap-0.5 opacity-100 [@media(hover:hover)]:opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition z-20">
@@ -1598,17 +1730,177 @@ export default function App() {
 
               {/* Breadcrumb back button when inside a specific category */}
               {selectedCategoryId && (
-                <div className="mb-4 flex items-center gap-2">
-                  <button
-                    onClick={() => setSelectedCategoryId(null)}
-                    className="text-xs text-[#D9D9D9] hover:underline"
-                  >
-                    ← Back to Categories
-                  </button>
-                  <span className="text-[#6B6B6B]">/</span>
-                  <span className="text-xs text-white font-semibold">
-                    {categories.find(c => c.id === selectedCategoryId)?.name}
-                  </span>
+                <div className="mb-4">
+                  <div className="flex items-center gap-2 mb-2.5">
+                    <button
+                      onClick={() => setSelectedCategoryId(null)}
+                      className="text-xs text-[#D9D9D9] hover:underline"
+                    >
+                      ← Back to Categories
+                    </button>
+                    <span className="text-[#6B6B6B]">/</span>
+                    <span className="text-xs text-white font-semibold">
+                      {categories.find(c => c.id === selectedCategoryId)?.name}
+                    </span>
+                  </div>
+
+                  {/* Subfolders inside this selected category */}
+                  {(() => {
+                    const subCats = categories.filter(c => c.parent_id === selectedCategoryId);
+                    if (subCats.length === 0) return null;
+                    return (
+                      <div className="p-3 rounded-xl border border-[#2E2E2E] bg-[#141414]/90 backdrop-blur space-y-2">
+                        <span className="text-[10px] font-mono uppercase tracking-wider text-[#737373] block">
+                          Nested Folders ({subCats.length})
+                        </span>
+                        <div className="flex flex-wrap gap-2">
+                          {subCats.map(sub => {
+                            const subCount = reels.filter(r => r.category_id === sub.id || r.subcategory_id === sub.id).length;
+                            const isOver = dragOverCatId === sub.id;
+                            return (
+                              <button
+                                key={sub.id}
+                                draggable
+                                onDragStart={(e) => {
+                                  setDraggedItem({ type: 'folder', id: sub.id });
+                                  e.dataTransfer.setData('application/json', JSON.stringify({ type: 'folder', id: sub.id, folderId: sub.id }));
+                                  e.dataTransfer.effectAllowed = 'move';
+                                }}
+                                onDragEnd={() => setDraggedItem(null)}
+                                onDragOver={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setDragOverCatId(sub.id);
+                                }}
+                                onDragLeave={() => setDragOverCatId(null)}
+                                onDrop={(e) => handleDropOnCategory(sub.id, e)}
+                                onClick={() => setSelectedCategoryId(sub.id)}
+                                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs text-white transition ${
+                                  isOver ? 'ring-2 ring-white border-white bg-[#222]' : 'border-[#333333] bg-[#0A0A0A] hover:bg-[#1A1A1A] hover:border-[#666]'
+                                }`}
+                              >
+                                <Folder className="h-3.5 w-3.5 text-zinc-400" />
+                                <span>{sub.name}</span>
+                                <span className="font-mono text-[10px] text-[#737373]">({subCount})</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+
+              {/* SAVE LATER CATEGORY QUICK BAR & DRAG-AND-DROP STRIP */}
+              {currentPage === 'savelater' && (
+                <div className="mb-6 rounded-2xl border border-[#2A2A2A] bg-[#121212]/90 backdrop-blur p-4 space-y-3">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <FolderTree className="h-4 w-4 text-white" />
+                        <h3 className="font-oughter text-sm font-bold text-white tracking-tight">Category Folders</h3>
+                        <span className="font-mono-micro text-[#888888]">
+                          ({rootCategories.length} folders)
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-[#737373] mt-0.5">
+                        Drag any saved reel below into a folder. Drag folders into folders to nest them. Click any folder to open instantly.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={() => setIsCreatingCategory(!isCreatingCategory)}
+                        className="flex items-center gap-1.5 rounded-lg bg-white hover:bg-zinc-200 text-[#0B0B0B] px-3 py-1.5 text-xs font-semibold transition active:scale-95 shadow-sm"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        <span>New Category</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Inline Category Creation Form */}
+                  {isCreatingCategory && (
+                    <form onSubmit={handleCreateCategory} className="p-3 rounded-xl border border-[#333333] bg-[#0E0E0E] flex flex-wrap items-center gap-2 animate-fade-up">
+                      <input
+                        type="text"
+                        required
+                        autoFocus
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        placeholder="New category name (e.g. Design, Workflows, Recipes)..."
+                        className="flex-1 min-w-[200px] rounded-lg border border-[#333333] bg-[#050505] px-3 py-1.5 text-xs text-white placeholder-[#666] focus:border-white focus:outline-none"
+                      />
+                      <button
+                        type="submit"
+                        disabled={categoryInsertPending}
+                        className="rounded-lg bg-white hover:bg-zinc-200 text-[#0B0B0B] px-3.5 py-1.5 text-xs font-semibold transition active:scale-95"
+                      >
+                        {categoryInsertPending ? 'Creating...' : 'Create Folder'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setIsCreatingCategory(false); setNewCategoryName(''); }}
+                        className="rounded-lg border border-[#333333] hover:bg-[#1A1A1A] text-zinc-400 px-2.5 py-1.5 text-xs transition"
+                      >
+                        Cancel
+                      </button>
+                    </form>
+                  )}
+
+                  {/* Horizontal Folders Strip (Draggable, Droppable, Click to open instantly) */}
+                  <div className="flex items-center gap-2.5 overflow-x-auto pb-1.5 pt-1 scrollbar-thin scrollbar-thumb-zinc-700">
+                    {rootCategories.map((cat) => {
+                      const count = reels.filter(r => r.category_id === cat.id).length;
+                      const subCats = categories.filter(c => c.parent_id === cat.id);
+                      const iconName = categoryMetaMap[cat.id]?.icon || 'Folder';
+                      const theme = getCategoryTheme(iconName, categoryMetaMap[cat.id]?.color);
+                      const isDragOver = dragOverCatId === cat.id;
+
+                      return (
+                        <div
+                          key={cat.id}
+                          draggable
+                          onDragStart={(e) => {
+                            setDraggedItem({ type: 'folder', id: cat.id });
+                            e.dataTransfer.setData('application/json', JSON.stringify({ type: 'folder', id: cat.id, folderId: cat.id }));
+                            e.dataTransfer.effectAllowed = 'move';
+                          }}
+                          onDragEnd={() => setDraggedItem(null)}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setDragOverCatId(cat.id);
+                          }}
+                          onDragLeave={() => setDragOverCatId(null)}
+                          onDrop={(e) => handleDropOnCategory(cat.id, e)}
+                          onClick={() => {
+                            setCurrentPage('categories');
+                            setSelectedCategoryId(cat.id);
+                          }}
+                          className={`group flex items-center gap-2.5 px-3 py-2 rounded-xl border cursor-pointer select-none shrink-0 transition-all duration-200 ${
+                            isDragOver
+                              ? 'ring-2 ring-white border-white bg-[#262626] scale-105 shadow-[0_0_15px_rgba(255,255,255,0.15)]'
+                              : 'border-[#2E2E2E] bg-[#171717] hover:border-[#666] hover:bg-[#1E1E1E]'
+                          }`}
+                          title={`Click to open "${cat.name}". Drag reel here to move, or drag another folder here to nest.`}
+                        >
+                          <div className={`p-1.5 rounded-lg ${theme.bg} ${theme.border} border group-hover:scale-105 transition`}>
+                            {renderCategoryIcon(iconName, `h-4 w-4 ${theme.text}`)}
+                          </div>
+                          <div className="flex flex-col text-left">
+                            <span className="text-xs font-semibold text-white group-hover:text-zinc-100 transition truncate max-w-[120px]">
+                              {cat.name}
+                            </span>
+                            <span className="font-mono text-[10px] text-[#888888] tabular-nums">
+                              {count} items {subCats.length > 0 ? `· ${subCats.length} sub` : ''}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
 
@@ -1641,15 +1933,25 @@ export default function App() {
                     return (
                       <div
                         key={reel.id}
+                        draggable={currentPage === 'savelater'}
+                        onDragStart={(e) => {
+                          if (currentPage !== 'savelater') return;
+                          setDraggedItem({ type: 'reel', id: reel.id });
+                          e.dataTransfer.setData('application/json', JSON.stringify({ type: 'reel', id: reel.id, reelId: reel.id }));
+                          e.dataTransfer.effectAllowed = 'move';
+                        }}
+                        onDragEnd={() => setDraggedItem(null)}
                         onClick={() => {
                           if (reel.completion_status !== 'completed') {
                             handleStatusChange(reel.id, 'completed');
                           }
-                          setDetailReelId(reel.id);
+                          window.open(reel.url, '_blank', 'noopener,noreferrer');
                         }}
-                        className={`group relative rounded-2xl border border-[#333333] bg-[#141414] overflow-hidden cursor-pointer transition-all duration-300 hover:border-[#6B6B6B] hover:shadow-[0_12px_36px_rgba(0,0,0,0.7)] hover:-translate-y-0.5 flex flex-col justify-between aspect-[3/4] sm:aspect-[4/5] ${
-                          density === 'compact' ? 'p-3' : density === 'spacious' ? 'p-5' : 'p-4'
-                        } ${searchQuery ? 'animate-in fade-in zoom-in-[0.98] duration-200' : ''}`}
+                        className={`group relative rounded-2xl border border-[#333333] bg-[#141414] overflow-hidden transition-all duration-300 hover:border-[#6B6B6B] hover:shadow-[0_16px_40px_rgba(0,0,0,0.75)] hover:-translate-y-1 flex flex-col justify-between aspect-[9/14] sm:aspect-[9/14] ${
+                          currentPage === 'savelater' ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
+                        } ${density === 'compact' ? 'p-3' : density === 'spacious' ? 'p-5' : 'p-4'} ${
+                          searchQuery ? 'animate-in fade-in zoom-in-[0.98] duration-200' : ''
+                        }`}
                       >
                         {/* Full Card Length Thumbnail Background */}
                         {isPending ? (
@@ -1670,7 +1972,7 @@ export default function App() {
                         {/* Fade Effect from Card Bottom to Middle */}
                         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/85 via-45% to-black/20 pointer-events-none z-[1]" />
 
-                        {/* Card Top: Floating Badges & Quick Save */}
+                        {/* Card Top: Floating Badges & 3-Dot Menu */}
                         <div className="relative z-10 flex items-start justify-between gap-1.5 w-full">
                           <div className="flex flex-wrap items-center gap-1.5 max-w-[80%]">
                             {catObj && (
@@ -1685,7 +1987,7 @@ export default function App() {
                             )}
                           </div>
 
-                          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center gap-1 relative" onClick={(e) => e.stopPropagation()}>
                             {(reel.is_failed || reel.processing_status === 'extraction_failed') && (
                               <button
                                 onClick={() => handleRetryExtraction(reel.id)}
@@ -1697,38 +1999,100 @@ export default function App() {
                               </button>
                             )}
 
-                            <button
-                              onClick={(e) => toggleSaveLater(reel.id, e)}
-                              title="Save for Later"
-                              aria-label="Save for Later"
-                              aria-pressed={savedLaterIds.includes(reel.id)}
-                              className={`p-1.5 rounded-full backdrop-blur-md border transition active:scale-90 ${
-                                savedLaterIds.includes(reel.id)
-                                  ? 'bg-amber-500/20 text-amber-400 border-amber-500/40'
-                                  : 'bg-black/60 text-white/70 hover:text-white border-white/15 hover:border-white/30'
-                              }`}
-                            >
-                              <Bookmark className={`h-3.5 w-3.5 ${savedLaterIds.includes(reel.id) ? 'fill-amber-400' : ''}`} />
-                            </button>
+                            {/* 3 Vertical Dots with Save & More Info Dropdown */}
+                            <div className="relative">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveCardMenuId(prev => prev === reel.id ? null : reel.id);
+                                }}
+                                title="Options"
+                                aria-label="Options"
+                                className={`p-1.5 rounded-full backdrop-blur-md border transition active:scale-90 relative ${
+                                  activeCardMenuId === reel.id
+                                    ? 'bg-white text-black border-white shadow-[0_0_12px_rgba(255,255,255,0.4)]'
+                                    : savedLaterIds.includes(reel.id)
+                                    ? 'bg-amber-500/20 text-amber-400 border-amber-500/40'
+                                    : 'bg-black/60 text-white/80 hover:text-white border-white/15 hover:border-white/30'
+                                }`}
+                              >
+                                <MoreVertical className="h-3.5 w-3.5" />
+                                {savedLaterIds.includes(reel.id) && activeCardMenuId !== reel.id && (
+                                  <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-amber-400 ring-2 ring-black" />
+                                )}
+                              </button>
+
+                              {/* Dropdown Menu */}
+                              {activeCardMenuId === reel.id && (
+                                <div
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="absolute right-0 top-full mt-1.5 w-48 rounded-2xl border border-white/20 bg-[#141414]/95 backdrop-blur-3xl shadow-[0_16px_50px_rgba(0,0,0,0.85),inset_0_1px_1px_rgba(255,255,255,0.3)] p-1.5 z-30 animate-in fade-in zoom-in-95 duration-150 space-y-0.5 text-left"
+                                >
+                                  {/* Option 1: Save for Later */}
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      toggleSaveLater(reel.id, e);
+                                    }}
+                                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition ${
+                                      savedLaterIds.includes(reel.id)
+                                        ? 'bg-amber-500/15 text-amber-300 hover:bg-amber-500/25'
+                                        : 'text-zinc-200 hover:bg-white/10 hover:text-white'
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <Bookmark className={`h-3.5 w-3.5 ${savedLaterIds.includes(reel.id) ? 'fill-amber-400 text-amber-400' : 'text-zinc-400'}`} />
+                                      <span>{savedLaterIds.includes(reel.id) ? 'Saved for Later' : 'Save for Later'}</span>
+                                    </div>
+                                    {savedLaterIds.includes(reel.id) && (
+                                      <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                                    )}
+                                  </button>
+
+                                  {/* Option 2: Get More Info (Opens Lightbox Model) */}
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setActiveCardMenuId(null);
+                                      setDetailReelId(reel.id);
+                                    }}
+                                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium text-zinc-200 hover:bg-white/10 hover:text-white transition"
+                                  >
+                                    <Info className="h-3.5 w-3.5 text-zinc-400" />
+                                    <span>Get More Info</span>
+                                  </button>
+
+                                  <div className="h-px bg-white/10 my-1" />
+
+                                  {/* Option 3: Direct Instagram Link */}
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setActiveCardMenuId(null);
+                                      if (reel.completion_status !== 'completed') {
+                                        handleStatusChange(reel.id, 'completed');
+                                      }
+                                      window.open(reel.url, '_blank', 'noopener,noreferrer');
+                                    }}
+                                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium text-zinc-300 hover:bg-white/10 hover:text-white transition"
+                                  >
+                                    <ExternalLink className="h-3.5 w-3.5 text-zinc-400" />
+                                    <span>Open on Instagram</span>
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
 
                         {/* Card Bottom: Content info */}
                         <div className="relative z-10 w-full mt-auto pt-4">
-                          {/* Creator Name */}
-                          {reel.creator_username && (
-                            <p className="font-mono text-[11px] text-[#A3A3A3] mb-1 tracking-tight flex items-center gap-1">
-                              <User className="h-3 w-3 text-[#737373]" />
-                              <span>@{reel.creator_username}</span>
-                            </p>
-                          )}
-
                           {/* Title of Content */}
-                          <h3 className="font-zolo font-bold text-white leading-snug text-sm sm:text-base mb-1.5 line-clamp-2 drop-shadow-sm group-hover:text-zinc-100 transition">
-                            {reel.ai_title || (reel.creator_username ? `@${reel.creator_username}'s Post` : 'Instagram Post')}
+                          <h3 className="font-oughter font-bold text-white leading-snug text-sm sm:text-base mb-1.5 line-clamp-2 drop-shadow-sm group-hover:text-zinc-100 transition">
+                            {reel.ai_title || 'Instagram Post'}
                           </h3>
 
-                          {/* Description (leave description as it is right now) */}
+                          {/* Description */}
                           <p className="text-xs text-zinc-300 line-clamp-2 leading-relaxed">
                             {reel.ai_summary || reel.ai_description || reel.caption || 'No summary available'}
                           </p>
@@ -1760,14 +2124,22 @@ export default function App() {
                     return (
                       <div
                         key={reel.id}
+                        draggable={currentPage === 'savelater'}
+                        onDragStart={(e) => {
+                          if (currentPage !== 'savelater') return;
+                          setDraggedItem({ type: 'reel', id: reel.id });
+                          e.dataTransfer.setData('application/json', JSON.stringify({ type: 'reel', id: reel.id, reelId: reel.id }));
+                          e.dataTransfer.effectAllowed = 'move';
+                        }}
+                        onDragEnd={() => setDraggedItem(null)}
                         onClick={() => {
                           if (reel.completion_status !== 'completed') {
                             handleStatusChange(reel.id, 'completed');
                           }
-                          setDetailReelId(reel.id);
+                          window.open(reel.url, '_blank', 'noopener,noreferrer');
                         }}
                         className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-xl border border-[#333333] bg-[#1A1A1A]/90 ${density === 'compact' ? 'p-2.5 sm:py-2 sm:px-3' : density === 'spacious' ? 'p-4' : 'p-3'
-                          } backdrop-blur hover:border-[#6B6B6B] cursor-pointer transition shadow-sm`}
+                          } backdrop-blur hover:border-[#6B6B6B] ${currentPage === 'savelater' ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} transition shadow-sm`}
                       >
                         <div className="flex items-center gap-3.5 min-w-0 flex-1 w-full sm:w-auto">
                           {isPending ? (
@@ -1802,14 +2174,10 @@ export default function App() {
                                   {catObj.name}{subObj ? ` / ${subObj.name}` : ''}
                                 </span>
                               )}
-
-                              {reel.creator_username && (
-                                <span className="font-mono-micro text-[#6B6B6B] truncate">@{reel.creator_username}</span>
-                              )}
                             </div>
 
-                            <h3 className="font-zolo font-semibold text-white leading-tight text-xs sm:text-sm truncate">
-                              {reel.ai_title || (reel.creator_username ? `@${reel.creator_username}'s Post` : 'Instagram Post')}
+                            <h3 className="font-oughter font-semibold text-white leading-tight text-xs sm:text-sm truncate">
+                              {reel.ai_title || 'Instagram Post'}
                             </h3>
 
                             <p className="text-[11px] text-[#6B6B6B] truncate mt-0.5">
@@ -1820,22 +2188,12 @@ export default function App() {
 
                         {/* List Row Right Controls */}
                         <div
-                          className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#333333]"
+                          className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#333333] relative"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <span className="font-mono-micro text-[#6B6B6B]">
                             {new Date(reel.created_at).toLocaleDateString()}
                           </span>
-
-                          <button
-                            onClick={(e) => toggleSaveLater(reel.id, e)}
-                            title="Save for Later"
-                            aria-label="Save for Later"
-                            aria-pressed={savedLaterIds.includes(reel.id)}
-                            className={`p-1.5 rounded-lg transition ${savedLaterIds.includes(reel.id) ? 'text-amber-400 bg-amber-500/10' : 'text-[#6B6B6B] hover:text-white'}`}
-                          >
-                            <Bookmark className={`h-3.5 w-3.5 ${savedLaterIds.includes(reel.id) ? 'fill-amber-400' : ''}`} />
-                          </button>
 
                           {(reel.is_failed || reel.processing_status === 'extraction_failed') && (
                             <button
@@ -1847,6 +2205,90 @@ export default function App() {
                               <span>Retry</span>
                             </button>
                           )}
+
+                          {/* 3-Dot Options Dropdown */}
+                          <div className="relative">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveCardMenuId(prev => prev === reel.id ? null : reel.id);
+                              }}
+                              title="Options"
+                              aria-label="Options"
+                              className={`p-1.5 rounded-lg border transition active:scale-90 relative ${
+                                activeCardMenuId === reel.id
+                                  ? 'bg-white text-black border-white shadow-sm'
+                                  : savedLaterIds.includes(reel.id)
+                                  ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                                  : 'border-[#333333] bg-[#0B0B0B] hover:bg-[#222222] text-[#888888] hover:text-white'
+                              }`}
+                            >
+                              <MoreVertical className="h-3.5 w-3.5" />
+                              {savedLaterIds.includes(reel.id) && activeCardMenuId !== reel.id && (
+                                <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-amber-400" />
+                              )}
+                            </button>
+
+                            {/* Dropdown Menu */}
+                            {activeCardMenuId === reel.id && (
+                              <div
+                                onClick={(e) => e.stopPropagation()}
+                                className="absolute right-0 top-full mt-1.5 w-48 rounded-2xl border border-white/20 bg-[#141414]/95 backdrop-blur-3xl shadow-[0_16px_50px_rgba(0,0,0,0.85),inset_0_1px_1px_rgba(255,255,255,0.3)] p-1.5 z-30 animate-in fade-in zoom-in-95 duration-150 space-y-0.5 text-left"
+                              >
+                                {/* Option 1: Save for Later */}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleSaveLater(reel.id, e);
+                                  }}
+                                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition ${
+                                    savedLaterIds.includes(reel.id)
+                                      ? 'bg-amber-500/15 text-amber-300 hover:bg-amber-500/25'
+                                      : 'text-zinc-200 hover:bg-white/10 hover:text-white'
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <Bookmark className={`h-3.5 w-3.5 ${savedLaterIds.includes(reel.id) ? 'fill-amber-400 text-amber-400' : 'text-zinc-400'}`} />
+                                    <span>{savedLaterIds.includes(reel.id) ? 'Saved for Later' : 'Save for Later'}</span>
+                                  </div>
+                                  {savedLaterIds.includes(reel.id) && (
+                                    <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                                  )}
+                                </button>
+
+                                {/* Option 2: Get More Info (Opens Lightbox Model) */}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setActiveCardMenuId(null);
+                                    setDetailReelId(reel.id);
+                                  }}
+                                  className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium text-zinc-200 hover:bg-white/10 hover:text-white transition"
+                                >
+                                  <Info className="h-3.5 w-3.5 text-zinc-400" />
+                                  <span>Get More Info</span>
+                                </button>
+
+                                <div className="h-px bg-white/10 my-1" />
+
+                                {/* Option 3: Direct Instagram Link */}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setActiveCardMenuId(null);
+                                    if (reel.completion_status !== 'completed') {
+                                      handleStatusChange(reel.id, 'completed');
+                                    }
+                                    window.open(reel.url, '_blank', 'noopener,noreferrer');
+                                  }}
+                                  className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium text-zinc-300 hover:bg-white/10 hover:text-white transition"
+                                >
+                                  <ExternalLink className="h-3.5 w-3.5 text-zinc-400" />
+                                  <span>Open on Instagram</span>
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     );
@@ -1856,334 +2298,392 @@ export default function App() {
             </div>
           )}
 
-          {/* SETTINGS VIEW */}
+          {/* SETTINGS VIEW: MINIMAL, ELEGANT HORIZONTAL ROWS */}
           {currentPage === 'settings' && (
-            <div className="w-full space-y-6">
-              {/* Top 2-Column Responsive Bento Layout */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-                {/* Account Settings */}
-                <div className="rounded-2xl border border-[#333333] bg-[#1A1A1A]/90 p-6 shadow-sm">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-zolo text-sm font-bold text-white tracking-tight flex items-center gap-2">
-                      <User className="h-4 w-4 text-[#D9D9D9]" />
-                      <span>Account Settings</span>
-                    </h3>
-                    <span className="font-mono-micro text-[#6B6B6B]">[SECURITY &amp; IDENTITY]</span>
+            <div className="max-w-4xl mx-auto space-y-8 pb-16 animate-fade-up">
+              {/* Page Title & Intro */}
+              <div className="border-b border-[#222222] pb-4">
+                <h2 className="font-oughter text-xl sm:text-2xl font-bold text-white tracking-tight">Settings</h2>
+                <p className="text-xs text-[#7E7E7E] mt-1">Configure your account, visual preferences, queue policies, and synchronization nodes.</p>
+              </div>
+
+              {/* Section 1: Account Settings */}
+              <div className="space-y-4">
+                {/* Row 1: Section Header Display */}
+                <div className="flex items-center gap-2.5 pb-2 border-b border-[#222222]">
+                  <User className="h-4 w-4 text-white" />
+                  <h3 className="font-oughter text-sm sm:text-base font-bold text-white tracking-tight">Account Settings</h3>
+                </div>
+
+                <div className="divide-y divide-[#1C1C1C]">
+                  {/* Row 2: Email Address & User Email Beside It */}
+                  <div className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <span className="text-xs font-medium text-white block">Email Address</span>
+                      <span className="text-[11px] text-[#737373]">Primary account address for authentication and sync</span>
+                    </div>
+                    <span className="font-mono text-xs text-[#D9D9D9] bg-[#141414] border border-[#262626] px-3 py-1.5 rounded-lg select-all">
+                      {session?.user?.email || 'No email attached'}
+                    </span>
                   </div>
 
-                  <div className="space-y-4">
+                  {/* Row 3: Change Password & Input Box Beside It with Update Button Right Next To It */}
+                  <div className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
-                      <label className="text-xs text-[#9E9E9E] block mb-1">Email Address</label>
-                      <input
-                        type="text"
-                        disabled
-                        value={session?.user?.email || ''}
-                        className="w-full rounded-lg border border-[#333333] bg-[#0B0B0B] px-3 py-2 text-xs text-[#D9D9D9] font-mono"
-                      />
+                      <span className="text-xs font-medium text-white block">Change Password</span>
+                      <span className="text-[11px] text-[#737373]">Set a new password (min 6 characters)</span>
                     </div>
-
-                    <div>
-                      <label className="text-xs text-[#9E9E9E] block mb-1">Account Created At</label>
-                      <span className="text-xs text-[#D9D9D9] font-mono">
-                        {new Date(session?.user?.created_at || Date.now()).toLocaleDateString()}
-                      </span>
-                    </div>
-
-                    <form onSubmit={handleChangePassword} className="pt-2">
-                      <label className="text-xs text-[#9E9E9E] block mb-1">Change Password</label>
-                      <div className="flex gap-2">
-                        <div className="relative flex-1">
-                          <input
-                            type={showNewPassword ? 'text' : 'password'}
-                            placeholder="New password (min 6 chars)..."
-                            value={newPassword}
-                            onChange={(e) => setNewPassword(e.target.value)}
-                            className="w-full rounded-lg border border-[#333333] bg-[#0B0B0B] px-3 py-2 pr-9 text-xs text-white placeholder-[#6B6B6B] focus:border-[#D9D9D9] focus:outline-none"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowNewPassword(!showNewPassword)}
-                            className="absolute right-2.5 top-2.5 text-[#6B6B6B] hover:text-white"
-                          >
-                            {showNewPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                          </button>
-                        </div>
-                        <button type="submit" className="rounded-lg bg-[#D9D9D9] hover:bg-white text-[#0B0B0B] px-4 py-2 text-xs font-semibold transition active:scale-95">
-                          Update
+                    <form onSubmit={handleChangePassword} className="flex items-center gap-2 w-full sm:max-w-md">
+                      <div className="relative flex-1">
+                        <input
+                          type={showNewPassword ? 'text' : 'password'}
+                          placeholder="New password..."
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          className="w-full rounded-lg border border-[#2E2E2E] bg-[#121212] px-3 py-1.5 pr-8 text-xs text-white placeholder-[#555] focus:border-white focus:outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowNewPassword(!showNewPassword)}
+                          className="absolute right-2.5 top-2 text-[#666] hover:text-white"
+                          tabIndex={-1}
+                        >
+                          {showNewPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                         </button>
                       </div>
-                      {passwordMsg && <p className="text-xs text-white mt-1.5 font-mono-micro">{passwordMsg}</p>}
+                      <button
+                        type="submit"
+                        className="rounded-lg bg-white hover:bg-zinc-200 text-[#0B0B0B] px-3.5 py-1.5 text-xs font-semibold shrink-0 transition active:scale-95"
+                      >
+                        Update
+                      </button>
                     </form>
                   </div>
+                  {passwordMsg && (
+                    <div className="py-1 text-right">
+                      <span className="text-[11px] text-[#D9D9D9] font-mono">{passwordMsg}</span>
+                    </div>
+                  )}
+
+                  {/* Row 4: Account Created At Info */}
+                  <div className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <span className="text-xs font-medium text-white block">Account Created At</span>
+                      <span className="text-[11px] text-[#737373]">Vault registration timestamp</span>
+                    </div>
+                    <span className="font-mono text-xs text-[#888888]">
+                      {new Date(session?.user?.created_at || Date.now()).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 2: Appearance & Layout */}
+              <div className="space-y-4">
+                {/* Row 1: Section Header Display */}
+                <div className="flex items-center gap-2.5 pb-2 border-b border-[#222222]">
+                  <Palette className="h-4 w-4 text-white" />
+                  <h3 className="font-oughter text-sm sm:text-base font-bold text-white tracking-tight">Appearance &amp; Layout</h3>
                 </div>
 
-                {/* Appearance & Density */}
-                <div className="rounded-2xl border border-[#333333] bg-[#1A1A1A]/90 p-6 shadow-sm">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-zolo text-sm font-bold text-white tracking-tight flex items-center gap-2">
-                      <Palette className="h-4 w-4 text-[#D9D9D9]" />
-                      <span>Appearance &amp; Layout</span>
-                    </h3>
-                    <span className="font-mono-micro text-[#6B6B6B]">[INTERFACE CONTROLS]</span>
+                <div className="divide-y divide-[#1C1C1C]">
+                  {/* Row 2: Card Density */}
+                  <div className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <span className="text-xs font-medium text-white block">Card Density</span>
+                      <span className="text-[11px] text-[#737373]">Adjust grid column count and card sizing</span>
+                    </div>
+                    <select
+                      value={density}
+                      onChange={(e) => {
+                        const val = e.target.value as any;
+                        setDensity(val);
+                        localStorage.setItem('watchlater_density', val);
+                      }}
+                      className="bg-[#121212] border border-[#2E2E2E] text-xs rounded-lg px-3 py-1.5 text-[#D9D9D9] focus:outline-none focus:border-white"
+                    >
+                      <option value="compact">Compact (Dense / High volume)</option>
+                      <option value="comfortable">Comfortable (Balanced)</option>
+                      <option value="spacious">Spacious (Large cards)</option>
+                    </select>
                   </div>
 
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <span className="text-xs text-[#D9D9D9] block">Card Density</span>
-                        <span className="text-[11px] text-[#6B6B6B]">Adjust grid columns and content spacing</span>
-                      </div>
-                      <select
-                        value={density}
-                        onChange={(e) => {
-                          const val = e.target.value as any;
-                          setDensity(val);
-                          localStorage.setItem('watchlater_density', val);
+                  {/* Row 3: Display Thumbnails */}
+                  <div className="py-3.5 flex items-center justify-between gap-3">
+                    <div>
+                      <span className="text-xs font-medium text-white block">Display Thumbnails</span>
+                      <span className="text-[11px] text-[#737373]">Show cover pictures and visual media on cards</span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={showThumbnails}
+                      onChange={(e) => {
+                        setShowThumbnails(e.target.checked);
+                        localStorage.setItem('watchlater_show_thumbnails', String(e.target.checked));
+                      }}
+                      className="rounded accent-white cursor-pointer h-4 w-4"
+                    />
+                  </div>
+
+                  {/* Row 4: Persona Insights */}
+                  <div className="py-3.5 flex items-center justify-between gap-3">
+                    <div>
+                      <label htmlFor="show-persona-insights" className="text-xs font-medium text-white block cursor-pointer">Show Persona Insights</label>
+                      <span className="text-[11px] text-[#737373]">Display &quot;Vault Intelligence Persona&quot; panel on Home</span>
+                    </div>
+                    <input
+                      id="show-persona-insights"
+                      type="checkbox"
+                      checked={showPersonaInsights}
+                      onChange={(e) => {
+                        setShowPersonaInsights(e.target.checked);
+                        localStorage.setItem('watchlater_show_persona', String(e.target.checked));
+                      }}
+                      className="rounded accent-white cursor-pointer h-4 w-4"
+                    />
+                  </div>
+
+                  {/* Row 5: Sidebar Collapsed */}
+                  <div className="py-3.5 flex items-center justify-between gap-3">
+                    <div>
+                      <span className="text-xs font-medium text-white block">Sidebar Collapsed by Default</span>
+                      <span className="text-[11px] text-[#737373]">Keep navigation sidebar minimized on wider screens</span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={sidebarCollapsed}
+                      onChange={(e) => {
+                        setSidebarCollapsed(e.target.checked);
+                        localStorage.setItem('watchlater_sidebar_collapsed', String(e.target.checked));
+                      }}
+                      className="rounded accent-white cursor-pointer h-4 w-4"
+                    />
+                  </div>
+
+                  {/* Row 6: Interactive Tutorial Quest */}
+                  <div className="py-3.5 flex items-center justify-between gap-3">
+                    <div>
+                      <span className="text-xs font-medium text-white block">Interactive Tutorial Quest</span>
+                      <span className="text-[11px] text-[#737373]">Replay the Apple liquid glass &quot;How to Play&quot; guide anytime</span>
+                    </div>
+                    <button
+                      onClick={() => setShowGameGuide(true)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/20 bg-white/[0.08] hover:bg-white/[0.15] text-xs font-medium text-white transition active:scale-95 shadow-sm"
+                    >
+                      <Gamepad2 className="h-3.5 w-3.5 text-cyan-300" />
+                      <span>Replay Guide</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 3: Archive Auto-Delete & Retention */}
+              <div className="space-y-4">
+                {/* Row 1: Section Header Display */}
+                <div className="flex items-center gap-2.5 pb-2 border-b border-[#222222]">
+                  <Clock className="h-4 w-4 text-white" />
+                  <h3 className="font-oughter text-sm sm:text-base font-bold text-white tracking-tight">Archive Auto-Delete &amp; Retention</h3>
+                </div>
+
+                <div className="divide-y divide-[#1C1C1C]">
+                  <div className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <span className="text-xs font-medium text-white block">Auto-Purge Window</span>
+                      <span className="text-[11px] text-[#737373]">Archived posts are permanently purged after this retention window (cap is 1 month)</span>
+                    </div>
+                    <div className="flex items-center bg-[#121212] p-1 rounded-xl border border-[#2E2E2E]">
+                      <button
+                        onClick={() => {
+                          setRetentionPeriod('day');
+                          localStorage.setItem('watchlater_archive_retention', 'day');
                         }}
-                        className="bg-[#0B0B0B] border border-[#333333] text-xs rounded-lg px-2.5 py-1.5 text-[#D9D9D9] focus:outline-none"
+                        className={`px-3 py-1 text-xs font-semibold rounded-lg transition ${
+                          retentionPeriod === 'day' ? 'bg-white text-[#0B0B0B]' : 'text-[#737373] hover:text-white'
+                        }`}
                       >
-                        <option value="compact">Compact (Dense / High volume)</option>
-                        <option value="comfortable">Comfortable (Balanced)</option>
-                        <option value="spacious">Spacious (Large cards)</option>
-                      </select>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <span className="text-xs text-[#D9D9D9] block">Display Thumbnails</span>
-                        <span className="text-[11px] text-[#6B6B6B]">Show reel cover pictures on cards</span>
-                      </div>
-                      <input
-                        type="checkbox"
-                        checked={showThumbnails}
-                        onChange={(e) => {
-                          setShowThumbnails(e.target.checked);
-                          localStorage.setItem('watchlater_show_thumbnails', String(e.target.checked));
+                        1 Day
+                      </button>
+                      <button
+                        onClick={() => {
+                          setRetentionPeriod('week');
+                          localStorage.setItem('watchlater_archive_retention', 'week');
                         }}
-                        className="rounded accent-white cursor-pointer h-4 w-4"
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <label htmlFor="show-persona-insights" className="text-xs text-[#D9D9D9] block cursor-pointer">Show Persona Insights</label>
-                        <span className="text-[11px] text-[#6B6B6B]">Display &quot;Vault Intelligence Persona&quot; panel</span>
-                      </div>
-                      <input
-                        id="show-persona-insights"
-                        aria-label="Show Persona Insights"
-                        type="checkbox"
-                        checked={showPersonaInsights}
-                        onChange={(e) => {
-                          setShowPersonaInsights(e.target.checked);
-                          localStorage.setItem('watchlater_show_persona', String(e.target.checked));
+                        className={`px-3 py-1 text-xs font-semibold rounded-lg transition ${
+                          retentionPeriod === 'week' ? 'bg-white text-[#0B0B0B]' : 'text-[#737373] hover:text-white'
+                        }`}
+                      >
+                        1 Week
+                      </button>
+                      <button
+                        onClick={() => {
+                          setRetentionPeriod('month');
+                          localStorage.setItem('watchlater_archive_retention', 'month');
                         }}
-                        className="rounded accent-white cursor-pointer h-4 w-4"
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <span className="text-xs text-[#D9D9D9] block">Sidebar Collapsed by Default</span>
-                        <span className="text-[11px] text-[#6B6B6B]">Keep navigation sidebar minimized</span>
-                      </div>
-                      <input
-                        type="checkbox"
-                        checked={sidebarCollapsed}
-                        onChange={(e) => {
-                          setSidebarCollapsed(e.target.checked);
-                          localStorage.setItem('watchlater_sidebar_collapsed', String(e.target.checked));
-                        }}
-                        className="rounded accent-white cursor-pointer h-4 w-4"
-                      />
+                        className={`px-3 py-1 text-xs font-semibold rounded-lg transition ${
+                          retentionPeriod === 'month' ? 'bg-white text-[#0B0B0B]' : 'text-[#737373] hover:text-white'
+                        }`}
+                      >
+                        1 Month (Cap)
+                      </button>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Data Management & Vault Archives Bento Layout */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
-                {/* Archive Auto-Delete */}
-                <div className="rounded-xl border border-[#333333] bg-[#1A1A1A]/90 p-4 sm:p-5 shadow-sm">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-zolo text-xs sm:text-sm font-bold text-white tracking-tight flex items-center gap-2">
-                      <Clock className="h-3.5 w-3.5 text-[#D9D9D9]" />
-                      <span>Archive Auto-Delete &amp; Retention Cap</span>
-                    </h3>
-                    <span className="font-mono-micro text-[#6B6B6B]">[PURGE POLICY]</span>
-                  </div>
-                  <p className="text-[11px] text-[#6B6B6B] mb-3">
-                    Archiving a post marks it for automatic deletion after your chosen retention period. Cap is 1 month.
-                  </p>
-
-                  <div className="grid grid-cols-3 gap-2 bg-[#0B0B0B] p-1.5 rounded-xl border border-[#333333]">
-                    <button
-                      onClick={() => {
-                        setRetentionPeriod('day');
-                        localStorage.setItem('watchlater_archive_retention', 'day');
-                      }}
-                      className={`py-1.5 text-xs font-semibold rounded-lg transition ${retentionPeriod === 'day' ? 'bg-[#D9D9D9] text-[#0B0B0B]' : 'text-[#6B6B6B] hover:text-[#D9D9D9]'
-                        }`}
-                    >
-                      1 Day
-                    </button>
-                    <button
-                      onClick={() => {
-                        setRetentionPeriod('week');
-                        localStorage.setItem('watchlater_archive_retention', 'week');
-                      }}
-                      className={`py-1.5 text-xs font-semibold rounded-lg transition ${retentionPeriod === 'week' ? 'bg-[#D9D9D9] text-[#0B0B0B]' : 'text-[#6B6B6B] hover:text-[#D9D9D9]'
-                        }`}
-                    >
-                      1 Week
-                    </button>
-                    <button
-                      onClick={() => {
-                        setRetentionPeriod('month');
-                        localStorage.setItem('watchlater_archive_retention', 'month');
-                      }}
-                      className={`py-1.5 text-xs font-semibold rounded-lg transition ${retentionPeriod === 'month' ? 'bg-[#D9D9D9] text-[#0B0B0B]' : 'text-[#6B6B6B] hover:text-[#D9D9D9]'
-                        }`}
-                    >
-                      1 Month (Cap)
-                    </button>
-                  </div>
+              {/* Section 4: Vault Status Queues */}
+              <div className="space-y-4">
+                {/* Row 1: Section Header Display */}
+                <div className="flex items-center gap-2.5 pb-2 border-b border-[#222222]">
+                  <Archive className="h-4 w-4 text-white" />
+                  <h3 className="font-oughter text-sm sm:text-base font-bold text-white tracking-tight">Vault Status Queues</h3>
                 </div>
 
-                {/* Vault Queues: Failed & Archived (Moved into Settings) */}
-                <div className="rounded-xl border border-[#333333] bg-[#1A1A1A]/90 p-4 sm:p-5 shadow-sm">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-zolo text-xs sm:text-sm font-bold text-white tracking-tight flex items-center gap-2">
-                      <Archive className="h-3.5 w-3.5 text-[#D9D9D9]" />
-                      <span>Vault Status Queues</span>
-                    </h3>
-                    <span className="font-mono-micro text-[#6B6B6B]">[QUEUES]</span>
-                  </div>
-                  <p className="text-[11px] text-[#6B6B6B] mb-3">
-                    Navigate to inspected issues or expired archived items.
-                  </p>
+                <div className="divide-y divide-[#1C1C1C]">
+                  <div className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <span className="text-xs font-medium text-white block">Status Queues</span>
+                      <span className="text-[11px] text-[#737373]">Inspect extraction issues or view posts pending retention purge</span>
+                    </div>
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      onClick={() => { setCurrentPage('failed'); setSelectedCategoryId(null); }}
-                      className="flex items-center justify-between p-3 rounded-xl border border-red-900/30 bg-red-950/20 hover:bg-red-950/40 text-left transition group active:scale-95"
-                    >
-                      <div>
-                        <div className="flex items-center gap-1.5 text-red-400 font-semibold text-xs mb-0.5">
-                          <AlertTriangle className="h-3.5 w-3.5" />
+                    <div className="flex items-center gap-2.5">
+                      {/* Failed Items Button: Recolored to match archived items button, small and minimal with hover info tooltip */}
+                      <div className="relative group">
+                        <button
+                          onClick={() => { setCurrentPage('failed'); setSelectedCategoryId(null); }}
+                          className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[#2E2E2E] bg-[#121212] hover:bg-[#1A1A1A] hover:border-[#555555] text-xs font-medium text-white transition active:scale-95"
+                        >
+                          <AlertTriangle className="h-3.5 w-3.5 text-zinc-400" />
                           <span>Failed Items</span>
-                        </div>
-                        <span className="text-[10px] text-red-300/70">Extraction errors</span>
-                      </div>
-                      <span className="font-mono-micro px-2 py-0.5 rounded bg-red-900/40 text-red-300 font-bold border border-red-800/40">
-                        {counts.failed}
-                      </span>
-                    </button>
+                          <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-zinc-300 font-bold border border-white/10">
+                            {counts.failed}
+                          </span>
+                        </button>
 
-                    <button
-                      onClick={() => { setCurrentPage('archived'); setSelectedCategoryId(null); }}
-                      className="flex items-center justify-between p-3 rounded-xl border border-[#333333] bg-[#0B0B0B] hover:bg-[#1A1A1A] text-left transition group active:scale-95"
-                    >
-                      <div>
-                        <div className="flex items-center gap-1.5 text-white font-semibold text-xs mb-0.5">
-                          <Archive className="h-3.5 w-3.5 text-[#999999]" />
-                          <span>Archived Items</span>
+                        {/* Minimal Hover Info Tooltip */}
+                        <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-30 animate-in fade-in zoom-in-95 duration-150">
+                          <div className="rounded-md border border-[#3E3E3E] bg-[#1A1A1A] px-2.5 py-1 text-[11px] text-zinc-200 shadow-xl whitespace-nowrap">
+                            {counts.failed} extraction error{counts.failed === 1 ? '' : 's'} · Click to view &amp; resolve
+                          </div>
+                          <div className="h-1 w-2 border-x-4 border-t-4 border-x-transparent border-t-[#1A1A1A]" />
                         </div>
-                        <span className="text-[10px] text-[#6B6B6B]">Purge queue</span>
                       </div>
-                      <span className="font-mono-micro px-2 py-0.5 rounded bg-[#1A1A1A] text-[#D9D9D9] font-bold border border-[#333333]">
-                        {counts.archived}
-                      </span>
-                    </button>
+
+                      {/* Archived Items Button: Small and minimal with hover info tooltip */}
+                      <div className="relative group">
+                        <button
+                          onClick={() => { setCurrentPage('archived'); setSelectedCategoryId(null); }}
+                          className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[#2E2E2E] bg-[#121212] hover:bg-[#1A1A1A] hover:border-[#555555] text-xs font-medium text-white transition active:scale-95"
+                        >
+                          <Archive className="h-3.5 w-3.5 text-zinc-400" />
+                          <span>Archived Items</span>
+                          <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-zinc-300 font-bold border border-white/10">
+                            {counts.archived}
+                          </span>
+                        </button>
+
+                        {/* Minimal Hover Info Tooltip */}
+                        <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-30 animate-in fade-in zoom-in-95 duration-150">
+                          <div className="rounded-md border border-[#3E3E3E] bg-[#1A1A1A] px-2.5 py-1 text-[11px] text-zinc-200 shadow-xl whitespace-nowrap">
+                            {counts.archived} post{counts.archived === 1 ? '' : 's'} in auto-purge retention queue
+                          </div>
+                          <div className="h-1 w-2 border-x-4 border-t-4 border-x-transparent border-t-[#1A1A1A]" />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Data Operations */}
-              <div className="rounded-xl border border-[#333333] bg-[#1A1A1A]/90 p-4 sm:p-5 shadow-sm">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-zolo text-xs sm:text-sm font-bold text-white tracking-tight flex items-center gap-2">
-                    <Download className="h-3.5 w-3.5 text-[#D9D9D9]" />
-                    <span>Data Management &amp; Export</span>
-                  </h3>
-                  <span className="font-mono-micro text-[#6B6B6B]">[DATA OPERATIONS]</span>
+              {/* Section 5: Data Management & Export */}
+              <div className="space-y-4">
+                {/* Row 1: Section Header Display */}
+                <div className="flex items-center gap-2.5 pb-2 border-b border-[#222222]">
+                  <Download className="h-4 w-4 text-white" />
+                  <h3 className="font-oughter text-sm sm:text-base font-bold text-white tracking-tight">Data Management &amp; Export</h3>
                 </div>
-                <p className="text-[11px] text-[#6B6B6B] mb-3">
-                  Export your curated library or clean completed items.
-                </p>
 
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={() => exportData()}
-                    className="flex items-center gap-1.5 rounded-lg border border-[#333333] bg-[#0B0B0B] hover:bg-[#333333] px-3.5 py-2 text-xs font-medium text-white transition active:scale-95"
-                  >
-                    <Download className="h-3.5 w-3.5" />
-                    <span>Export CSV ({reels.length} items)</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setClearCategoriesAlso(false);
-                      setShowClearHistoryLightbox(true);
-                    }}
-                    className="flex items-center gap-1.5 rounded-lg border border-red-900/40 bg-red-950/20 hover:bg-red-950/40 hover:border-red-800/60 text-red-300 px-3.5 py-2 text-xs font-medium transition active:scale-95"
-                  >
-                    <Trash2 className="h-3.5 w-3.5 text-red-400" />
-                    <span>Delete All Saved Items</span>
-                  </button>
-                  <button
-                    onClick={async () => {
-                      const completedReels = reels.filter(r => r.completion_status === 'completed');
-                      if (completedReels.length === 0) {
-                        alert('No completed items to delete.');
-                        return;
-                      }
-                      if (!confirm(`Permanently delete ${completedReels.length} completed item(s)?`)) return;
-                      const ids = completedReels.map(r => r.id);
-                      setReels(prev => prev.filter(r => r.completion_status !== 'completed'));
-                      const { error } = await supabase.from('reels').delete().in('id', ids);
-                      if (error) {
-                        alert(`Failed: ${error.message}`);
-                        await loadData();
-                      }
-                    }}
-                    className="flex items-center gap-1.5 rounded-lg border border-[#333333] bg-[#0B0B0B] hover:bg-red-950/40 hover:border-red-800/50 hover:text-red-400 px-3.5 py-2 text-xs font-medium text-[#6B6B6B] transition active:scale-95"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                    <span>Delete Watched Content</span>
-                  </button>
+                <div className="divide-y divide-[#1C1C1C]">
+                  <div className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <span className="text-xs font-medium text-white block">Curated Library Operations</span>
+                      <span className="text-[11px] text-[#737373]">Export your saved reels or clean completed and stored items</span>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        onClick={() => exportData()}
+                        className="flex items-center gap-1.5 rounded-lg border border-[#2E2E2E] bg-[#121212] hover:bg-[#1E1E1E] hover:border-[#555] px-3 py-1.5 text-xs font-medium text-white transition active:scale-95"
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                        <span>Export CSV ({reels.length})</span>
+                      </button>
+                      <button
+                        onClick={async () => {
+                          const completedReels = reels.filter(r => r.completion_status === 'completed');
+                          if (completedReels.length === 0) {
+                            alert('No watched items to delete.');
+                            return;
+                          }
+                          if (!confirm(`Permanently delete ${completedReels.length} watched item(s)?`)) return;
+                          const ids = completedReels.map(r => r.id);
+                          setReels(prev => prev.filter(r => r.completion_status !== 'completed'));
+                          const { error } = await supabase.from('reels').delete().in('id', ids);
+                          if (error) {
+                            alert(`Failed: ${error.message}`);
+                            await loadData();
+                          }
+                        }}
+                        className="flex items-center gap-1.5 rounded-lg border border-[#2E2E2E] bg-[#121212] hover:bg-red-950/30 hover:border-red-900/50 hover:text-red-300 text-zinc-300 px-3 py-1.5 text-xs font-medium transition active:scale-95"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        <span>Delete Watched</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setClearCategoriesAlso(false);
+                          setShowClearHistoryLightbox(true);
+                        }}
+                        className="flex items-center gap-1.5 rounded-lg border border-[#2E2E2E] bg-[#121212] hover:bg-red-950/40 hover:border-red-800/60 text-red-400 px-3 py-1.5 text-xs font-medium transition active:scale-95"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        <span>Delete All Saved Items</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Registered Devices */}
-              <div className="rounded-2xl border border-[#333333] bg-[#1A1A1A]/90 p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-zolo text-xs sm:text-sm font-bold text-white tracking-tight flex items-center gap-2">
-                    <Smartphone className="h-3.5 w-3.5 text-[#D9D9D9]" />
-                    <span>Registered Devices &amp; Synchronization</span>
-                  </h3>
-                  <span className="font-mono-micro text-[#6B6B6B]">[SYNC NODES]</span>
+              {/* Section 6: Registered Devices & Synchronization */}
+              <div className="space-y-4">
+                {/* Row 1: Section Header Display */}
+                <div className="flex items-center gap-2.5 pb-2 border-b border-[#222222]">
+                  <Smartphone className="h-4 w-4 text-white" />
+                  <h3 className="font-oughter text-sm sm:text-base font-bold text-white tracking-tight">Registered Devices &amp; Synchronization</h3>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                <div className="divide-y divide-[#1C1C1C]">
                   {devices.length === 0 ? (
-                    <p className="text-xs text-[#6B6B6B] italic col-span-full">No mobile devices registered yet.</p>
+                    <div className="py-3.5 flex items-center justify-between">
+                      <span className="text-xs text-[#737373]">No mobile devices registered yet</span>
+                      <span className="font-mono text-[11px] text-[#555]">0 connected nodes</span>
+                    </div>
                   ) : (
-                    devices.map(dev => {
+                    devices.map((dev) => {
                       const isApple = dev.platform === 'ios' || dev.device_name?.toLowerCase().includes('iphone') || dev.device_name?.toLowerCase().includes('ipad');
                       return (
-                        <div key={dev.id} className="flex items-center justify-between p-3.5 rounded-xl border border-[#333333] bg-[#0B0B0B]">
+                        <div key={dev.id} className="py-3.5 flex items-center justify-between gap-3">
                           <div className="flex items-center gap-3">
-                            <div className="h-8 w-8 rounded-lg bg-[#1A1A1A] border border-[#333333] flex items-center justify-center text-white">
-                              <Smartphone className="h-4 w-4 text-[#D9D9D9]" />
+                            <div className="h-8 w-8 rounded-lg bg-[#141414] border border-[#2E2E2E] flex items-center justify-center text-white shrink-0">
+                              <Smartphone className="h-4 w-4 text-zinc-400" />
                             </div>
                             <div>
                               <div className="flex items-center gap-2">
-                                <span className="text-xs font-semibold text-white block">{dev.device_name || (isApple ? 'Apple iPhone' : 'Android Device')}</span>
-                                <span className="font-mono-micro px-1.5 py-0.5 rounded border border-[#333333] bg-[#1A1A1A] text-[#D9D9D9]">
+                                <span className="text-xs font-semibold text-white">{dev.device_name || (isApple ? 'Apple iPhone' : 'Android Device')}</span>
+                                <span className="font-mono text-[10px] px-1.5 py-0.5 rounded border border-[#2E2E2E] bg-[#141414] text-zinc-300">
                                   {isApple ? ' iOS' : '🤖 Android'}
                                 </span>
                               </div>
-                              <span className="text-[11px] text-[#6B6B6B] font-mono">
+                              <span className="text-[11px] text-[#737373] font-mono">
                                 Last synced: {new Date(dev.last_synced_at).toLocaleString()}
                               </span>
                             </div>
@@ -2201,19 +2701,29 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Sign Out Section exclusively placed at bottom of Settings */}
-              <div className="rounded-2xl border border-red-900/30 bg-red-950/10 p-6 shadow-sm flex items-center justify-between">
-                <div>
-                  <h4 className="font-zolo text-sm font-bold text-white tracking-tight">Session &amp; Logout</h4>
-                  <p className="text-xs text-[#6B6B6B] mt-0.5">Sign out of your Watch Later account on this browser.</p>
+              {/* Section 7: Session & Sign Out */}
+              <div className="space-y-4">
+                {/* Row 1: Section Header Display */}
+                <div className="flex items-center gap-2.5 pb-2 border-b border-[#222222]">
+                  <LogOut className="h-4 w-4 text-white" />
+                  <h3 className="font-oughter text-sm sm:text-base font-bold text-white tracking-tight">Session &amp; Logout</h3>
                 </div>
-                <button
-                  onClick={() => supabase.auth.signOut({ scope: 'local' })}
-                  className="flex items-center gap-2 rounded-lg border border-red-800/50 bg-red-950/40 hover:bg-red-900/60 text-red-300 px-4 py-2 text-xs font-semibold transition active:scale-95"
-                >
-                  <LogOut className="h-4 w-4" />
-                  <span>Sign Out</span>
-                </button>
+
+                <div className="divide-y divide-[#1C1C1C]">
+                  <div className="py-3.5 flex items-center justify-between gap-3">
+                    <div>
+                      <span className="text-xs font-medium text-white block">Active Browser Session</span>
+                      <span className="text-[11px] text-[#737373]">Signed in as {session?.user?.email}</span>
+                    </div>
+                    <button
+                      onClick={() => supabase.auth.signOut({ scope: 'local' })}
+                      className="flex items-center gap-1.5 rounded-lg border border-[#2E2E2E] bg-[#121212] hover:bg-red-950/40 hover:border-red-900/60 hover:text-red-300 text-zinc-300 px-3.5 py-1.5 text-xs font-semibold transition active:scale-95"
+                    >
+                      <LogOut className="h-3.5 w-3.5" />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -2236,7 +2746,7 @@ export default function App() {
                 <div className="h-8 w-8 rounded-lg bg-[#0B0B0B] border border-[#333333] flex items-center justify-center text-white shrink-0">
                   <Film className="h-4 w-4 text-[#D9D9D9]" />
                 </div>
-                <h3 className="font-zolo text-lg font-bold text-white truncate">
+                <h3 className="font-oughter text-lg font-bold text-white truncate">
                   {detailReel.ai_title || 'Post Details'}
                 </h3>
               </div>
@@ -2358,11 +2868,10 @@ export default function App() {
                   title="Save for Later"
                   aria-label="Save for Later"
                   aria-pressed={savedLaterIds.includes(detailReel.id)}
-                  className={`rounded-lg border px-3.5 py-1.5 text-xs font-semibold transition active:scale-95 flex items-center gap-1.5 ${
-                    savedLaterIds.includes(detailReel.id)
+                  className={`rounded-lg border px-3.5 py-1.5 text-xs font-semibold transition active:scale-95 flex items-center gap-1.5 ${savedLaterIds.includes(detailReel.id)
                       ? 'border-amber-500/40 bg-amber-500/10 text-amber-400'
                       : 'border-[#333333] bg-[#1A1A1A] hover:bg-[#333333] text-[#D9D9D9]'
-                  }`}
+                    }`}
                 >
                   <Bookmark className={`h-3.5 w-3.5 ${savedLaterIds.includes(detailReel.id) ? 'fill-amber-400' : ''}`} />
                   <span>Save for Later</span>
@@ -2495,7 +3004,7 @@ export default function App() {
                   <Palette className="h-4 w-4" />
                 </div>
                 <div>
-                  <h3 className="font-zolo text-base font-bold text-white tracking-tight">Customize Category</h3>
+                  <h3 className="font-oughter text-base font-bold text-white tracking-tight">Customize Category</h3>
                   <p className="text-[11px] text-[#6B6B6B]">Personalize name, color accent, and iconic symbol</p>
                 </div>
               </div>
@@ -2537,9 +3046,8 @@ export default function App() {
                         type="button"
                         onClick={() => setEditCategoryColor(p.id)}
                         title={p.name}
-                        className={`group relative flex items-center justify-center h-6 w-6 rounded-full border transition-all active:scale-95 ${
-                          isSelected ? 'border-white scale-125 shadow-[0_0_12px_rgba(255,255,255,0.35)]' : 'border-[#333333] hover:border-[#6B6B6B]'
-                        }`}
+                        className={`group relative flex items-center justify-center h-6 w-6 rounded-full border transition-all active:scale-95 ${isSelected ? 'border-white scale-125 shadow-[0_0_12px_rgba(255,255,255,0.35)]' : 'border-[#333333] hover:border-[#6B6B6B]'
+                          }`}
                       >
                         <span
                           className="h-3.5 w-3.5 rounded-full transition-transform group-hover:scale-110"
@@ -2604,11 +3112,10 @@ export default function App() {
                         key={item.icon}
                         type="button"
                         onClick={() => setEditCategoryIcon(item.icon)}
-                        className={`flex flex-col items-center justify-center p-2 rounded-xl border text-xs transition active:scale-95 ${
-                          isSelected
+                        className={`flex flex-col items-center justify-center p-2 rounded-xl border text-xs transition active:scale-95 ${isSelected
                             ? 'border-white bg-[#222222] shadow-sm'
                             : 'border-[#333333] bg-[#0B0B0B] hover:bg-[#1A1A1A]'
-                        }`}
+                          }`}
                       >
                         <div className="mb-1">
                           {renderCategoryIcon(item.icon, `h-4 w-4 ${previewTheme.text}`)}
@@ -2655,6 +3162,12 @@ export default function App() {
           </div>
         </div>
       )}
+      {/* Apple Liquid Glass "How to Play" Game Guide for First-time Sign-in & New Accounts */}
+      <GameOnboardingGuide
+        isOpen={showGameGuide}
+        onClose={dismissGameGuide}
+        onComplete={dismissGameGuide}
+      />
     </div>
   );
 }

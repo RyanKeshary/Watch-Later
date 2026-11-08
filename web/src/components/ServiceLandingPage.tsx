@@ -214,7 +214,7 @@ export default function ServiceLandingPage({
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6 sm:px-10">
           <div className="flex items-center gap-2.5">
             <span className="h-2 w-2 rounded-full bg-cyanbrand" />
-            <span className="font-zolo text-lg font-bold tracking-tight text-ink">Watch Later</span>
+            <span className="font-oughter text-lg font-bold tracking-tight text-ink">Watch Later</span>
           </div>
 
           <div className="flex items-center gap-4">
@@ -291,7 +291,7 @@ export default function ServiceLandingPage({
             <span className="text-ink-subtle">Android APK &amp; Web</span>
           </div>
 
-          <h1 className="font-zolo text-4xl sm:text-6xl md:text-7xl font-black tracking-tight text-ink text-balance leading-[1.08] mb-6">
+          <h1 className="font-oughter text-4xl sm:text-6xl md:text-7xl font-black tracking-tight text-ink text-balance leading-[1.08] mb-6">
             Never lose a reel worth revisiting.
           </h1>
 
@@ -332,9 +332,8 @@ export default function ServiceLandingPage({
             </div>
 
             <p
-              className={`text-xs text-ink-subtle transition-opacity duration-300 ${
-                hasDownloaded || downloadSuccess ? 'opacity-100' : 'opacity-0'
-              }`}
+              className={`text-xs text-ink-subtle transition-opacity duration-300 ${hasDownloaded || downloadSuccess ? 'opacity-100' : 'opacity-0'
+                }`}
             >
               First download complete. Sign in with the account you share clips from.
             </p>
@@ -372,7 +371,7 @@ export default function ServiceLandingPage({
                 <span className="h-1.5 w-1.5 rounded-full bg-cyanbrand" />
                 <span>Process sequence</span>
               </div>
-              <h2 className="font-zolo text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-ink mb-2 text-balance leading-[1.12]">
+              <h2 className="font-oughter text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-ink mb-2 text-balance leading-[1.12]">
                 One tap. Everything else is on autopilot.
               </h2>
               <p className="text-sm text-ink-subtle text-balance">
@@ -393,11 +392,10 @@ export default function ServiceLandingPage({
                     const targetScroll = el.offsetTop + (i / (steps.length - 1)) * totalScrollable;
                     window.scrollTo({ top: targetScroll, behavior: 'smooth' });
                   }}
-                  className={`h-8 px-3 rounded-full text-xs transition-colors flex items-center gap-1.5 ${
-                    activeBeat === i
+                  className={`h-8 px-3 rounded-full text-xs transition-colors flex items-center gap-1.5 ${activeBeat === i
                       ? 'bg-cyanbrand text-black font-bold'
                       : 'bg-panel text-ink-subtle hover:bg-raised hover:text-ink border border-white/[0.08]'
-                  }`}
+                    }`}
                 >
                   <span className="tabular-nums">{s.num}</span>
                   <span className="hidden lg:inline text-[11px] font-medium">{s.title.split(' ')[0]}</span>
@@ -419,11 +417,10 @@ export default function ServiceLandingPage({
                 return (
                   <article
                     key={step.num}
-                    className={`w-[440px] shrink-0 border-t-2 pt-6 pb-8 flex flex-col justify-between transition-colors ${
-                      isCurrent
+                    className={`w-[440px] shrink-0 border-t-2 pt-6 pb-8 flex flex-col justify-between transition-colors ${isCurrent
                         ? 'border-cyanbrand bg-panel/90 px-6 backdrop-blur-sm'
                         : 'border-white/15 bg-panel/40 hover:border-white/30'
-                    }`}
+                      }`}
                   >
                     <div>
                       <div className="flex items-baseline justify-between mb-8">
@@ -435,7 +432,7 @@ export default function ServiceLandingPage({
                         </span>
                       </div>
 
-                      <h3 className="font-zolo text-2xl font-bold text-ink mb-2 tracking-tight text-balance">
+                      <h3 className="font-oughter text-2xl font-bold text-ink mb-2 tracking-tight text-balance">
                         {step.title}
                       </h3>
                       <p className="text-sm text-amberbrand mb-4 font-medium">{step.note}</p>
@@ -465,7 +462,7 @@ export default function ServiceLandingPage({
                       <span className="text-2xl text-cyanbrand tabular-nums">{step.num}</span>
                       <span className="text-[11px] text-ink-muted bg-white/[0.06] px-2 py-0.5 rounded-full">{step.detail}</span>
                     </div>
-                    <h3 className="font-zolo text-xl font-bold text-ink mb-1.5 text-balance">{step.title}</h3>
+                    <h3 className="font-oughter text-xl font-bold text-ink mb-1.5 text-balance">{step.title}</h3>
                     <p className="text-xs text-amberbrand mb-2.5 font-medium">{step.note}</p>
                     <p className="text-xs text-ink-muted leading-relaxed">{step.body}</p>
                   </div>
@@ -504,7 +501,7 @@ export default function ServiceLandingPage({
                 <span className="h-1.5 w-1.5 rounded-full bg-amberbrand" />
                 <span>Live reel processing</span>
               </div>
-              <h2 className="font-zolo text-3xl sm:text-5xl font-black text-ink tracking-tight text-balance leading-[1.1]">
+              <h2 className="font-oughter text-3xl sm:text-5xl font-black text-ink tracking-tight text-balance leading-[1.1]">
                 Inside the parsing engine.
               </h2>
               <p className="text-sm sm:text-base text-ink-subtle mt-2 max-w-xl text-balance">
@@ -519,11 +516,10 @@ export default function ServiceLandingPage({
                   key={cat}
                   type="button"
                   onClick={() => setShowcaseCategory(cat)}
-                  className={`px-4 py-1.5 rounded-full text-xs font-semibold capitalize transition-colors ${
-                    showcaseCategory === cat
+                  className={`px-4 py-1.5 rounded-full text-xs font-semibold capitalize transition-colors ${showcaseCategory === cat
                       ? 'bg-ink text-black'
                       : 'text-ink-subtle hover:text-ink'
-                  }`}
+                    }`}
                 >
                   {cat === 'design' ? 'Design & Visual' : cat === 'cooking' ? 'Cooking & Food' : 'Fitness & Form'}
                 </button>
@@ -541,7 +537,7 @@ export default function ServiceLandingPage({
                       <span>@studiodesign</span>
                       <span className="text-amberbrand">Captured 14m ago</span>
                     </div>
-                    <h3 className="font-zolo text-lg font-bold text-ink mb-2 text-balance">Concentric Radii in Mobile UI</h3>
+                    <h3 className="font-oughter text-lg font-bold text-ink mb-2 text-balance">Concentric Radii in Mobile UI</h3>
                     <p className="text-xs text-ink-muted leading-relaxed mb-4">
                       Nested surfaces appear distorted when outer and inner containers share identical radius. Radius inner equals radius outer minus padding.
                     </p>
@@ -563,7 +559,7 @@ export default function ServiceLandingPage({
                       <span>@motioncrafter</span>
                       <span className="text-amberbrand">Captured 2h ago</span>
                     </div>
-                    <h3 className="font-zolo text-lg font-bold text-ink mb-2 text-balance">Spring Physics vs Linear Easing</h3>
+                    <h3 className="font-oughter text-lg font-bold text-ink mb-2 text-balance">Spring Physics vs Linear Easing</h3>
                     <p className="text-xs text-ink-muted leading-relaxed mb-4">
                       Linear transitions feel mechanical. Damped springs with stiffness 280 and damping 26 deliver physical weight.
                     </p>
@@ -585,7 +581,7 @@ export default function ServiceLandingPage({
                       <span>@typefoundry</span>
                       <span className="text-amberbrand">Captured 1d ago</span>
                     </div>
-                    <h3 className="font-zolo text-lg font-bold text-ink mb-2 text-balance">Editorial Line Heights &amp; Contrast</h3>
+                    <h3 className="font-oughter text-lg font-bold text-ink mb-2 text-balance">Editorial Line Heights &amp; Contrast</h3>
                     <p className="text-xs text-ink-muted leading-relaxed mb-4">
                       Display headers require tight leading paired with generous line spacing across continuous body text.
                     </p>
@@ -611,7 +607,7 @@ export default function ServiceLandingPage({
                       <span>@pasta.craft</span>
                       <span className="text-amberbrand">Captured 3h ago</span>
                     </div>
-                    <h3 className="font-zolo text-lg font-bold text-ink mb-2 text-balance">The Real Carbonara Emulsion</h3>
+                    <h3 className="font-oughter text-lg font-bold text-ink mb-2 text-balance">The Real Carbonara Emulsion</h3>
                     <p className="text-xs text-ink-muted leading-relaxed mb-4">
                       Avoid heavy dairy. Combine starchy pasta water with cured pork fat and grated pecorino off the flame for velvet texture.
                     </p>
@@ -633,7 +629,7 @@ export default function ServiceLandingPage({
                       <span>@breadlab</span>
                       <span className="text-amberbrand">Captured 5h ago</span>
                     </div>
-                    <h3 className="font-zolo text-lg font-bold text-ink mb-2 text-balance">No-Knead Overnight Focaccia</h3>
+                    <h3 className="font-oughter text-lg font-bold text-ink mb-2 text-balance">No-Knead Overnight Focaccia</h3>
                     <p className="text-xs text-ink-muted leading-relaxed mb-4">
                       Eighty percent hydration dough resting twenty-four hours chilled. Deep oil indentation generates open crumb and blistered crust.
                     </p>
@@ -655,7 +651,7 @@ export default function ServiceLandingPage({
                       <span>@culinarytechnique</span>
                       <span className="text-amberbrand">Captured 1d ago</span>
                     </div>
-                    <h3 className="font-zolo text-lg font-bold text-ink mb-2 text-balance">Steak Pan Sauce Deglaze</h3>
+                    <h3 className="font-oughter text-lg font-bold text-ink mb-2 text-balance">Steak Pan Sauce Deglaze</h3>
                     <p className="text-xs text-ink-muted leading-relaxed mb-4">
                       Dissolve fond with shallots and dry wine. Remove heat completely before incorporating cold cubed butter.
                     </p>
@@ -681,7 +677,7 @@ export default function ServiceLandingPage({
                       <span>@biomechanics</span>
                       <span className="text-amberbrand">Captured 4h ago</span>
                     </div>
-                    <h3 className="font-zolo text-lg font-bold text-ink mb-2 text-balance">Hip Wedge Setup for Deadlifts</h3>
+                    <h3 className="font-oughter text-lg font-bold text-ink mb-2 text-balance">Hip Wedge Setup for Deadlifts</h3>
                     <p className="text-xs text-ink-muted leading-relaxed mb-4">
                       Draw barbell slack out before initiating ground drive. Wedge hips into the bar instead of sinking into deep squat.
                     </p>
@@ -703,7 +699,7 @@ export default function ServiceLandingPage({
                       <span>@mobilityproject</span>
                       <span className="text-amberbrand">Captured 8h ago</span>
                     </div>
-                    <h3 className="font-zolo text-lg font-bold text-ink mb-2 text-balance">Thoracic Spine Rotation Drills</h3>
+                    <h3 className="font-oughter text-lg font-bold text-ink mb-2 text-balance">Thoracic Spine Rotation Drills</h3>
                     <p className="text-xs text-ink-muted leading-relaxed mb-4">
                       Counter seated desk posture quickly. Quadruped reach-throughs restore upper spinal mobility for overhead movements.
                     </p>
@@ -725,7 +721,7 @@ export default function ServiceLandingPage({
                       <span>@rehabspecialist</span>
                       <span className="text-amberbrand">Captured 2d ago</span>
                     </div>
-                    <h3 className="font-zolo text-lg font-bold text-ink mb-2 text-balance">Shoulder External Rotator Cue</h3>
+                    <h3 className="font-oughter text-lg font-bold text-ink mb-2 text-balance">Shoulder External Rotator Cue</h3>
                     <p className="text-xs text-ink-muted leading-relaxed mb-4">
                       Flared elbows impinge rotator cuff tendons. Keep elbow path near forty-five degrees and engage lower traps.
                     </p>
@@ -757,7 +753,7 @@ export default function ServiceLandingPage({
                 <span className="h-1.5 w-1.5 rounded-full bg-cyanbrand" />
                 <span>Cross-platform capture</span>
               </div>
-              <h3 className="font-zolo text-2xl sm:text-3xl font-bold text-ink tracking-tight text-balance">
+              <h3 className="font-oughter text-2xl sm:text-3xl font-bold text-ink tracking-tight text-balance">
                 One library for every format you consume.
               </h3>
             </div>
@@ -820,7 +816,7 @@ export default function ServiceLandingPage({
                     {item.speed}
                   </span>
                 </div>
-                <h4 className="font-zolo text-xl font-bold text-ink mb-2">
+                <h4 className="font-oughter text-xl font-bold text-ink mb-2">
                   {item.platform}
                 </h4>
                 <p className="text-xs text-ink-muted leading-relaxed">
@@ -843,7 +839,7 @@ export default function ServiceLandingPage({
       <section className="py-32 px-6 sm:px-10 bg-canvas border-t border-white/[0.08]">
         <div className="mx-auto max-w-5xl">
           <div className="max-w-xl mb-16">
-            <h2 className="font-zolo text-3xl sm:text-5xl font-black text-ink tracking-tight mb-4 text-balance leading-[1.1]">
+            <h2 className="font-oughter text-3xl sm:text-5xl font-black text-ink tracking-tight mb-4 text-balance leading-[1.1]">
               No endless saved list. Just what matters.
             </h2>
             <p className="text-base text-ink-muted text-balance">
@@ -856,7 +852,7 @@ export default function ServiceLandingPage({
             <div className="py-8 grid grid-cols-1 md:grid-cols-12 gap-4 items-baseline group">
               <div className="md:col-span-4 flex items-baseline gap-3">
                 <span className="text-xs text-cyanbrand tabular-nums">01</span>
-                <h3 className="font-zolo text-xl font-bold text-ink group-hover:text-cyanbrand transition-colors">
+                <h3 className="font-oughter text-xl font-bold text-ink group-hover:text-cyanbrand transition-colors">
                   Cooking &amp; Food
                 </h3>
               </div>
@@ -871,7 +867,7 @@ export default function ServiceLandingPage({
             <div className="py-8 grid grid-cols-1 md:grid-cols-12 gap-4 items-baseline group">
               <div className="md:col-span-4 flex items-baseline gap-3">
                 <span className="text-xs text-cyanbrand tabular-nums">02</span>
-                <h3 className="font-zolo text-xl font-bold text-ink group-hover:text-cyanbrand transition-colors">
+                <h3 className="font-oughter text-xl font-bold text-ink group-hover:text-cyanbrand transition-colors">
                   Design &amp; Visual
                 </h3>
               </div>
@@ -886,7 +882,7 @@ export default function ServiceLandingPage({
             <div className="py-8 grid grid-cols-1 md:grid-cols-12 gap-4 items-baseline group">
               <div className="md:col-span-4 flex items-baseline gap-3">
                 <span className="text-xs text-cyanbrand tabular-nums">03</span>
-                <h3 className="font-zolo text-xl font-bold text-ink group-hover:text-cyanbrand transition-colors">
+                <h3 className="font-oughter text-xl font-bold text-ink group-hover:text-cyanbrand transition-colors">
                   Fitness &amp; Recovery
                 </h3>
               </div>
@@ -912,7 +908,7 @@ export default function ServiceLandingPage({
             <span>Ready for Android devices and web companions</span>
           </div>
 
-          <h2 className="font-zolo text-3xl sm:text-5xl font-black text-ink tracking-tight mb-4 text-balance leading-[1.1]">
+          <h2 className="font-oughter text-3xl sm:text-5xl font-black text-ink tracking-tight mb-4 text-balance leading-[1.1]">
             Never lose a reel worth revisiting.
           </h2>
           <p className="text-sm sm:text-base text-ink-muted mb-8 text-balance max-w-lg">
@@ -949,7 +945,7 @@ export default function ServiceLandingPage({
         <div className="mx-auto max-w-6xl flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-ink-subtle">
           <div className="flex items-center gap-2">
             <span className="h-1.5 w-1.5 rounded-full bg-cyanbrand" />
-            <span className="font-zolo font-bold text-sm text-ink">Watch Later</span>
+            <span className="font-oughter font-bold text-sm text-ink">Watch Later</span>
           </div>
           <span className="text-ink-subtle">Never lose a reel worth revisiting.</span>
         </div>
@@ -975,7 +971,7 @@ export default function ServiceLandingPage({
               <X className="h-5 w-5" />
             </button>
 
-            <h3 id="auth-modal-title" className="font-zolo text-2xl font-bold text-ink mb-1">
+            <h3 id="auth-modal-title" className="font-oughter text-2xl font-bold text-ink mb-1">
               {authMode === 'signin' ? 'Welcome back' : 'Create account'}
             </h3>
             <p className="text-xs text-ink-muted mb-6">

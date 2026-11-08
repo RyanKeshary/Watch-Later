@@ -206,7 +206,7 @@ export default function ProductionLaunchVideo() {
                 <Play className="h-8 w-8 fill-black text-black ml-1 transition-transform group-hover:scale-110" />
               </button>
               <span className="font-mono-micro text-sky-400 block mb-1">OFFICIAL PRODUCT TRAILER</span>
-              <h3 className="font-zolo text-2xl sm:text-3xl font-bold text-white tracking-tight mb-2">
+              <h3 className="font-oughter text-2xl sm:text-3xl font-bold text-white tracking-tight mb-2">
                 The Death of Scattered Saves
               </h3>
               <p className="text-xs sm:text-sm text-[#888888] max-w-md leading-relaxed">
@@ -219,7 +219,7 @@ export default function ProductionLaunchVideo() {
           {isScene1 && (
             <div className="animate-fade-up max-w-lg mx-auto">
               <span className="font-mono-micro text-rose-400 block mb-2">[ACT 01 // THE CLUTTER]</span>
-              <h2 className="font-zolo text-2xl sm:text-4xl font-bold text-white tracking-tight mb-3">
+              <h2 className="font-oughter text-2xl sm:text-4xl font-bold text-white tracking-tight mb-3">
                 Saved reels go to die.
               </h2>
               <p className="text-xs sm:text-sm text-[#999999] leading-relaxed mb-6">
@@ -244,7 +244,7 @@ export default function ProductionLaunchVideo() {
           {isScene2 && (
             <div className="animate-fade-up max-w-lg mx-auto">
               <span className="font-mono-micro text-sky-400 block mb-2">[ACT 02 // ONE HABIT]</span>
-              <h2 className="font-zolo text-2xl sm:text-4xl font-bold text-white tracking-tight mb-3">
+              <h2 className="font-oughter text-2xl sm:text-4xl font-bold text-white tracking-tight mb-3">
                 Share, don&apos;t save.
               </h2>
               <p className="text-xs sm:text-sm text-[#999999] leading-relaxed mb-6">
@@ -272,7 +272,7 @@ export default function ProductionLaunchVideo() {
           {isScene3 && (
             <div className="animate-fade-up max-w-lg mx-auto">
               <span className="font-mono-micro text-purple-400 block mb-2">[ACT 03 // THE ENGINE]</span>
-              <h2 className="font-zolo text-2xl sm:text-4xl font-bold text-white tracking-tight mb-3">
+              <h2 className="font-oughter text-2xl sm:text-4xl font-bold text-white tracking-tight mb-3">
                 Substance over screenshots.
               </h2>
               <p className="text-xs sm:text-sm text-[#999999] leading-relaxed mb-6">
@@ -296,7 +296,7 @@ export default function ProductionLaunchVideo() {
           {isScene4 && (
             <div className="animate-fade-up max-w-lg mx-auto">
               <span className="font-mono-micro text-emerald-400 block mb-2">[ACT 04 // THE PAYOFF]</span>
-              <h2 className="font-zolo text-2xl sm:text-4xl font-bold text-white tracking-tight mb-3">
+              <h2 className="font-oughter text-2xl sm:text-4xl font-bold text-white tracking-tight mb-3">
                 Watch it. It disappears.
               </h2>
               <p className="text-xs sm:text-sm text-[#999999] leading-relaxed mb-6">
@@ -327,7 +327,7 @@ export default function ProductionLaunchVideo() {
           {isScene5 && (
             <div className="animate-fade-up max-w-lg mx-auto">
               <span className="font-mono-micro text-white block mb-2">[WATCH LATER]</span>
-              <h2 className="font-zolo text-3xl sm:text-5xl font-bold text-white tracking-tight mb-4">
+              <h2 className="font-oughter text-3xl sm:text-5xl font-bold text-white tracking-tight mb-4">
                 Never lose a reel worth revisiting.
               </h2>
               <div className="inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-bold text-black shadow-[0_0_35px_rgba(255,255,255,0.25)]">
