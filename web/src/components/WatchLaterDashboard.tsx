@@ -414,6 +414,26 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
   const [isCreatingSaveFolder, setIsCreatingSaveFolder] = useState(false);
   const [newSaveFolderName, setNewSaveFolderName] = useState('');
 
+  // Niche Category Breakdown view format: 'bars' | 'pie'
+  const [nicheViewMode, setNicheViewMode] = useState<'bars' | 'pie'>('bars');
+  const [hoveredPieCatId, setHoveredPieCatId] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const savedMode = localStorage.getItem('watchlater_niche_view_mode');
+      if (savedMode === 'bars' || savedMode === 'pie') {
+        setNicheViewMode(savedMode);
+      }
+    } catch (e) { }
+  }, []);
+
+  const updateNicheViewMode = (mode: 'bars' | 'pie') => {
+    setNicheViewMode(mode);
+    try {
+      localStorage.setItem('watchlater_niche_view_mode', mode);
+    } catch (e) { }
+  };
+
   // Animation state for Niche Category Breakdown bars & counters
   const [barsAnimated, setBarsAnimated] = useState(false);
   useEffect(() => {
@@ -1018,37 +1038,189 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
 
               {/* Compressed Niche Category Distribution */}
               <div className="rounded-2xl border border-[#333333] bg-[#1A1A1A]/80 p-5 shadow-sm">
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center justify-between mb-4">
                   <h3 className="font-sans text-sm font-bold text-white tracking-tight flex items-center gap-2">
                     <PieChart className="h-4 w-4 text-[#D9D9D9]" />
                     <span>Niche Category Breakdown</span>
                   </h3>
+
+                  {/* Switch between Bars & Dynamic Pie */}
+                  <div className="flex items-center gap-1 p-0.5 rounded-xl border border-white/10 bg-[#0B0B0B]">
+                    <button
+                      onClick={() => updateNicheViewMode('bars')}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition ${
+                        nicheViewMode === 'bars' ? 'bg-white/15 text-white font-semibold' : 'text-zinc-500 hover:text-zinc-300'
+                      }`}
+                      title="Bar distribution view"
+                    >
+                      Bars
+                    </button>
+                    <button
+                      onClick={() => updateNicheViewMode('pie')}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition ${
+                        nicheViewMode === 'pie' ? 'bg-white/15 text-white font-semibold' : 'text-zinc-500 hover:text-zinc-300'
+                      }`}
+                      title="Interactive pie chart view"
+                    >
+                      Pie Chart
+                    </button>
+                  </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  {rootCategories
-                    .filter(cat => !savesFolderIds.includes(cat.id) && cat.name.toLowerCase() !== 'saves' && cat.name.toLowerCase() !== 'save later')
-                    .map((cat, idx) => {
-                    const count = reels.filter(r => r.category_id === cat.id).length;
-                    const pct = reels.length > 0 ? Math.round((count / reels.length) * 100) : 0;
+
+                {(() => {
+                  const nicheCategories = rootCategories.filter(
+                    cat => !savesFolderIds.includes(cat.id) && cat.name.toLowerCase() !== 'saves' && cat.name.toLowerCase() !== 'save later'
+                  );
+                  const PIE_COLORS = ['#38BDF8', '#818CF8', '#A78BFA', '#F472B6', '#FB7185', '#FBBF24', '#34D399', '#2DD4BF', '#4ADE80', '#A3E635', '#F97316', '#E879F9'];
+
+                  if (nicheViewMode === 'bars') {
                     return (
-                      <div key={cat.id} className="flex items-center gap-3 px-3 py-2 rounded-xl border border-[#262626] bg-[#0B0B0B]/70 hover:bg-[#141414] transition">
-                        <span className="text-xs font-medium text-[#D9D9D9] w-28 sm:w-36 truncate">{cat.name}</span>
-                        <div className="flex-1 h-1.5 rounded-full bg-[#1A1A1A] overflow-hidden border border-[#333333]/40">
-                          <div
-                            className="h-full bg-gradient-to-r from-zinc-400 to-white rounded-full transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)]"
-                            style={{
-                              width: barsAnimated ? `${pct}%` : '0%',
-                              transitionDelay: `${Math.min(idx * 30, 400)}ms`
-                            }}
-                          />
-                        </div>
-                        <span className="font-mono-micro text-[#6B6B6B] w-24 text-right tabular-nums">
-                          <NumberTicker value={count} duration={900} /> (<NumberTicker value={pct} duration={900} />%)
-                        </span>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {nicheCategories.map((cat, idx) => {
+                          const count = reels.filter(r => r.category_id === cat.id).length;
+                          const pct = reels.length > 0 ? Math.round((count / reels.length) * 100) : 0;
+                          return (
+                            <div key={cat.id} className="flex items-center gap-3 px-3 py-2 rounded-xl border border-[#262626] bg-[#0B0B0B]/70 hover:bg-[#141414] transition">
+                              <span className="text-xs font-medium text-[#D9D9D9] w-28 sm:w-36 truncate">{cat.name}</span>
+                              <div className="flex-1 h-1.5 rounded-full bg-[#1A1A1A] overflow-hidden border border-[#333333]/40">
+                                <div
+                                  className="h-full bg-gradient-to-r from-zinc-400 to-white rounded-full transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)]"
+                                  style={{
+                                    width: barsAnimated ? `${pct}%` : '0%',
+                                    transitionDelay: `${Math.min(idx * 30, 400)}ms`
+                                  }}
+                                />
+                              </div>
+                              <span className="font-mono-micro text-[#6B6B6B] w-24 text-right tabular-nums">
+                                <NumberTicker value={count} duration={900} /> (<NumberTicker value={pct} duration={900} />%)
+                              </span>
+                            </div>
+                          );
+                        })}
                       </div>
                     );
-                  })}
-                </div>
+                  }
+
+                  // Dynamic Pie / Donut View
+                  const totalNicheReels = nicheCategories.reduce(
+                    (acc, c) => acc + reels.filter(r => r.category_id === c.id).length, 0
+                  );
+                  const radius = 54;
+                  const circumference = 2 * Math.PI * radius;
+                  let accumulatedOffset = 0;
+
+                  const hoveredCat = nicheCategories.find(c => c.id === hoveredPieCatId);
+                  const hoveredCount = hoveredCat ? reels.filter(r => r.category_id === hoveredCat.id).length : 0;
+                  const hoveredPct = hoveredCat && totalNicheReels > 0 ? Math.round((hoveredCount / totalNicheReels) * 100) : 0;
+
+                  return (
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-6 py-2 px-2 max-w-3xl mx-auto">
+                      {/* Compact Donut */}
+                      <div className="relative w-44 h-44 sm:w-48 sm:h-48 shrink-0 flex items-center justify-center">
+                        <svg viewBox="0 0 140 140" className="w-full h-full -rotate-90 transform">
+                          <circle
+                            cx="70"
+                            cy="70"
+                            r={radius}
+                            fill="transparent"
+                            stroke="#222222"
+                            strokeWidth="16"
+                          />
+                          {totalNicheReels > 0 && nicheCategories.map((cat, idx) => {
+                            const count = reels.filter(r => r.category_id === cat.id).length;
+                            if (count === 0) return null;
+                            const slicePercent = count / totalNicheReels;
+                            const sliceLength = slicePercent * circumference;
+                            const currentOffset = accumulatedOffset;
+                            accumulatedOffset += sliceLength;
+                            const color = PIE_COLORS[idx % PIE_COLORS.length];
+                            const isHovered = hoveredPieCatId === cat.id;
+
+                            return (
+                              <circle
+                                key={cat.id}
+                                cx="70"
+                                cy="70"
+                                r={radius}
+                                fill="transparent"
+                                stroke={color}
+                                strokeWidth={isHovered ? 20 : 16}
+                                strokeDasharray={`${sliceLength} ${circumference}`}
+                                strokeDashoffset={-currentOffset}
+                                className="transition-all duration-300 cursor-pointer"
+                                style={{
+                                  filter: isHovered ? `drop-shadow(0 0 6px ${color})` : undefined,
+                                }}
+                                onMouseEnter={() => setHoveredPieCatId(cat.id)}
+                                onMouseLeave={() => setHoveredPieCatId(null)}
+                              />
+                            );
+                          })}
+                        </svg>
+
+                        {/* Donut Center Display */}
+                        <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-2 pointer-events-none select-none">
+                          {hoveredCat ? (
+                            <>
+                              <span className="text-[10px] font-mono uppercase text-zinc-400 truncate max-w-[85px]">
+                                {hoveredCat.name}
+                              </span>
+                              <span className="text-base font-bold text-white tabular-nums leading-tight">
+                                {hoveredCount}
+                              </span>
+                              <span className="text-[11px] font-semibold text-cyan-300 font-mono tabular-nums">
+                                {hoveredPct}%
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="text-[10px] font-mono uppercase text-zinc-500">
+                                Total
+                              </span>
+                              <span className="text-lg font-bold text-white tabular-nums leading-tight">
+                                {totalNicheReels}
+                              </span>
+                              <span className="text-[10px] text-zinc-400">
+                                Saved Posts
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Interactive Legend Grid */}
+                      <div className="grid grid-cols-2 gap-2 w-full max-h-48 overflow-y-auto pr-1">
+                        {nicheCategories.map((cat, idx) => {
+                          const count = reels.filter(r => r.category_id === cat.id).length;
+                          const pct = totalNicheReels > 0 ? Math.round((count / totalNicheReels) * 100) : 0;
+                          const color = PIE_COLORS[idx % PIE_COLORS.length];
+                          const isHovered = hoveredPieCatId === cat.id;
+
+                          return (
+                            <div
+                              key={cat.id}
+                              onMouseEnter={() => setHoveredPieCatId(cat.id)}
+                              onMouseLeave={() => setHoveredPieCatId(null)}
+                              className={`flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg border text-xs transition cursor-pointer ${
+                                isHovered
+                                  ? 'border-white/30 bg-white/10 text-white shadow-sm'
+                                  : 'border-white/5 bg-[#0C0C0C]/80 hover:bg-[#141414] text-zinc-300'
+                              }`}
+                            >
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                                <span className="truncate text-xs font-medium">{cat.name}</span>
+                              </div>
+                              <span className="font-mono text-[10px] text-zinc-400 tabular-nums shrink-0">
+                                {count} ({pct}%)
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           )}
@@ -1878,6 +2050,22 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                       <option value="compact">Compact (Dense / High volume)</option>
                       <option value="comfortable">Comfortable (Balanced)</option>
                       <option value="spacious">Spacious (Large cards)</option>
+                    </select>
+                  </div>
+
+                  <div className="py-3.5 flex items-center justify-between gap-3">
+                    <div>
+                      <label htmlFor="niche-breakdown-mode" className="text-xs font-medium text-white block cursor-pointer">Niche Breakdown Format</label>
+                      <span className="text-[11px] text-[#737373]">Choose between linear distribution bars and dynamic pie chart</span>
+                    </div>
+                    <select
+                      id="niche-breakdown-mode"
+                      value={nicheViewMode}
+                      onChange={(e) => updateNicheViewMode(e.target.value as 'bars' | 'pie')}
+                      className="rounded-lg border border-[#333333] bg-[#0B0B0B] px-3 py-1.5 text-xs text-white focus:border-white focus:outline-none cursor-pointer"
+                    >
+                      <option value="bars">Bar Distribution</option>
+                      <option value="pie">Interactive Pie Chart</option>
                     </select>
                   </div>
 
