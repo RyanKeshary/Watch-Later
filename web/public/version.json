@@ -1,0 +1,6 @@
+{
+  "versionCode": 1,
+  "versionName": "1.0.0",
+  "apkUrl": "https://watchlatertool.vercel.app/watch-later.apk",
+  "releaseNotes": "Initial release with silent share-sheet capture and real-time vault sync."
+}

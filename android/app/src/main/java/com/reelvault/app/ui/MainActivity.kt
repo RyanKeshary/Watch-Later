@@ -37,6 +37,8 @@ import com.reelvault.app.ui.theme.DarkSurface
 import com.reelvault.app.ui.theme.LightText
 import com.reelvault.app.ui.theme.PureWhite
 import com.reelvault.app.ui.theme.WatchLaterDarkColorScheme
+import com.reelvault.app.util.AppUpdater
+import com.reelvault.app.util.AppVersionInfo
 import com.reelvault.app.util.PreferenceManager
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.android.Android
@@ -82,6 +84,20 @@ class MainActivity : ComponentActivity() {
                     val isLoggedIn = remember { mutableStateOf(PreferenceManager.isLoggedIn(this)) }
                     isLoggedInState = isLoggedIn
                     var userEmail by remember { mutableStateOf(PreferenceManager.getUserEmail(this) ?: "") }
+                    var availableUpdate by remember { mutableStateOf<AppVersionInfo?>(null) }
+                    var isDownloadingUpdate by remember { mutableStateOf(false) }
+
+                    // Check for in-app update on launch
+                    LaunchedEffect(Unit) {
+                        lifecycleScope.launch(Dispatchers.IO) {
+                            val update = AppUpdater.checkForUpdate()
+                            if (update != null) {
+                                withContext(Dispatchers.Main) {
+                                    availableUpdate = update
+                                }
+                            }
+                        }
+                    }
 
                     if (isLoggedIn.value) {
                         LaunchedEffect(Unit) {
@@ -119,6 +135,15 @@ class MainActivity : ComponentActivity() {
                         }
                         SettingsScreen(
                             email = userEmail,
+                            availableUpdate = availableUpdate,
+                            isDownloadingUpdate = isDownloadingUpdate,
+                            onUpdateClick = {
+                                availableUpdate?.let { info ->
+                                    isDownloadingUpdate = true
+                                    Toast.makeText(this@MainActivity, "Starting update download...", Toast.LENGTH_SHORT).show()
+                                    AppUpdater.startDownloadAndInstall(this@MainActivity, info)
+                                }
+                            },
                             onLogout = {
                                 PreferenceManager.clearSession(this)
                                 isLoggedIn.value = false
@@ -458,7 +483,13 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    fun SettingsScreen(email: String, onLogout: () -> Unit) {
+    fun SettingsScreen(
+        email: String,
+        availableUpdate: AppVersionInfo? = null,
+        isDownloadingUpdate: Boolean = false,
+        onUpdateClick: () -> Unit = {},
+        onLogout: () -> Unit
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -482,7 +513,57 @@ class MainActivity : ComponentActivity() {
                 textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            // In-app Update Banner
+            if (availableUpdate != null) {
+                Spacer(modifier = Modifier.height(20.dp))
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(1.dp, Color(0xFF225544), RoundedCornerShape(16.dp))
+                        .background(Color(0xFF0D221A), RoundedCornerShape(16.dp))
+                        .padding(16.dp)
+                ) {
+                    Text(
+                        text = "NEW UPDATE AVAILABLE: v${availableUpdate.versionName}",
+                        fontSize = 11.sp,
+                        fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF34D399),
+                        letterSpacing = 1.sp
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = availableUpdate.releaseNotes ?: "Bug fixes and performance improvements.",
+                        fontSize = 13.sp,
+                        color = LightText
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Button(
+                        onClick = onUpdateClick,
+                        enabled = !isDownloadingUpdate,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF10B981),
+                            contentColor = Color.Black
+                        ),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth().height(40.dp)
+                    ) {
+                        if (isDownloadingUpdate) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp,
+                                color = Color.Black
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Downloading update...", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                        } else {
+                            Text("Update Now (v${availableUpdate.versionName})", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
 
             Column(
                 modifier = Modifier
