@@ -63,8 +63,8 @@ interface WatchLaterContextType {
   handleDropOnCategory: (targetCatId: string, e: React.DragEvent) => Promise<void>;
   togglePinFolder: (catId: string) => void;
   retryingId: string | null;
-  density: 'compact' | 'comfortable' | 'spacious';
-  setDensity: (d: 'compact' | 'comfortable' | 'spacious') => void;
+  density: 'extra-compact' | 'compact' | 'comfortable' | 'spacious' | 'extra-spacious';
+  setDensity: (d: 'extra-compact' | 'compact' | 'comfortable' | 'spacious' | 'extra-spacious') => void;
   showThumbnails: boolean;
   setShowThumbnails: (s: boolean) => void;
   showPersonaInsights: boolean;
@@ -218,7 +218,7 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
   const [categoryMetaMap, setCategoryMetaMap] = useState<Record<string, { icon?: string; color?: string; description?: string }>>({});
 
   // Layout & Density
-  const [density, setDensity] = useState<'compact' | 'comfortable' | 'spacious'>('comfortable');
+  const [density, setDensity] = useState<'extra-compact' | 'compact' | 'comfortable' | 'spacious' | 'extra-spacious'>('comfortable');
   const [showThumbnails, setShowThumbnails] = useState(true);
   const [showPersonaInsights, setShowPersonaInsights] = useState(true);
   const [isFirstTimePersona, setIsFirstTimePersona] = useState(false);
@@ -385,7 +385,7 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
     broadcastCrossTab({ type: 'VIEW_LAYOUT_CHANGE', payload: { layout: val } });
   };
 
-  const updateDensity = (d: 'compact' | 'comfortable' | 'spacious') => {
+  const updateDensity = (d: 'extra-compact' | 'compact' | 'comfortable' | 'spacious' | 'extra-spacious') => {
     setDensity(d);
     try {
       localStorage.setItem('watchlater_density', d);

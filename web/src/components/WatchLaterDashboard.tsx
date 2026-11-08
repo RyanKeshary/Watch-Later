@@ -1773,11 +1773,15 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                 </div>
               ) : viewLayout === 'grid' ? (
                 <div className={
-                  density === 'compact'
-                    ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-5'
-                    : density === 'spacious'
-                      ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 sm:gap-9'
-                      : 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-6 sm:gap-7'
+                  density === 'extra-compact'
+                    ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-3 sm:gap-4'
+                    : density === 'compact'
+                      ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-5'
+                      : density === 'spacious'
+                        ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 sm:gap-9'
+                        : density === 'extra-spacious'
+                          ? 'grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-10 sm:gap-12'
+                          : 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-6 sm:gap-7'
                 }>
                   {renderedReels.map((reel) => {
                     const extractionErr = Array.isArray(reel.extracted_content)
@@ -1793,11 +1797,15 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                         key={`${reel.id}-${searchQuery ? 's' : 'i'}`}
                         isForceMounted={activeCardMenuId === reel.id || detailReelId === reel.id}
                         className={`w-full ${
-                          density === 'compact'
-                            ? 'min-h-[380px] aspect-[9/16]'
-                            : density === 'spacious'
-                              ? 'min-h-[500px] aspect-[9/15]'
-                              : 'min-h-[430px] sm:min-h-[450px] aspect-[9/15]'
+                          density === 'extra-compact'
+                            ? 'min-h-[320px] aspect-[9/16]'
+                            : density === 'compact'
+                              ? 'min-h-[380px] aspect-[9/16]'
+                              : density === 'spacious'
+                                ? 'min-h-[500px] aspect-[9/15]'
+                                : density === 'extra-spacious'
+                                  ? 'min-h-[580px] aspect-[9/14]'
+                                  : 'min-h-[430px] sm:min-h-[450px] aspect-[9/15]'
                         }`}
                       >
                         <div
@@ -1818,11 +1826,15 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                         className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-[#333333] bg-[#141414] hover:border-white/40 transform-gpu will-change-transform ${
                           isDragAllowed ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
                         } transition-all duration-500 shadow-md ${
-                          density === 'compact'
-                            ? 'min-h-[380px] aspect-[9/16] p-3'
-                            : density === 'spacious'
-                              ? 'min-h-[500px] aspect-[9/15] p-4'
-                              : 'min-h-[430px] sm:min-h-[450px] aspect-[9/15] p-3.5'
+                          density === 'extra-compact'
+                            ? 'min-h-[320px] aspect-[9/16] p-2.5'
+                            : density === 'compact'
+                              ? 'min-h-[380px] aspect-[9/16] p-3'
+                              : density === 'spacious'
+                                ? 'min-h-[500px] aspect-[9/15] p-4'
+                                : density === 'extra-spacious'
+                                  ? 'min-h-[580px] aspect-[9/14] p-5'
+                                  : 'min-h-[430px] sm:min-h-[450px] aspect-[9/15] p-3.5'
                         } ${activeCardMenuId === reel.id ? 'z-20' : ''} ${searchQuery ? 'animate-in fade-in zoom-in-95 duration-150' : ''}`}
                       >
                         {/* Media Cover Layer */}
@@ -1994,7 +2006,17 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                     return (
                       <VirtualCardContainer
                         key={`${reel.id}-${searchQuery ? 's' : 'i'}`}
-                        minHeight={density === 'compact' ? '56px' : density === 'spacious' ? '76px' : '64px'}
+                        minHeight={
+                          density === 'extra-compact'
+                            ? '48px'
+                            : density === 'compact'
+                              ? '56px'
+                              : density === 'spacious'
+                                ? '76px'
+                                : density === 'extra-spacious'
+                                  ? '88px'
+                                  : '64px'
+                        }
                         isForceMounted={activeCardMenuId === reel.id || detailReelId === reel.id}
                         className="w-full"
                         placeholderClassName="rounded-xl"
@@ -2014,7 +2036,16 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                           }
                           window.open(reel.url, '_blank', 'noopener,noreferrer');
                         }}
-                        className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-xl border border-[#333333] bg-[#1A1A1A]/90 transform-gpu will-change-transform ${density === 'compact' ? 'p-2.5 sm:py-2 sm:px-3' : density === 'spacious' ? 'p-4' : 'p-3'
+                        className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-xl border border-[#333333] bg-[#1A1A1A]/90 transform-gpu will-change-transform ${
+                          density === 'extra-compact'
+                            ? 'p-2 sm:py-1.5 sm:px-2.5'
+                            : density === 'compact'
+                              ? 'p-2.5 sm:py-2 sm:px-3'
+                              : density === 'spacious'
+                                ? 'p-4'
+                                : density === 'extra-spacious'
+                                  ? 'p-5'
+                                  : 'p-3'
                           } backdrop-blur hover:border-[#6B6B6B] ${isDragAllowed ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} ${activeCardMenuId === reel.id ? 'relative z-20' : ''} ${searchQuery ? 'animate-in fade-in zoom-in-95 duration-150' : ''} transition shadow-sm`}
                       >
                         <div className="flex items-center gap-3.5 min-w-0 flex-1 w-full sm:w-auto">
@@ -2269,9 +2300,11 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                       }}
                       className="bg-[#121212] border border-[#2E2E2E] text-xs rounded-lg px-3 py-1.5 text-[#D9D9D9] focus:outline-none focus:border-white"
                     >
+                      <option value="extra-compact">Extra Compact (Ultra dense / Maximum posts)</option>
                       <option value="compact">Compact (Dense / High volume)</option>
                       <option value="comfortable">Comfortable (Balanced)</option>
                       <option value="spacious">Spacious (Large cards)</option>
+                      <option value="extra-spacious">Extra Spacious (Cinematic / Full size)</option>
                     </select>
                   </div>
 
