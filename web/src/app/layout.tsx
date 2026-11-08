@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
+import { WatchLaterProvider } from "@/context/WatchLaterContext";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 const oughter = localFont({
@@ -27,7 +28,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${oughter.variable} ${jetbrainsMono.variable}`}>
       <body className="font-sans antialiased bg-[#0B0B0B] bg-fabric text-[#D9D9D9] selection:bg-[#333333] selection:text-white">
-        {children}
+        <WatchLaterProvider>
+          {children}
+        </WatchLaterProvider>
       </body>
     </html>
   );
