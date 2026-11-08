@@ -1293,13 +1293,13 @@ export default function App() {
       >
         <div className="overflow-y-auto overflow-x-hidden">
           {/* Logo & Toggle */}
-          <div className="flex items-center justify-between px-2 py-3 mb-2">
+          <div className={`px-2 py-3 mb-2 flex ${sidebarCollapsed ? 'flex-row md:flex-col items-center justify-between md:justify-center gap-3' : 'items-center justify-between'}`}>
             <a
               href="/"
               className={`flex items-center gap-3 cursor-pointer hover:opacity-85 transition ${sidebarCollapsed ? 'flex md:hidden' : 'flex'}`}
               title="Return to Landing Page"
             >
-              <img src="/logo.jpg" alt="Watch Later" className="h-11 w-11 sm:h-12 sm:w-12 rounded-xl object-cover shadow-md border border-white/15 shrink-0" />
+              <img src="/logo.png" alt="Watch Later" className="h-12 w-12 sm:h-14 sm:w-14 object-contain shrink-0" />
               <div>
                 <span className="font-oughter text-xl font-bold tracking-tight text-white block leading-none">Watch Later</span>
                 <span className="text-[11px] text-[#7E7E7E] block leading-tight mt-1">Never lose a reel worth revisiting.</span>
@@ -1311,16 +1311,16 @@ export default function App() {
                 className="hidden md:flex items-center justify-center py-1 hover:opacity-85 transition"
                 title="Return to Landing Page"
               >
-                <img src="/logo.jpg" alt="Watch Later" className="h-10 w-10 rounded-xl object-cover shadow-md border border-white/15" />
+                <img src="/logo.png" alt="Watch Later" className="h-11 w-11 object-contain" />
               </a>
             )}
             <div className="flex items-center gap-1">
               <button
                 onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                className="hidden md:inline-flex p-1 rounded hover:bg-zinc-800/80 text-zinc-400 hover:text-white transition"
+                className="hidden md:inline-flex p-1.5 rounded-lg hover:bg-zinc-800/80 text-zinc-400 hover:text-white transition"
                 title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
               >
-                {sidebarCollapsed ? <PanelLeft className="h-5 w-5" /> : <PanelLeftClose className="h-4 w-4" />}
+                {sidebarCollapsed ? <PanelLeft className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
               </button>
               <button
                 onClick={() => setMobileMenuOpen(false)}
@@ -1357,30 +1357,30 @@ export default function App() {
               <span className={`font-mono-micro text-[#6B6B6B] ${sidebarCollapsed ? 'inline md:hidden' : 'inline'}`}>{counts.all}</span>
             </button>
 
-            {/* Renamed from Sorted Saves to Categories */}
+            {/* Folders Navigation */}
             <button
               onClick={() => { setCurrentPage('categories'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
               className={`flex w-full items-center ${sidebarCollapsed ? 'justify-between md:justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'categories' && !selectedCategoryId ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
                 }`}
-              title="Categories"
+              title="Folders"
             >
               <div className="flex items-center gap-2.5">
                 <FolderTree className="h-4 w-4 shrink-0 text-white" />
-                <span className={sidebarCollapsed ? 'inline md:hidden' : 'inline'}>Categories</span>
+                <span className={sidebarCollapsed ? 'inline md:hidden' : 'inline'}>Folders</span>
               </div>
               <span className={`font-mono-micro text-[#6B6B6B] ${sidebarCollapsed ? 'inline md:hidden' : 'inline'}`}>{counts.categories}</span>
             </button>
 
-            {/* Save Later Page */}
+            {/* Saves Page */}
             <button
               onClick={() => { setCurrentPage('savelater'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
               className={`flex w-full items-center ${sidebarCollapsed ? 'justify-between md:justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'savelater' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
                 }`}
-              title="Save Later (Bookmarks)"
+              title="Saves"
             >
               <div className="flex items-center gap-2.5">
                 <Bookmark className="h-4 w-4 shrink-0" />
-                <span className={sidebarCollapsed ? 'inline md:hidden' : 'inline'}>Save Later</span>
+                <span className={sidebarCollapsed ? 'inline md:hidden' : 'inline'}>Saves</span>
               </div>
               <span className={`font-mono-micro text-[#6B6B6B] ${sidebarCollapsed ? 'inline md:hidden' : 'inline'}`}>{counts.savelater}</span>
             </button>
@@ -1511,11 +1511,11 @@ export default function App() {
                   : 'max-w-[280px] sm:max-w-xs opacity-100 translate-x-0 mr-2.5'
                 }`}
             >
-              <h2 className="font-oughter text-sm sm:text-base font-bold text-white tracking-tight whitespace-nowrap">
+              <h2 className="font-sans text-sm sm:text-base font-bold text-white tracking-tight whitespace-nowrap">
                 {currentPage === 'home' && 'Analytics & Intelligence'}
                 {currentPage === 'all' && 'All Saved Content'}
-                {currentPage === 'categories' && (selectedCategoryId ? categories.find(c => c.id === selectedCategoryId)?.name || 'Category' : 'Categories Directory')}
-                {currentPage === 'savelater' && 'Save Later'}
+                {currentPage === 'categories' && (selectedCategoryId ? categories.find(c => c.id === selectedCategoryId)?.name || 'Folder' : 'Folders Directory')}
+                {currentPage === 'savelater' && 'Saves'}
                 {currentPage === 'watched' && 'Watched Collection'}
                 {currentPage === 'inbox' && 'Processing Inbox'}
                 {currentPage === 'failed' && 'Extraction Issues'}
@@ -1575,16 +1575,6 @@ export default function App() {
                 </div>
               </div>
             )}
-
-            {/* Apple Liquid Glass "How to Play" Guide Trigger */}
-            <button
-              onClick={() => setShowGameGuide(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-white/20 bg-white/[0.08] hover:bg-white/[0.16] text-xs font-semibold text-white transition active:scale-95 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3)] backdrop-blur-xl shrink-0"
-              title="How to Play / Interactive Guide"
-            >
-              <Gamepad2 className="h-3.5 w-3.5 text-cyan-300" />
-              <span className="hidden sm:inline">How to Play</span>
-            </button>
           </div>
         </header>
 
@@ -1599,7 +1589,7 @@ export default function App() {
                     <span className="font-mono-micro text-[#D9D9D9] font-medium tracking-wider">WATCHED</span>
                     <Film className="h-4 w-4 text-[#D9D9D9]" />
                   </div>
-                  <div className="font-oughter text-3xl font-bold text-white tracking-tight">
+                  <div className="font-sans text-3xl font-bold text-white tracking-tight">
                     <NumberTicker value={counts.watched} />
                   </div>
                   <span className="font-mono-micro text-[#6B6B6B] mt-2 block">
@@ -1609,10 +1599,10 @@ export default function App() {
 
                 <div className="rounded-2xl border border-[#333333] bg-[#1A1A1A]/80 p-5 shadow-sm">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="font-mono-micro text-[#D9D9D9] font-medium tracking-wider">CATEGORIES</span>
+                    <span className="font-mono-micro text-[#D9D9D9] font-medium tracking-wider">FOLDERS</span>
                     <FolderTree className="h-4 w-4 text-[#D9D9D9]" />
                   </div>
-                  <div className="font-oughter text-3xl font-bold text-white tracking-tight">
+                  <div className="font-sans text-3xl font-bold text-white tracking-tight">
                     <NumberTicker value={categories.length} />
                   </div>
                   <span className="font-mono-micro text-[#6B6B6B] mt-2 block">
@@ -1625,7 +1615,7 @@ export default function App() {
                     <span className="font-mono-micro text-[#D9D9D9] font-medium tracking-wider">CONNECTED DEVICES</span>
                     <Smartphone className="h-4 w-4 text-[#D9D9D9]" />
                   </div>
-                  <div className="font-oughter text-3xl font-bold text-white tracking-tight">
+                  <div className="font-sans text-3xl font-bold text-white tracking-tight">
                     <NumberTicker value={devices.length} />
                   </div>
                   <span className="font-mono-micro text-[#6B6B6B] mt-2 block">
@@ -1637,17 +1627,17 @@ export default function App() {
               {/* Persona Insights - Attractive Celebratory State on First Generation, Minimal Thereafter */}
               {showPersonaInsights && (
                 isFirstTimePersona ? (
-                  <div className="relative p-[1.5px] rounded-2xl bg-gradient-to-r from-emerald-500/40 via-cyan-400/30 via-indigo-500/40 to-purple-500/40 shadow-[0_0_35px_rgba(52,211,153,0.15)] overflow-hidden transition-all duration-500">
+                  <div className="relative p-[1px] rounded-2xl bg-gradient-to-b from-white/30 via-white/10 to-white/5 shadow-[0_0_25px_rgba(255,255,255,0.08)] overflow-hidden transition-all duration-500">
                     <div className="relative rounded-2xl bg-[#141414]/95 backdrop-blur-xl p-6 sm:p-7">
                       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                         <div className="flex items-center gap-2.5">
-                          <div className="p-2 rounded-xl bg-gradient-to-tr from-emerald-500/20 to-cyan-500/20 border border-emerald-500/30 text-emerald-400 shadow-sm animate-pulse">
-                            <Sparkles className="h-4 w-4" />
+                          <div className="p-2 rounded-xl bg-white/10 border border-white/20 text-white shadow-[0_0_12px_rgba(255,255,255,0.12)]">
+                            <Sparkles className="h-4 w-4 text-white" />
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
-                              <h3 className="font-oughter text-base font-bold text-white tracking-tight">Vault Intelligence Persona</h3>
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-emerald-400/10 text-emerald-300 border border-emerald-400/30">
+                              <h3 className="font-sans text-base font-bold text-white tracking-tight">Vault Intelligence Persona</h3>
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-white/10 text-zinc-200 border border-white/20">
                                 ✨ Synthesized
                               </span>
                             </div>
@@ -1668,15 +1658,15 @@ export default function App() {
                         {userPersonaInsight}
                       </p>
 
-                      <div className="h-1 w-full rounded-full bg-gradient-to-r from-emerald-400 via-cyan-400 to-purple-400 opacity-60" />
+                      <div className="h-0.5 w-full rounded-full bg-gradient-to-r from-transparent via-white/70 to-transparent shadow-[0_0_10px_rgba(255,255,255,0.4)]" />
                     </div>
                   </div>
                 ) : (
-                  <div className="rounded-2xl border border-[#333333] bg-[#1A1A1A]/90 p-6 shadow-sm">
+                  <div className="rounded-2xl border border-white/15 bg-[#1A1A1A]/90 p-6 shadow-sm">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
                         <Bookmark className="h-4 w-4 text-[#D9D9D9]" />
-                        <h3 className="font-oughter text-sm font-bold text-white tracking-tight">Vault Intelligence Persona</h3>
+                        <h3 className="font-sans text-sm font-bold text-white tracking-tight">Vault Intelligence Persona</h3>
                       </div>
                       {reels.length < 20 && (
                         <span className="font-mono-micro text-[#6B6B6B] bg-[#0B0B0B] px-2.5 py-1 rounded-full border border-[#333333]">
@@ -1691,12 +1681,12 @@ export default function App() {
                 )
               )}
 
-              {/* Compressed Niche Category Distribution */}
+              {/* Compressed Niche Folder Distribution */}
               <div className="rounded-2xl border border-[#333333] bg-[#1A1A1A]/80 p-5 shadow-sm">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-oughter text-sm font-bold text-white tracking-tight flex items-center gap-2">
+                  <h3 className="font-sans text-sm font-bold text-white tracking-tight flex items-center gap-2">
                     <PieChart className="h-4 w-4 text-[#D9D9D9]" />
-                    <span>Niche Category Breakdown</span>
+                    <span>Niche Folder Breakdown</span>
                   </h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -1725,15 +1715,15 @@ export default function App() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-oughter text-sm sm:text-base font-bold text-white tracking-tight">Categories Directory</h3>
-                  <p className="text-[11px] sm:text-xs text-[#6B6B6B]">Click any category to open and explore saved posts directly.</p>
+                  <h3 className="font-sans text-sm sm:text-base font-bold text-white tracking-tight">Folders Directory</h3>
+                  <p className="text-[11px] sm:text-xs text-[#6B6B6B]">Click any folder to open and explore saved posts directly.</p>
                 </div>
                 <button
                   onClick={() => setIsCreatingCategory(!isCreatingCategory)}
                   className="flex items-center gap-1.5 rounded-lg bg-[#D9D9D9] hover:bg-white text-[#0B0B0B] px-3 py-1.5 text-xs font-semibold active:scale-95 transition"
                 >
                   <Plus className="h-3.5 w-3.5" />
-                  <span>New Category</span>
+                  <span>New Folder</span>
                 </button>
               </div>
 
@@ -1744,11 +1734,11 @@ export default function App() {
                     required
                     value={newCategoryName}
                     onChange={(e) => setNewCategoryName(e.target.value)}
-                    placeholder="Category name..."
+                    placeholder="Folder name..."
                     className="flex-1 min-w-[180px] rounded-lg border border-[#333333] bg-[#0B0B0B] px-3 py-1.5 text-xs text-white placeholder-[#6B6B6B] focus:border-[#D9D9D9] focus:outline-none"
                   />
                   <button type="submit" className="rounded-lg bg-[#D9D9D9] hover:bg-white text-[#0B0B0B] px-3.5 py-1.5 text-xs font-semibold">
-                    Create
+                    Create Folder
                   </button>
                 </form>
               )}
@@ -1871,7 +1861,7 @@ export default function App() {
                         dragOverCatId === '__root__' ? 'border-amber-400 bg-amber-950/40 text-amber-200 ring-2 ring-amber-400' : 'border-transparent text-[#D9D9D9] hover:underline'
                       }`}
                     >
-                      ← Back to Categories {currentPage === 'savelater' && '(Drop to take out)'}
+                      ← Back to Folders {currentPage === 'savelater' && '(Drop to take out)'}
                     </button>
                     <span className="text-[#6B6B6B]">/</span>
                     <span className="text-xs text-white font-semibold">
@@ -1929,147 +1919,6 @@ export default function App() {
                       </div>
                     );
                   })()}
-                </div>
-              )}
-
-              {/* SAVE LATER CATEGORY QUICK BAR & DRAG-AND-DROP STRIP */}
-              {currentPage === 'savelater' && (
-                <div className="mb-6 rounded-2xl border border-[#2A2A2A] bg-[#121212]/90 backdrop-blur p-4 space-y-3">
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <FolderTree className="h-4 w-4 text-white" />
-                        <h3 className="font-oughter text-sm font-bold text-white tracking-tight">Category Folders</h3>
-                        <span className="font-mono-micro text-[#888888]">
-                          ({rootCategories.length} folders)
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-[#737373] mt-0.5">
-                        Drag any saved reel below into a folder. Drag folders into folders to nest them. Click any folder to open instantly.
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        onClick={() => setIsCreatingCategory(!isCreatingCategory)}
-                        className="flex items-center gap-1.5 rounded-lg bg-white hover:bg-zinc-200 text-[#0B0B0B] px-3 py-1.5 text-xs font-semibold transition active:scale-95 shadow-sm"
-                      >
-                        <Plus className="h-3.5 w-3.5" />
-                        <span>New Category</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Inline Category Creation Form */}
-                  {isCreatingCategory && (
-                    <form onSubmit={handleCreateCategory} className="p-3 rounded-xl border border-[#333333] bg-[#0E0E0E] flex flex-wrap items-center gap-2 animate-fade-up">
-                      <input
-                        type="text"
-                        required
-                        autoFocus
-                        value={newCategoryName}
-                        onChange={(e) => setNewCategoryName(e.target.value)}
-                        placeholder="New category name (e.g. Design, Workflows, Recipes)..."
-                        className="flex-1 min-w-[200px] rounded-lg border border-[#333333] bg-[#050505] px-3 py-1.5 text-xs text-white placeholder-[#666] focus:border-white focus:outline-none"
-                      />
-                      <button
-                        type="submit"
-                        disabled={categoryInsertPending}
-                        className="rounded-lg bg-white hover:bg-zinc-200 text-[#0B0B0B] px-3.5 py-1.5 text-xs font-semibold transition active:scale-95"
-                      >
-                        {categoryInsertPending ? 'Creating...' : 'Create Folder'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => { setIsCreatingCategory(false); setNewCategoryName(''); }}
-                        className="rounded-lg border border-[#333333] hover:bg-[#1A1A1A] text-zinc-400 px-2.5 py-1.5 text-xs transition"
-                      >
-                        Cancel
-                      </button>
-                    </form>
-                  )}
-
-                  {/* Horizontal Folders Strip (Draggable, Droppable, Click to open instantly) */}
-                  <div className="flex items-center gap-2.5 overflow-x-auto pb-1.5 pt-1 scrollbar-thin scrollbar-thumb-zinc-700">
-                    {/* Dedicated "Out of Folder" drop zone */}
-                    <div
-                      onDragOver={(e) => {
-                        if (currentPage !== 'savelater') return;
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setDragOverCatId('__root__');
-                      }}
-                      onDragLeave={() => setDragOverCatId(null)}
-                      onDrop={(e) => {
-                        if (currentPage !== 'savelater') return;
-                        handleDropOnCategory('__root__', e);
-                      }}
-                      className={`group flex items-center gap-2 px-3 py-2 rounded-xl border border-dashed cursor-pointer select-none shrink-0 transition-all text-xs font-medium ${
-                        dragOverCatId === '__root__'
-                          ? 'ring-2 ring-amber-400 border-amber-400 bg-amber-950/40 text-amber-200 scale-105 shadow-[0_0_15px_rgba(251,191,36,0.25)]'
-                          : 'border-white/20 bg-white/[0.04] text-zinc-400 hover:text-white hover:border-white/40'
-                      }`}
-                      title="Drop a reel or folder here to take it out to root (uncategorized)"
-                    >
-                      <FolderMinus className="h-4 w-4 text-amber-400/80" />
-                      <span>Take Out of Folder</span>
-                    </div>
-
-                    {rootCategories.map((cat) => {
-                      const count = reels.filter(r => r.category_id === cat.id).length;
-                      const subCats = categories.filter(c => c.parent_id === cat.id);
-                      const iconName = categoryMetaMap[cat.id]?.icon || 'Folder';
-                      const theme = getCategoryTheme(iconName, categoryMetaMap[cat.id]?.color);
-                      const isDragOver = dragOverCatId === cat.id;
-
-                      return (
-                        <div
-                          key={cat.id}
-                          draggable={currentPage === 'savelater'}
-                          onDragStart={(e) => {
-                            if (currentPage !== 'savelater') { e.preventDefault(); return; }
-                            setDraggedItem({ type: 'folder', id: cat.id, folderId: cat.id });
-                            e.dataTransfer.setData('application/json', JSON.stringify({ type: 'folder', id: cat.id, folderId: cat.id }));
-                            e.dataTransfer.effectAllowed = 'move';
-                          }}
-                          onDragEnd={() => setDraggedItem(null)}
-                          onDragOver={(e) => {
-                            if (currentPage !== 'savelater') return;
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setDragOverCatId(cat.id);
-                          }}
-                          onDragLeave={() => setDragOverCatId(null)}
-                          onDrop={(e) => {
-                            if (currentPage !== 'savelater') return;
-                            handleDropOnCategory(cat.id, e);
-                          }}
-                          onClick={() => {
-                            setCurrentPage('categories');
-                            setSelectedCategoryId(cat.id);
-                          }}
-                          className={`group flex items-center gap-2.5 px-3 py-2 rounded-xl border cursor-pointer select-none shrink-0 transition-all duration-200 ${
-                            isDragOver
-                              ? 'ring-2 ring-white border-white bg-[#262626] scale-105 shadow-[0_0_15px_rgba(255,255,255,0.15)]'
-                              : 'border-[#2E2E2E] bg-[#171717] hover:border-[#666] hover:bg-[#1E1E1E]'
-                          }`}
-                          title={`Click to open "${cat.name}". Drag reel here to move, or drag another folder here to nest.`}
-                        >
-                          <div className={`p-1.5 rounded-lg ${theme.bg} ${theme.border} border group-hover:scale-105 transition`}>
-                            {renderCategoryIcon(iconName, `h-4 w-4 ${theme.text}`)}
-                          </div>
-                          <div className="flex flex-col text-left">
-                            <span className="text-xs font-semibold text-white group-hover:text-zinc-100 transition truncate max-w-[120px]">
-                              {cat.name}
-                            </span>
-                            <span className="font-mono text-[10px] text-[#888888] tabular-nums">
-                              {count} items {subCats.length > 0 ? `· ${subCats.length} sub` : ''}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
                 </div>
               )}
 
@@ -2276,7 +2125,7 @@ export default function App() {
                         {/* Card Bottom: Content info */}
                         <div className="relative z-10 w-full mt-auto pt-4">
                           {/* Title of Content */}
-                          <h3 className="font-oughter font-bold text-white leading-snug text-sm sm:text-base mb-1.5 line-clamp-2 drop-shadow-sm group-hover:text-zinc-100 transition">
+                          <h3 className="font-sans font-bold text-white leading-snug text-sm sm:text-base mb-1.5 line-clamp-2 drop-shadow-sm group-hover:text-zinc-100 transition">
                             {reel.ai_title || 'Instagram Post'}
                           </h3>
 
@@ -2364,7 +2213,7 @@ export default function App() {
                               )}
                             </div>
 
-                            <h3 className="font-oughter font-semibold text-white leading-tight text-xs sm:text-sm truncate">
+                            <h3 className="font-sans font-semibold text-white leading-tight text-xs sm:text-sm truncate">
                               {reel.ai_title || 'Instagram Post'}
                             </h3>
 
@@ -2507,10 +2356,10 @@ export default function App() {
 
           {/* SETTINGS VIEW: MINIMAL, ELEGANT HORIZONTAL ROWS */}
           {currentPage === 'settings' && (
-            <div className="max-w-4xl mx-auto space-y-8 pb-16 animate-fade-up">
+            <div className="w-full space-y-8 pb-16 animate-fade-up">
               {/* Page Title & Intro */}
               <div className="border-b border-[#222222] pb-4">
-                <h2 className="font-oughter text-xl sm:text-2xl font-bold text-white tracking-tight">Settings</h2>
+                <h2 className="font-sans text-xl sm:text-2xl font-bold text-white tracking-tight">Settings</h2>
                 <p className="text-xs text-[#7E7E7E] mt-1">Configure your account, visual preferences, queue policies, and synchronization nodes.</p>
               </div>
 
@@ -2519,7 +2368,7 @@ export default function App() {
                 {/* Row 1: Section Header Display */}
                 <div className="flex items-center gap-2.5 pb-2 border-b border-[#222222]">
                   <User className="h-4 w-4 text-white" />
-                  <h3 className="font-oughter text-sm sm:text-base font-bold text-white tracking-tight">Account Settings</h3>
+                  <h3 className="font-sans text-sm sm:text-base font-bold text-white tracking-tight">Account Settings</h3>
                 </div>
 
                 <div className="divide-y divide-[#1C1C1C]">
@@ -2590,7 +2439,7 @@ export default function App() {
                 {/* Row 1: Section Header Display */}
                 <div className="flex items-center gap-2.5 pb-2 border-b border-[#222222]">
                   <Palette className="h-4 w-4 text-white" />
-                  <h3 className="font-oughter text-sm sm:text-base font-bold text-white tracking-tight">Appearance &amp; Layout</h3>
+                  <h3 className="font-sans text-sm sm:text-base font-bold text-white tracking-tight">Appearance &amp; Layout</h3>
                 </div>
 
                 <div className="divide-y divide-[#1C1C1C]">
@@ -2667,18 +2516,18 @@ export default function App() {
                     />
                   </div>
 
-                  {/* Row 6: Interactive Tutorial Quest */}
+                  {/* Row 6: Interactive Walkthrough */}
                   <div className="py-3.5 flex items-center justify-between gap-3">
                     <div>
-                      <span className="text-xs font-medium text-white block">Interactive Tutorial Quest</span>
-                      <span className="text-[11px] text-[#737373]">Replay the Apple liquid glass &quot;How to Play&quot; guide anytime</span>
+                      <span className="text-xs font-medium text-white block">Welcome &amp; Feature Walkthrough</span>
+                      <span className="text-[11px] text-[#737373]">Replay the interactive feature tour anytime</span>
                     </div>
                     <button
                       onClick={() => setShowGameGuide(true)}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/20 bg-white/[0.08] hover:bg-white/[0.15] text-xs font-medium text-white transition active:scale-95 shadow-sm"
                     >
-                      <Gamepad2 className="h-3.5 w-3.5 text-cyan-300" />
-                      <span>Replay Guide</span>
+                      <Sparkles className="h-3.5 w-3.5 text-zinc-300" />
+                      <span>Replay Tour</span>
                     </button>
                   </div>
                 </div>
@@ -2689,7 +2538,7 @@ export default function App() {
                 {/* Row 1: Section Header Display */}
                 <div className="flex items-center gap-2.5 pb-2 border-b border-[#222222]">
                   <Clock className="h-4 w-4 text-white" />
-                  <h3 className="font-oughter text-sm sm:text-base font-bold text-white tracking-tight">Archive Auto-Delete &amp; Retention</h3>
+                  <h3 className="font-sans text-sm sm:text-base font-bold text-white tracking-tight">Archive Auto-Delete &amp; Retention</h3>
                 </div>
 
                 <div className="divide-y divide-[#1C1C1C]">
@@ -2742,7 +2591,7 @@ export default function App() {
                 {/* Row 1: Section Header Display */}
                 <div className="flex items-center gap-2.5 pb-2 border-b border-[#222222]">
                   <Archive className="h-4 w-4 text-white" />
-                  <h3 className="font-oughter text-sm sm:text-base font-bold text-white tracking-tight">Vault Status Queues</h3>
+                  <h3 className="font-sans text-sm sm:text-base font-bold text-white tracking-tight">Vault Status Queues</h3>
                 </div>
 
                 <div className="divide-y divide-[#1C1C1C]">
@@ -2806,7 +2655,7 @@ export default function App() {
                 {/* Row 1: Section Header Display */}
                 <div className="flex items-center gap-2.5 pb-2 border-b border-[#222222]">
                   <Download className="h-4 w-4 text-white" />
-                  <h3 className="font-oughter text-sm sm:text-base font-bold text-white tracking-tight">Data Management &amp; Export</h3>
+                  <h3 className="font-sans text-sm sm:text-base font-bold text-white tracking-tight">Data Management &amp; Export</h3>
                 </div>
 
                 <div className="divide-y divide-[#1C1C1C]">
@@ -2865,7 +2714,7 @@ export default function App() {
                 {/* Row 1: Section Header Display */}
                 <div className="flex items-center gap-2.5 pb-2 border-b border-[#222222]">
                   <Smartphone className="h-4 w-4 text-white" />
-                  <h3 className="font-oughter text-sm sm:text-base font-bold text-white tracking-tight">Registered Devices &amp; Synchronization</h3>
+                  <h3 className="font-sans text-sm sm:text-base font-bold text-white tracking-tight">Registered Devices &amp; Synchronization</h3>
                 </div>
 
                 <div className="divide-y divide-[#1C1C1C]">
@@ -2913,7 +2762,7 @@ export default function App() {
                 {/* Row 1: Section Header Display */}
                 <div className="flex items-center gap-2.5 pb-2 border-b border-[#222222]">
                   <LogOut className="h-4 w-4 text-white" />
-                  <h3 className="font-oughter text-sm sm:text-base font-bold text-white tracking-tight">Session &amp; Logout</h3>
+                  <h3 className="font-sans text-sm sm:text-base font-bold text-white tracking-tight">Session &amp; Logout</h3>
                 </div>
 
                 <div className="divide-y divide-[#1C1C1C]">
@@ -2956,7 +2805,7 @@ export default function App() {
                 <div className="h-8 w-8 rounded-xl bg-white/[0.1] border border-white/20 flex items-center justify-center text-white shrink-0 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3)]">
                   <Film className="h-4 w-4 text-white" />
                 </div>
-                <h3 className="font-oughter text-lg font-bold text-white truncate">
+                <h3 className="font-sans text-lg font-bold text-white truncate">
                   {detailReel.ai_title || 'Post Details'}
                 </h3>
               </div>
@@ -3129,7 +2978,7 @@ export default function App() {
                 <Trash2 className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="font-oughter text-base font-bold text-white">Delete All Saved Items</h3>
+                <h3 className="font-sans text-base font-bold text-white">Delete All Saved Items</h3>
                 <p className="text-xs text-white/70">Permanently delete saved items from your account.</p>
               </div>
             </div>
@@ -3225,7 +3074,7 @@ export default function App() {
                   <Palette className="h-4 w-4" />
                 </div>
                 <div>
-                  <h3 className="font-oughter text-base font-bold text-white tracking-tight">Customize Category</h3>
+                  <h3 className="font-sans text-base font-bold text-white tracking-tight">Customize Folder</h3>
                   <p className="text-[11px] text-white/70">Personalize name, color accent, and iconic symbol</p>
                 </div>
               </div>
@@ -3239,7 +3088,7 @@ export default function App() {
 
             <form onSubmit={handleUpdateCategory} className="space-y-4">
               <div>
-                <label className="text-xs font-medium text-[#D9D9D9] block mb-1.5">Category Name</label>
+                <label className="text-xs font-medium text-[#D9D9D9] block mb-1.5">Folder Name</label>
                 <input
                   type="text"
                   required

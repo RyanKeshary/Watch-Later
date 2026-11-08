@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   title: "Watch Later — Never lose a reel worth revisiting.",
   description: "Curate, classify, and revisit your saved reels and social content in high-fidelity.",
   icons: {
-    icon: "/logo.jpg"
+    icon: "/logo.png"
   }
 };
 
