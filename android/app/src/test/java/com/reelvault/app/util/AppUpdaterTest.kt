@@ -29,3 +29,4 @@ class AppUpdaterTest {
         assertTrue(info.versionCode > 1)
     }
 }
+

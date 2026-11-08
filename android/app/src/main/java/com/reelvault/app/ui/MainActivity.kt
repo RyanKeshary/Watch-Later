@@ -217,6 +217,38 @@ class MainActivity : ComponentActivity() {
                             )
                         } else {
                             AuthScreen(
+                                availableUpdate = availableUpdate,
+                                isDownloadingUpdate = isDownloadingUpdate,
+                                onUpdateClick = {
+                                    availableUpdate?.let { info ->
+                                        isDownloadingUpdate = true
+                                        Toast.makeText(this@MainActivity, "Starting update download...", Toast.LENGTH_SHORT).show()
+
+                                        val watchdogJob = lifecycleScope.launch {
+                                            kotlinx.coroutines.delay(600_000L)
+                                            if (isDownloadingUpdate) {
+                                                isDownloadingUpdate = false
+                                                Toast.makeText(this@MainActivity, "Update download timed out", Toast.LENGTH_SHORT).show()
+                                            }
+                                        }
+
+                                        AppUpdater.startDownloadAndInstall(this@MainActivity, info) { result ->
+                                            watchdogJob.cancel()
+                                            runOnUiThread {
+                                                isDownloadingUpdate = false
+                                                when (result) {
+                                                    UpdateResult.SUCCESS -> {}
+                                                    UpdateResult.BROWSER_OPENED -> {
+                                                        Toast.makeText(this@MainActivity, "Opening update in browser...", Toast.LENGTH_SHORT).show()
+                                                    }
+                                                    UpdateResult.FAILED -> {
+                                                        Toast.makeText(this@MainActivity, "Update download was cancelled or failed", Toast.LENGTH_SHORT).show()
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
                                 onAuthSuccess = { email ->
                                     userEmail = email
                                     isLoggedIn.value = true
@@ -291,7 +323,12 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    fun AuthScreen(onAuthSuccess: (String) -> Unit) {
+    fun AuthScreen(
+        availableUpdate: AppVersionInfo? = null,
+        isDownloadingUpdate: Boolean = false,
+        onUpdateClick: () -> Unit = {},
+        onAuthSuccess: (String) -> Unit
+    ) {
         var email by remember { mutableStateOf("") }
         var password by remember { mutableStateOf("") }
         var showPassword by remember { mutableStateOf(false) }
@@ -319,8 +356,58 @@ class MainActivity : ComponentActivity() {
                 fontSize = 14.sp,
                 color = DarkMuted,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(bottom = 36.dp)
+                modifier = Modifier.padding(bottom = if (availableUpdate != null) 16.dp else 36.dp)
             )
+
+            // In-app Update Banner (Visible even before login)
+            if (availableUpdate != null) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 20.dp)
+                        .border(1.dp, Color(0xFF225544), RoundedCornerShape(16.dp))
+                        .background(Color(0xFF0D221A), RoundedCornerShape(16.dp))
+                        .padding(16.dp)
+                ) {
+                    Text(
+                        text = "NEW UPDATE AVAILABLE: v${availableUpdate.versionName}",
+                        fontSize = 11.sp,
+                        fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF34D399),
+                        letterSpacing = 1.sp
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = availableUpdate.releaseNotes ?: "Bug fixes and performance improvements.",
+                        fontSize = 13.sp,
+                        color = LightText
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Button(
+                        onClick = onUpdateClick,
+                        enabled = !isDownloadingUpdate,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF10B981),
+                            contentColor = Color.Black
+                        ),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth().height(40.dp)
+                    ) {
+                        if (isDownloadingUpdate) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp,
+                                color = Color.Black
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Downloading update...", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                        } else {
+                            Text("Update Now (v${availableUpdate.versionName})", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
 
             // Input card with dark styling
             Column(
