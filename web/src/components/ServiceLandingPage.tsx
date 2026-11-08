@@ -19,7 +19,6 @@ import { supabase } from '@/lib/supabase';
 import SplashCursor from '@/components/SplashCursor';
 import Preloader from '@/components/Preloader';
 import StageshowStepCard from '@/components/StageshowStepCard';
-import StageshowAboutCard from '@/components/StageshowAboutCard';
 
 interface ServicePageProps {
   onSignInSuccess?: () => void;
@@ -554,51 +553,59 @@ export default function ServiceLandingPage({
         </section>
 
         {/* ========================================================================= */}
-        {/* 6 & 8. ABOUT SECTION (§6 & §8: 100vh height, locked palette, traveling icon) */}
+        {/* 6. ABOUT SECTION (White background, black text, clean & telling)         */}
         {/* ========================================================================= */}
         <section
           id="about"
           ref={aboutRef}
-          className="relative min-h-screen flex flex-col justify-center items-center py-20 px-6 sm:px-10 bg-[#1A1A1A] text-[#FFFFFF] border-y border-[#333333] text-center overflow-hidden"
+          className="relative min-h-screen flex flex-col justify-center items-center py-24 px-6 sm:px-12 bg-[#FFFFFF] text-[#0B0B0B] border-y border-[#D9D9D9] text-center overflow-hidden"
         >
-          {/* Subtle fabric blend on dark surface */}
-          <div className="absolute inset-0 bg-fabric opacity-15 pointer-events-none" />
-
-          {/* §6: The Traveling Reel Icon revolving in background */}
-          <div
-            className="absolute pointer-events-none z-0 transition-opacity duration-300"
-            style={{
-              opacity: heroToAboutProgress > 0.05 && aboutToMissionProgress < 0.6 ? 0.18 : 0,
-              transform: `translate(${Math.sin(heroToAboutProgress * Math.PI) * 40}px, ${(heroToAboutProgress - 0.5) * 120}px) rotate(${
-                heroToAboutProgress * 360 + scrollY * 0.2
-              }deg) scale(${1.2 + heroToAboutProgress * 1.5})`
-            }}
-          >
-            <div className="w-48 h-48 rounded-full border-4 border-[#D9D9D9] flex items-center justify-center">
-              <Play className="w-20 h-20 fill-[#D9D9D9] stroke-none ml-2" />
-            </div>
+          {/* Subtle light watermark / depth geometry in pale grey */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0">
+            <span className="font-oughter text-[20vw] leading-none text-[#0B0B0B]/[0.03] whitespace-nowrap uppercase tracking-tight">
+              Revisit
+            </span>
           </div>
 
-          <div className="relative z-10 mx-auto max-w-3xl flex flex-col items-center">
-            {/* Small uppercase label */}
-            <span className="text-xs font-mono font-bold tracking-widest uppercase text-[#6B6B6B] mb-8 block">
-              ABOUT WATCH LATER
-            </span>
-
-            {/* Exact Centered Statement */}
-            <h2 className="text-2xl sm:text-4xl md:text-5xl font-black tracking-tight text-[#FFFFFF] text-balance leading-snug mb-8">
+          <div className="relative z-10 mx-auto max-w-4xl flex flex-col items-center">
+            {/* Bold, telling statement in high-contrast crisp black typography */}
+            <h2 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-[-0.03em] text-[#0B0B0B] text-balance leading-[1.12] mb-10">
               Good content deserves more than a forgotten save.
               <br />
-              Every reel deserves a revisit.
-              <br />
-              <span className="text-[#D9D9D9] font-medium">
-                This tool turns the content you save into a magical library worth revisiting.
-              </span>
+              <span className="text-[#0B0B0B]/70 font-semibold">Every reel deserves a revisit.</span>
             </h2>
 
-            {/* Faux Product UI Live Vault Card */}
-            <div className="w-full mt-4">
-              <StageshowAboutCard />
+            {/* Clear, structured explanatory subtitle */}
+            <p className="text-base sm:text-xl text-[#333333] max-w-2xl text-balance leading-relaxed font-normal">
+              Turns passive Instagram saves into a structured, searchable personal library.
+              Capture silently on mobile, browse organized shelves on web, and never let valuable knowledge rot.
+            </p>
+
+            {/* Clean three-column visual proof points */}
+            <div className="mt-14 grid grid-cols-1 sm:grid-cols-3 gap-6 w-full text-left">
+              <div className="rounded-2xl border border-[#D9D9D9] bg-[#FFFFFF] p-6 shadow-sm">
+                <span className="font-mono text-xs text-[#6B6B6B] block mb-2">01 / CAPTURE</span>
+                <h4 className="text-base font-bold text-[#0B0B0B] mb-1">Instant &amp; Silent</h4>
+                <p className="text-xs text-[#6B6B6B] leading-relaxed">
+                  One tap from the Instagram share sheet. Under 20ms local disk queue.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-[#D9D9D9] bg-[#FFFFFF] p-6 shadow-sm">
+                <span className="font-mono text-xs text-[#6B6B6B] block mb-2">02 / STRUCTURE</span>
+                <h4 className="text-base font-bold text-[#0B0B0B] mb-1">Autonomous Sort</h4>
+                <p className="text-xs text-[#6B6B6B] leading-relaxed">
+                  Audio transcripts and captions categorized by machine intelligence.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-[#D9D9D9] bg-[#FFFFFF] p-6 shadow-sm">
+                <span className="font-mono text-xs text-[#6B6B6B] block mb-2">03 / DELIBERATE</span>
+                <h4 className="text-base font-bold text-[#0B0B0B] mb-1">Revisit Shelf</h4>
+                <p className="text-xs text-[#6B6B6B] leading-relaxed">
+                  A focused dashboard queue with automated summaries and key takeaways.
+                </p>
+              </div>
             </div>
           </div>
         </section>
