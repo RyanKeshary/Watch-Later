@@ -1943,11 +1943,13 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
 
                         {/* Card Bottom: Content info */}
                         <div className="relative z-10 w-full mt-auto pt-3 transition-transform duration-500 ease-out transform group-hover:translate-y-16">
-                          <h3 className={`font-sans font-bold leading-snug text-sm sm:text-base mb-1 line-clamp-2 group-hover:line-clamp-1 drop-shadow-sm transition-all ${
-                            isSaved
-                              ? 'text-emerald-300 border border-emerald-400/80 [text-shadow:_0_0_1px_#10b981,_0_0_8px_rgba(16,185,129,0.4)] rounded-lg px-2 py-0.5 bg-transparent inline-block'
-                              : 'text-white group-hover:text-zinc-100'
-                          }`}>
+                          <h3
+                            className={`font-sans font-bold leading-snug text-sm sm:text-base mb-1 line-clamp-2 group-hover:line-clamp-1 drop-shadow-sm transition-all ${
+                              isSaved
+                                ? 'text-white [-webkit-text-stroke:_0.45px_#10b981]'
+                                : 'text-white group-hover:text-zinc-100'
+                            }`}
+                          >
                             {reel.ai_title || 'Instagram Post'}
                           </h3>
                           <p className="text-xs text-zinc-300 line-clamp-2 leading-relaxed transition-opacity duration-300 group-hover:opacity-0 group-hover:pointer-events-none">
@@ -2047,11 +2049,13 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                               )}
                             </div>
 
-                            <h3 className={`font-sans font-semibold leading-tight text-xs sm:text-sm truncate ${
-                              isSaved
-                                ? 'text-emerald-300 border border-emerald-400/80 [text-shadow:_0_0_1px_#10b981,_0_0_8px_rgba(16,185,129,0.4)] rounded-md px-1.5 py-0.5 bg-transparent inline-block'
-                                : 'text-white'
-                            }`}>
+                            <h3
+                              className={`font-sans font-semibold leading-tight text-xs sm:text-sm truncate ${
+                                isSaved
+                                  ? 'text-white [-webkit-text-stroke:_0.45px_#10b981]'
+                                  : 'text-white'
+                              }`}
+                            >
                               {reel.ai_title || 'Instagram Post'}
                             </h3>
 
