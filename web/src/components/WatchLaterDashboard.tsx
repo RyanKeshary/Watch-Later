@@ -632,27 +632,27 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
       <aside
         onMouseEnter={handleSidebarMouseEnter}
         onMouseLeave={handleSidebarMouseLeave}
-        className={`${isEffectiveExpanded ? 'w-72 md:w-72 lg:w-76 xl:w-80' : 'w-72 md:w-20'
+        className={`${isEffectiveExpanded ? 'w-72 md:w-72 lg:w-76 xl:w-80' : 'w-72 md:w-16'
           } ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
-          } fixed md:static inset-y-0 left-0 z-40 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] border-r border-[#333333] bg-[#0B0B0B]/95 md:bg-[#0B0B0B]/85 backdrop-blur-xl p-3 sm:p-3.5 flex flex-col justify-between select-none shrink-0 ${
+          } fixed md:static inset-y-0 left-0 z-40 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] border-r border-[#333333] bg-[#0B0B0B]/95 md:bg-[#0B0B0B]/85 backdrop-blur-xl p-2.5 sm:p-3 flex flex-col justify-between select-none shrink-0 ${
             sidebarCollapsed && isSidebarHovered ? 'shadow-[0_20px_60px_rgba(0,0,0,0.85)] z-50' : ''
           }`}
       >
         <div className="overflow-y-auto overflow-x-hidden">
           {/* Logo & Toggle Header */}
-          <div className="px-1.5 py-2 mb-2 flex items-center justify-between gap-2 min-h-[44px]">
+          <div className="px-1 py-1.5 mb-2 flex items-center justify-between gap-1.5 min-h-[40px]">
             <button
               onClick={() => { router.push('/'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
-              className="flex items-center gap-2.5 cursor-pointer hover:opacity-90 transition text-left group min-w-0"
+              className="flex items-center gap-2 cursor-pointer hover:opacity-90 transition text-left group min-w-0"
               title="Return to Home"
             >
               <img
                 src="/logo.png"
                 alt="Watch Later"
-                className="h-8 w-8 sm:h-9 sm:w-9 object-contain shrink-0 group-hover:scale-105 transition-all drop-shadow"
+                className="h-7 w-7 sm:h-8 sm:w-8 object-contain shrink-0 group-hover:scale-105 transition-all drop-shadow"
               />
               <div className={`min-w-0 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-hidden whitespace-nowrap ${
-                isEffectiveExpanded ? 'max-w-[160px] opacity-100' : 'max-w-0 opacity-0 pointer-events-none'
+                isEffectiveExpanded ? 'max-w-[150px] opacity-100' : 'max-w-0 opacity-0 pointer-events-none'
               }`}>
                 <span className="font-oughter text-base sm:text-lg font-bold tracking-tight text-white block leading-none">
                   Watch Later
@@ -663,20 +663,16 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
               </div>
             </button>
 
-            <div className="flex items-center gap-1 shrink-0">
+            <div className={`flex items-center gap-1 shrink-0 ${!isEffectiveExpanded ? 'hidden' : 'flex'}`}>
               <button
                 onClick={() => {
                   setSidebarCollapsed(!sidebarCollapsed);
                   setIsSidebarHovered(false);
                 }}
                 className="hidden md:inline-flex p-1.5 rounded-lg hover:bg-zinc-800/80 text-zinc-400 hover:text-white transition active:scale-95"
-                title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                title="Collapse sidebar"
               >
-                {sidebarCollapsed ? (
-                  <PanelLeft className="h-3.5 w-3.5" />
-                ) : (
-                  <PanelLeftClose className="h-3.5 w-3.5" />
-                )}
+                <PanelLeftClose className="h-3.5 w-3.5" />
               </button>
               <button
                 onClick={() => setMobileMenuOpen(false)}
@@ -1102,11 +1098,11 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                     );
                   }
 
-                  // Dynamic Pie / Donut View (Enhanced, Larger & Circular Loading Animation)
+                  // Dynamic Pie View (Solid disc filled to core, larger & smooth entry)
                   const totalNicheReels = nicheCategories.reduce(
                     (acc, c) => acc + reels.filter(r => r.category_id === c.id).length, 0
                   );
-                  const radius = 62;
+                  const radius = 35;
                   const circumference = 2 * Math.PI * radius;
                   let accumulatedOffset = 0;
 
@@ -1116,7 +1112,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
 
                   return (
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-7 py-3 px-2 max-w-4xl mx-auto">
-                      {/* Enhanced Larger Donut/Pie */}
+                      {/* Solid Pie with radial segments to core */}
                       <div className="relative w-56 h-56 sm:w-60 sm:h-60 shrink-0 flex items-center justify-center">
                         <svg viewBox="0 0 160 160" className="w-full h-full -rotate-90 transform overflow-visible">
                           <circle
@@ -1124,8 +1120,8 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                             cy="80"
                             r={radius}
                             fill="#111111"
-                            stroke="#1E1E1E"
-                            strokeWidth="24"
+                            stroke="#1A1A1A"
+                            strokeWidth="70"
                           />
                           {totalNicheReels > 0 && nicheCategories.map((cat, idx) => {
                             const count = reels.filter(r => r.category_id === cat.id).length;
@@ -1145,12 +1141,12 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                                 r={radius}
                                 fill="transparent"
                                 stroke={color}
-                                strokeWidth={isHovered ? 28 : 24}
+                                strokeWidth={isHovered ? 74 : 70}
                                 strokeDasharray={pieAnimated ? `${sliceLength} ${circumference}` : `0 ${circumference}`}
                                 strokeDashoffset={-currentOffset}
                                 className="transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer"
                                 style={{
-                                  filter: isHovered ? `drop-shadow(0 0 8px ${color})` : undefined,
+                                  filter: isHovered ? `drop-shadow(0 0 10px ${color})` : undefined,
                                 }}
                                 onMouseEnter={() => setHoveredPieCatId(cat.id)}
                                 onMouseLeave={() => setHoveredPieCatId(null)}
@@ -1159,33 +1155,35 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                           })}
                         </svg>
 
-                        {/* Donut Center Display */}
+                        {/* Pie Center Tooltip Pill (glass floating over solid pie) */}
                         <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-3 pointer-events-none select-none">
-                          {hoveredCat ? (
-                            <>
-                              <span className="text-[10px] font-mono uppercase text-zinc-400 truncate max-w-[105px]">
-                                {hoveredCat.name}
-                              </span>
-                              <span className="text-xl font-bold text-white tabular-nums leading-tight">
-                                {hoveredCount}
-                              </span>
-                              <span className="text-xs font-semibold text-cyan-300 font-mono tabular-nums">
-                                {hoveredPct}%
-                              </span>
-                            </>
-                          ) : (
-                            <>
-                              <span className="text-[10px] font-mono uppercase text-zinc-500">
-                                Total
-                              </span>
-                              <span className="text-2xl font-bold text-white tabular-nums leading-tight">
-                                <NumberTicker value={totalNicheReels} />
-                              </span>
-                              <span className="text-[10px] text-zinc-400">
-                                Saved Posts
-                              </span>
-                            </>
-                          )}
+                          <div className="rounded-2xl px-3 py-2 bg-black/85 backdrop-blur-md border border-white/20 shadow-[0_8px_30px_rgba(0,0,0,0.8)] flex flex-col items-center">
+                            {hoveredCat ? (
+                              <>
+                                <span className="text-[10px] font-mono uppercase text-zinc-400 truncate max-w-[100px]">
+                                  {hoveredCat.name}
+                                </span>
+                                <span className="text-lg font-bold text-white tabular-nums leading-tight">
+                                  {hoveredCount}
+                                </span>
+                                <span className="text-xs font-semibold text-emerald-400 font-mono tabular-nums">
+                                  {hoveredPct}%
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="text-[10px] font-mono uppercase text-zinc-500">
+                                  Total
+                                </span>
+                                <span className="text-xl font-bold text-white tabular-nums leading-tight">
+                                  <NumberTicker value={totalNicheReels} />
+                                </span>
+                                <span className="text-[10px] text-zinc-400">
+                                  Saved Posts
+                                </span>
+                              </>
+                            )}
+                          </div>
                         </div>
                       </div>
 
@@ -1371,16 +1369,18 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                     if (subCats.length === 0) return null;
                     const isDragAllowed = true;
                     return (
-                      <div className="p-3 rounded-xl border border-[#2E2E2E] bg-[#141414]/90 backdrop-blur space-y-2">
-                        <span className="text-[10px] font-mono uppercase tracking-wider text-[#737373] block">
+                      <div className="p-4 rounded-2xl border border-white/10 bg-[#141414]/90 backdrop-blur-md space-y-3">
+                        <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400 block">
                           Nested Categories ({subCats.length})
                         </span>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
                           {subCats.map(sub => {
                             const subCount = reels.filter(r => r.category_id === sub.id || r.subcategory_id === sub.id).length;
                             const isOver = dragOverCatId === sub.id;
+                            const subIcon = categoryMetaMap[sub.id]?.icon || 'Folder';
+                            const subTheme = getCategoryTheme(subIcon, categoryMetaMap[sub.id]?.color);
                             return (
-                              <button
+                              <div
                                 key={sub.id}
                                 draggable={isDragAllowed}
                                 onDragStart={(e) => {
@@ -1402,14 +1402,36 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                                   handleDropOnCategory(sub.id, e);
                                 }}
                                 onClick={() => setSelectedCategoryId(sub.id)}
-                                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs text-white transition ${
-                                  isOver ? 'ring-2 ring-white border-white bg-[#222]' : 'border-[#333333] bg-[#0A0A0A] hover:bg-[#1A1A1A] hover:border-[#666]'
+                                className={`group relative flex flex-col justify-between p-3.5 rounded-2xl border transition-all cursor-grab active:cursor-grabbing select-none backdrop-blur-xl ${
+                                  isOver
+                                    ? 'border-white bg-[#262626] ring-2 ring-white scale-105'
+                                    : 'border-white/10 bg-[#141414]/85 hover:bg-[#1E1E1E]/95 hover:border-white/25 text-white shadow-lg'
                                 }`}
                               >
-                                <Folder className="h-3.5 w-3.5 text-zinc-400" />
-                                <span>{sub.name}</span>
-                                <span className="font-mono text-[10px] text-[#737373]">({subCount})</span>
-                              </button>
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className={`p-1.5 rounded-xl ${subTheme.bg} border ${subTheme.border} ${subTheme.text} group-hover:scale-105 transition-transform`}>
+                                    {renderCategoryIcon(subIcon, "h-3.5 w-3.5")}
+                                  </div>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeleteCategory(sub.id, e);
+                                    }}
+                                    className="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-red-500/20 text-zinc-500 hover:text-red-400 transition"
+                                    title="Delete category"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </button>
+                                </div>
+                                <div>
+                                  <span className="text-xs font-semibold text-white group-hover:text-zinc-100 transition-colors block truncate">
+                                    {sub.name}
+                                  </span>
+                                  <span className="text-[10px] font-mono text-zinc-400 mt-0.5 block">
+                                    {subCount} {subCount === 1 ? 'post' : 'posts'}
+                                  </span>
+                                </div>
+                              </div>
                             );
                           })}
                         </div>
@@ -1422,16 +1444,16 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                     const nestedSaves = savesFolders.filter(f => f.parent_id === selectedCategoryId);
                     if (nestedSaves.length === 0) return null;
                     return (
-                      <div className="p-3 rounded-xl border border-white/10 bg-[#141414]/90 backdrop-blur space-y-2">
+                      <div className="p-4 rounded-2xl border border-white/10 bg-[#141414]/90 backdrop-blur-md space-y-3">
                         <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400 block">
                           Nested Folders ({nestedSaves.length})
                         </span>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
                           {nestedSaves.map(sub => {
                             const subCount = reels.filter(r => r.category_id === sub.id && savedLaterIds.includes(r.id)).length;
                             const isOver = dragOverCatId === sub.id;
                             return (
-                              <button
+                              <div
                                 key={sub.id}
                                 draggable={true}
                                 onDragStart={(e) => {
@@ -1450,14 +1472,36 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                                   handleDropOnCategory(sub.id, e);
                                 }}
                                 onClick={() => setSelectedCategoryId(sub.id)}
-                                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs text-white transition ${
-                                  isOver ? 'ring-2 ring-cyan-400 border-cyan-400 bg-cyan-950/40 text-cyan-200' : 'border-white/10 bg-[#0A0A0A] hover:bg-[#1A1A1A] hover:border-white/30'
+                                className={`group relative flex flex-col justify-between p-3.5 rounded-2xl border transition-all cursor-grab active:cursor-grabbing select-none backdrop-blur-xl ${
+                                  isOver
+                                    ? 'border-cyan-400 bg-cyan-950/40 text-cyan-200 ring-2 ring-cyan-400 scale-105'
+                                    : 'border-white/10 bg-[#141414]/85 hover:bg-[#1E1E1E]/95 hover:border-white/25 text-white shadow-lg'
                                 }`}
                               >
-                                <Folder className="h-3.5 w-3.5 text-cyan-400" />
-                                <span>{sub.name}</span>
-                                <span className="font-mono text-[10px] text-zinc-400">({subCount})</span>
-                              </button>
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="p-1.5 rounded-xl bg-white/10 border border-white/15 text-white group-hover:scale-105 transition-transform">
+                                    <Folder className="h-3.5 w-3.5 text-cyan-400" />
+                                  </div>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeleteCategory(sub.id, e);
+                                    }}
+                                    className="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-red-500/20 text-zinc-500 hover:text-red-400 transition"
+                                    title="Delete folder"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </button>
+                                </div>
+                                <div>
+                                  <span className="text-xs font-semibold text-white group-hover:text-cyan-200 transition-colors block truncate">
+                                    {sub.name}
+                                  </span>
+                                  <span className="text-[10px] font-mono text-zinc-400 mt-0.5 block">
+                                    {subCount} {subCount === 1 ? 'saved video' : 'saved videos'}
+                                  </span>
+                                </div>
+                              </div>
                             );
                           })}
                         </div>
@@ -1776,7 +1820,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                         <div className="relative z-10 w-full mt-auto pt-3 transition-transform duration-500 ease-out transform group-hover:translate-y-16">
                           <h3 className={`font-sans font-bold leading-snug text-sm sm:text-base mb-1 line-clamp-2 group-hover:line-clamp-1 drop-shadow-sm transition-all ${
                             isSaved
-                              ? 'text-amber-200 ring-1 ring-amber-400/60 [text-shadow:_0_0_1.5px_#f59e0b,_0_0_8px_rgba(245,158,11,0.5)] rounded-lg px-2 py-0.5 bg-amber-500/15 inline-block shadow-[0_0_10px_rgba(245,158,11,0.25)]'
+                              ? 'text-emerald-300 ring-1 ring-emerald-500/80 [text-shadow:_0_0_2px_#10b981,_0_0_10px_rgba(16,185,129,0.5)] rounded-lg px-2 py-0.5 bg-emerald-950/40 inline-block shadow-[0_0_12px_rgba(16,185,129,0.35)]'
                               : 'text-white group-hover:text-zinc-100'
                           }`}>
                             {reel.ai_title || 'Instagram Post'}
@@ -1880,7 +1924,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
 
                             <h3 className={`font-sans font-semibold leading-tight text-xs sm:text-sm truncate ${
                               isSaved
-                                ? 'text-amber-200 ring-1 ring-amber-400/60 [text-shadow:_0_0_1.5px_#f59e0b,_0_0_8px_rgba(245,158,11,0.5)] rounded-md px-1.5 py-0.5 bg-amber-500/15 inline-block shadow-[0_0_10px_rgba(245,158,11,0.25)]'
+                                ? 'text-emerald-300 ring-1 ring-emerald-500/80 [text-shadow:_0_0_2px_#10b981,_0_0_10px_rgba(16,185,129,0.5)] rounded-md px-1.5 py-0.5 bg-emerald-950/40 inline-block shadow-[0_0_12px_rgba(16,185,129,0.35)]'
                                 : 'text-white'
                             }`}>
                               {reel.ai_title || 'Instagram Post'}

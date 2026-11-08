@@ -1005,6 +1005,7 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
 
     if (!confirm(`Permanently delete folder "${cat.name}"? Saved reels will remain intact as uncategorized.`)) return;
 
+    // Optimistically remove immediately from local state
     setCategories(prev => prev.filter(c => c.id !== catId));
     if (selectedCategoryId === catId) setSelectedCategoryId(null);
     if (savesFolderIds.includes(catId)) {
@@ -1022,6 +1023,13 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
 
     broadcastCrossTab({ type: 'DATA_REFRESH' });
 
+    // Step 1: Nullify parent_id for any nested children so foreign key constraints or queries don't revert
+    await supabase.from('categories').update({ parent_id: null }).eq('parent_id', catId);
+    // Step 2: Unlink any reels mapped to this category so they safely become uncategorized
+    await supabase.from('reels').update({ category_id: null }).eq('category_id', catId);
+    await supabase.from('reels').update({ subcategory_id: null }).eq('subcategory_id', catId);
+
+    // Step 3: Delete the category record itself
     const { error } = await supabase.from('categories').delete().eq('id', catId);
     if (error) {
       alert(`Failed to delete folder: ${error.message}`);
