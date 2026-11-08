@@ -30,6 +30,12 @@ data class AppVersionInfo(
     val releaseNotes: String? = null
 )
 
+enum class UpdateResult {
+    SUCCESS,
+    BROWSER_OPENED,
+    FAILED
+}
+
 object AppUpdater {
     private const val VERSION_URL = "https://watchlatertool.vercel.app/version.json"
     private val json = Json { ignoreUnknownKeys = true }
@@ -52,10 +58,15 @@ object AppUpdater {
         null
     }
 
-    fun startDownloadAndInstall(context: Context, info: AppVersionInfo) {
+    fun startDownloadAndInstall(
+        context: Context,
+        info: AppVersionInfo,
+        onFinished: (result: UpdateResult) -> Unit = {}
+    ) {
+        val appContext = context.applicationContext
         try {
             val filename = "watch-later-v${info.versionName}.apk"
-            val destination = File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), filename)
+            val destination = File(appContext.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), filename)
             if (destination.exists()) {
                 destination.delete()
             }
@@ -68,7 +79,7 @@ object AppUpdater {
                 .setAllowedOverMetered(true)
                 .setAllowedOverRoaming(true)
 
-            val dm = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+            val dm = appContext.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
             val downloadId = dm.enqueue(request)
 
             val onCompleteReceiver = object : BroadcastReceiver() {
@@ -76,38 +87,65 @@ object AppUpdater {
                     val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L)
                     if (id == downloadId) {
                         try {
-                            recvContext.unregisterReceiver(this)
+                            appContext.unregisterReceiver(this)
                         } catch (_: Exception) {}
-                        installApk(recvContext, destination)
+
+                        var isSuccess = false
+                        try {
+                            val query = DownloadManager.Query().setFilterById(downloadId)
+                            dm.query(query)?.use { cursor ->
+                                if (cursor.moveToFirst()) {
+                                    val statusIdx = cursor.getColumnIndex(DownloadManager.COLUMN_STATUS)
+                                    if (statusIdx != -1 && cursor.getInt(statusIdx) == DownloadManager.STATUS_SUCCESSFUL) {
+                                        isSuccess = true
+                                    }
+                                }
+                            }
+                        } catch (e: Exception) {
+                            Log.w("AppUpdater", "Error querying download status", e)
+                        }
+
+                        if (isSuccess) {
+                            val installed = installApk(appContext, destination)
+                            onFinished(if (installed) UpdateResult.SUCCESS else UpdateResult.FAILED)
+                        } else {
+                            onFinished(UpdateResult.FAILED)
+                        }
                     }
                 }
             }
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                context.registerReceiver(
+                appContext.registerReceiver(
                     onCompleteReceiver,
                     IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
                     Context.RECEIVER_NOT_EXPORTED
                 )
             } else {
-                context.registerReceiver(
+                appContext.registerReceiver(
                     onCompleteReceiver,
                     IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
                 )
             }
         } catch (e: Exception) {
             Log.e("AppUpdater", "Error starting update download", e)
-            // Fallback: open browser to apkUrl
-            val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(info.apkUrl)).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            var browserOpened = false
+            try {
+                val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(info.apkUrl)).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                appContext.startActivity(browserIntent)
+                browserOpened = true
+            } catch (fallbackErr: Exception) {
+                Log.e("AppUpdater", "Browser fallback failed", fallbackErr)
             }
-            context.startActivity(browserIntent)
+            onFinished(if (browserOpened) UpdateResult.BROWSER_OPENED else UpdateResult.FAILED)
         }
     }
 
-    fun installApk(context: Context, apkFile: File) {
-        try {
-            if (!apkFile.exists()) return
+    fun installApk(context: Context, apkFile: File): Boolean {
+        return try {
+            if (!apkFile.exists()) return false
 
             val contentUri = FileProvider.getUriForFile(
                 context,
@@ -121,8 +159,10 @@ object AppUpdater {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             context.startActivity(installIntent)
+            true
         } catch (e: Exception) {
             Log.e("AppUpdater", "Error launching APK installer", e)
+            false
         }
     }
 }

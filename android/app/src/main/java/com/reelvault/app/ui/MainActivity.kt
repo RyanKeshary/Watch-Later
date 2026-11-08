@@ -40,6 +40,7 @@ import com.reelvault.app.ui.theme.WatchLaterDarkColorScheme
 import com.reelvault.app.util.AppUpdater
 import com.reelvault.app.util.AppVersionInfo
 import com.reelvault.app.util.PreferenceManager
+import com.reelvault.app.util.UpdateResult
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.android.Android
 import io.ktor.client.request.get
@@ -89,13 +90,9 @@ class MainActivity : ComponentActivity() {
 
                     // Check for in-app update on launch
                     LaunchedEffect(Unit) {
-                        lifecycleScope.launch(Dispatchers.IO) {
-                            val update = AppUpdater.checkForUpdate()
-                            if (update != null) {
-                                withContext(Dispatchers.Main) {
-                                    availableUpdate = update
-                                }
-                            }
+                        val update = AppUpdater.checkForUpdate()
+                        if (update != null) {
+                            availableUpdate = update
                         }
                     }
 
@@ -141,7 +138,31 @@ class MainActivity : ComponentActivity() {
                                 availableUpdate?.let { info ->
                                     isDownloadingUpdate = true
                                     Toast.makeText(this@MainActivity, "Starting update download...", Toast.LENGTH_SHORT).show()
-                                    AppUpdater.startDownloadAndInstall(this@MainActivity, info)
+
+                                    // Bounded 10-minute timeout watchdog to clear download spinner if download hangs or is cancelled
+                                    val watchdogJob = lifecycleScope.launch {
+                                        kotlinx.coroutines.delay(600_000L)
+                                        if (isDownloadingUpdate) {
+                                            isDownloadingUpdate = false
+                                            Toast.makeText(this@MainActivity, "Update download timed out", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+
+                                    AppUpdater.startDownloadAndInstall(this@MainActivity, info) { result ->
+                                        watchdogJob.cancel()
+                                        runOnUiThread {
+                                            isDownloadingUpdate = false
+                                            when (result) {
+                                                UpdateResult.SUCCESS -> {}
+                                                UpdateResult.BROWSER_OPENED -> {
+                                                    Toast.makeText(this@MainActivity, "Opening update in browser...", Toast.LENGTH_SHORT).show()
+                                                }
+                                                UpdateResult.FAILED -> {
+                                                    Toast.makeText(this@MainActivity, "Update download was cancelled or failed", Toast.LENGTH_SHORT).show()
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             },
                             onLogout = {
