@@ -567,6 +567,7 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
         alert(`Failed to undo move: ${error.message}`);
         await loadData();
       } else {
+        broadcastCrossDevice('REEL_UPDATE', { reelId: action.id, categoryId: action.prevCatId });
         showIncomingAlert(`Undone! Returned reel to previous folder ✓`);
       }
     } else if (action.type === 'folder') {
@@ -714,7 +715,28 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
               break;
             case 'REEL_UPDATE':
               if (payload?.reelId) {
-                setReels(prev => prev.map(r => r.id === payload.reelId ? { ...r, completion_status: payload.status } : r));
+                setReels(prev => prev.map(r => {
+                  if (r.id !== payload.reelId) return r;
+                  const updated = { ...r };
+                  if (payload.status !== undefined) updated.completion_status = payload.status;
+                  if (payload.categoryId !== undefined) updated.category_id = payload.categoryId;
+                  return updated;
+                }));
+              }
+              break;
+            case 'CATEGORY_ADD':
+              if (currentUserId && payload?.category?.user_id === currentUserId) {
+                setCategories(prev => prev.some(c => c.id === payload.category.id) ? prev : [...prev, payload.category]);
+              }
+              break;
+            case 'CATEGORY_UPDATE':
+              if (currentUserId && payload?.categoryId && payload?.name && (!payload?.userId || payload.userId === currentUserId)) {
+                setCategories(prev => prev.map(c => c.id === payload.categoryId ? { ...c, name: payload.name } : c));
+              }
+              break;
+            case 'CATEGORY_DELETE':
+              if (currentUserId && payload?.categoryId && (!payload?.userId || payload.userId === currentUserId)) {
+                setCategories(prev => prev.filter(c => c.id !== payload.categoryId));
               }
               break;
             case 'REEL_DELETE':
@@ -835,7 +857,28 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
                 break;
               case 'REEL_UPDATE':
                 if (payload?.reelId) {
-                  setReels(prev => prev.map(r => r.id === payload.reelId ? { ...r, completion_status: payload.status } : r));
+                  setReels(prev => prev.map(r => {
+                    if (r.id !== payload.reelId) return r;
+                    const updated = { ...r };
+                    if (payload.status !== undefined) updated.completion_status = payload.status;
+                    if (payload.categoryId !== undefined) updated.category_id = payload.categoryId;
+                    return updated;
+                  }));
+                }
+                break;
+              case 'CATEGORY_ADD':
+                if (currentUserId && payload?.category?.user_id === currentUserId) {
+                  setCategories(prev => prev.some(c => c.id === payload.category.id) ? prev : [...prev, payload.category]);
+                }
+                break;
+              case 'CATEGORY_UPDATE':
+                if (currentUserId && payload?.categoryId && payload?.name && (!payload?.userId || payload.userId === currentUserId)) {
+                  setCategories(prev => prev.map(c => c.id === payload.categoryId ? { ...c, name: payload.name } : c));
+                }
+                break;
+              case 'CATEGORY_DELETE':
+                if (currentUserId && payload?.categoryId && (!payload?.userId || payload.userId === currentUserId)) {
+                  setCategories(prev => prev.filter(c => c.id !== payload.categoryId));
                 }
                 break;
               case 'REEL_DELETE':
@@ -1078,10 +1121,12 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
       }
 
       if (data) {
-        setCategories(prev => [...prev, data as Category]);
+        const createdCat = data as Category;
+        setCategories(prev => prev.some(c => c.id === createdCat.id) ? prev : [...prev, createdCat]);
         setNewCategoryName('');
         setIsCreatingCategory(false);
         setCategoryParentId(null);
+        broadcastCrossDevice('CATEGORY_ADD', { category: createdCat });
         broadcastCrossTab({ type: 'DATA_REFRESH' });
       }
     } finally {
@@ -1116,6 +1161,7 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
 
     setCategories(prev => prev.map(c => c.id === editingCategory.id ? { ...c, name: trimmed } : c));
     setEditingCategory(null);
+    broadcastCrossDevice('CATEGORY_UPDATE', { userId: session?.user?.id, categoryId: editingCategory.id, name: trimmed });
     broadcastCrossTab({ type: 'DATA_REFRESH' });
   };
 
@@ -1125,6 +1171,10 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
     if (!cat) return;
 
     if (!confirm(`Permanently delete folder "${cat.name}"? Saved reels will remain intact as uncategorized.`)) return;
+
+    const initiatingUserId = sessionRef.current?.user?.id;
+    const previousCategories = [...categories];
+    const previousSavesFolderIds = [...savesFolderIds];
 
     // Optimistically remove immediately from local state
     setCategories(prev => prev.filter(c => c.id !== catId));
@@ -1136,13 +1186,10 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
           try {
             localStorage.setItem(`watchlater_saves_folder_ids_${session.user.id}`, JSON.stringify(next));
           } catch (e) { }
-          broadcastCrossTab({ type: 'SAVES_FOLDERS_CHANGE', payload: { userId: session.user.id, savesFolderIds: next } });
         }
         return next;
       });
     }
-
-    broadcastCrossTab({ type: 'DATA_REFRESH' });
 
     // Step 1: Nullify parent_id for any nested children so foreign key constraints or queries don't revert
     await supabase.from('categories').update({ parent_id: null }).eq('parent_id', catId);
@@ -1154,7 +1201,18 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
     const { error } = await supabase.from('categories').delete().eq('id', catId);
     if (error) {
       alert(`Failed to delete folder: ${error.message}`);
+      if (initiatingUserId && sessionRef.current?.user?.id === initiatingUserId) {
+        setCategories(previousCategories);
+        setSavesFolderIds(previousSavesFolderIds);
+      }
       await loadData();
+    } else {
+      broadcastCrossDevice('CATEGORY_DELETE', { userId: session?.user?.id, categoryId: catId });
+      if (savesFolderIds.includes(catId) && session?.user?.id) {
+        const next = savesFolderIds.filter(id => id !== catId);
+        broadcastCrossDevice('SAVES_FOLDERS_CHANGE', { userId: session.user.id, savesFolderIds: next });
+      }
+      broadcastCrossTab({ type: 'DATA_REFRESH' });
     }
   };
 
@@ -1196,6 +1254,7 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
       if (data) {
         const createdCat = data as Category;
         setCategories(prev => prev.some(c => c.id === createdCat.id) ? prev : [...prev, createdCat]);
+        broadcastCrossDevice('CATEGORY_ADD', { category: createdCat });
         setSavesFolderIds(prev => {
           const next = prev.includes(createdCat.id) ? prev : [...prev, createdCat.id];
           try {
@@ -1237,6 +1296,7 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
       if (prevCatId === targetDbId) return;
 
       setReels(prev => prev.map(r => r.id === reelId ? { ...r, category_id: targetDbId } : r));
+      broadcastCrossDevice('REEL_UPDATE', { reelId, categoryId: targetDbId });
       setLastMoveAction({
         type: 'reel',
         id: reelId,

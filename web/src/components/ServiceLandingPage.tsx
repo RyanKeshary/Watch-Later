@@ -204,7 +204,7 @@ export default function ServiceLandingPage({
               >
                 Go to Dashboard
               </button>
-            ) : hasDownloaded ? (
+            ) : (
               <button
                 type="button"
                 onClick={() => {
@@ -214,15 +214,6 @@ export default function ServiceLandingPage({
                 className="inline-flex items-center justify-center rounded-full bg-ink text-black px-4 py-1.5 text-xs font-semibold hover:bg-ink-muted transition-colors active:scale-[0.98]"
               >
                 Sign In
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={handleDownloadClick}
-                className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/5 hover:bg-white/10 px-4 py-1.5 text-xs font-medium text-ink transition-colors active:scale-[0.98]"
-              >
-                <Download className="h-3.5 w-3.5 text-cyanbrand" />
-                <span>Download</span>
               </button>
             )}
           </div>

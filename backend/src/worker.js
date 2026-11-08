@@ -41,18 +41,33 @@ async function extractViaOpenGraph(url) {
     ? (isPost ? `https://www.instagram.com/p/${shortcode}/` : `https://www.instagram.com/reel/${shortcode}/`)
     : url;
 
-  const res = await fetch(targetUrl, {
-    headers: {
-      'User-Agent': 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)',
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), INSTAGRAM_TIMEOUT_MS);
+
+  let res;
+  let html;
+  try {
+    res = await fetch(targetUrl, {
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+      }
+    });
+
+    if (!res.ok) {
+      throw new Error('Unable to access Instagram post (network or privacy restricted)');
     }
-  });
 
-  if (!res.ok) {
-    throw new Error('Unable to access Instagram post (network or privacy restricted)');
+    html = await res.text();
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      throw new Error(`OpenGraph metadata fetch timed out after ${INSTAGRAM_TIMEOUT_MS}ms`);
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  const html = await res.text();
 
   function extractMetaProperty(htmlContent, propertyName) {
     const metaTagRegex = /<meta\s+(?:[^>"']|"[^"]*"|'[^']*')*>/gi;
@@ -199,9 +214,13 @@ Return strictly a valid JSON object matching this schema:
 - Mentions: ${metadata.mentions?.join(' ') || 'none'}
 - Raw Description/Context: """${metadata.raw?.raw_desc || ''}"""`;
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), GROQ_TIMEOUT_MS);
+
   try {
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
+      signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${GROQ_API_KEY}`
@@ -218,25 +237,44 @@ Return strictly a valid JSON object matching this schema:
     });
 
     if (!response.ok) {
-      console.warn(`[Groq] API error (${response.status}): ${await response.text()}`);
+      const errText = await response.text();
+      clearTimeout(timeoutId);
+      console.warn(`[Groq] API error (${response.status}): ${errText}`);
       return null;
     }
 
     const data = await response.json();
+    clearTimeout(timeoutId);
     return JSON.parse(data.choices[0]?.message?.content);
   } catch (err) {
-    console.warn('[Groq] Categorization error:', err.message);
+    clearTimeout(timeoutId);
+    if (err.name === 'AbortError') {
+      console.warn(`[Groq] AI classification timed out after ${GROQ_TIMEOUT_MS}ms`);
+    } else {
+      console.warn('[Groq] Categorization error:', err.message);
+    }
     return null;
   }
 }
 
 async function processReel(reel) {
-  console.log(`[Worker] Processing reel ID: ${reel.id} (${reel.url})`);
+  const startTime = Date.now();
+  console.log(`[Worker] Attempting to claim reel ID: ${reel.id} (${reel.url})`);
 
-  await supabase
+  // Atomic claim: verify processing_status is still 'pending' to prevent multi-worker race conditions
+  const { data: claimed, error: claimErr } = await supabase
     .from('reels')
     .update({ processing_status: 'resolving' })
-    .eq('id', reel.id);
+    .eq('id', reel.id)
+    .eq('processing_status', 'pending')
+    .select('id');
+
+  if (claimErr || !claimed || claimed.length === 0) {
+    // Another worker instance claimed this reel first
+    return;
+  }
+
+  activeJobClaimTimes.set(reel.id, Date.now());
 
   let extractionData = null;
   let extractionError = null;
@@ -249,6 +287,8 @@ async function processReel(reel) {
   }
 
   if (extractionError || !extractionData) {
+    workerMetrics.failedCount++;
+    workerMetrics.lastJobDurationMs = Date.now() - startTime;
     await supabase.from('extracted_content').upsert({
       reel_id: reel.id,
       extraction_status: 'failed',
@@ -335,7 +375,7 @@ async function processReel(reel) {
     }
   }
 
-  await supabase
+  const { error: updateErr } = await supabase
     .from('reels')
     .update({
       creator_username: creator,
@@ -352,7 +392,16 @@ async function processReel(reel) {
     })
     .eq('id', reel.id);
 
-  console.log(`[Worker] Reel ${reel.id} processing finished. Status: ${processingStatus}`);
+  if (updateErr) {
+    workerMetrics.failedCount++;
+    workerMetrics.lastJobDurationMs = Date.now() - startTime;
+    console.error(`[Worker] Reel ${reel.id} update error:`, updateErr.message);
+    return;
+  }
+
+  workerMetrics.processedCount++;
+  workerMetrics.lastJobDurationMs = Date.now() - startTime;
+  console.log(`[Worker] Reel ${reel.id} processing finished in ${workerMetrics.lastJobDurationMs}ms. Status: ${processingStatus}`);
 
   // Clean up any empty categories for this user
   try {
@@ -430,6 +479,9 @@ async function processReel(reel) {
       const emptyIds = allUserCats.filter(cat => {
         if (cat.is_system) return false;
         if (usedIds.has(cat.id)) return false;
+        if (cat.created_at && (now - new Date(cat.created_at).getTime()) < recentGracePeriodMs) {
+          return false;
+        }
         if (protectedRecentParentIds.has(cat.id)) {
           return false;
         }
@@ -583,41 +635,166 @@ async function cleanupEmptyCategories() {
   }
 }
 
+// Worker configuration constants
+const INSTAGRAM_TIMEOUT_MS = 12000;
+const GROQ_TIMEOUT_MS = 8000;
+const MAX_CONCURRENT_JOBS = 3;
+const ABANDONED_JOB_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+
+// In-flight processing tracking for graceful shutdown and lease management
+const activeJobPromises = new Set();
+const activeJobClaimTimes = new Map();
+let isShuttingDown = false;
+
+// Worker metrics tracking
+const workerMetrics = {
+  startedAt: new Date().toISOString(),
+  processedCount: 0,
+  failedCount: 0,
+  abandonedRecoveredCount: 0,
+  lastJobDurationMs: 0
+};
+
+// Periodic recovery of jobs abandoned during worker crash
+async function recoverAbandonedJobs() {
+  try {
+    const now = Date.now();
+
+    // Query resolving reels to inspect claim times vs cutoff
+    const { data: resolvingReels, error: fetchErr } = await supabase
+      .from('reels')
+      .select('id, created_at')
+      .eq('processing_status', 'resolving');
+
+    if (fetchErr) {
+      console.warn('[Worker] Abandoned jobs fetch error:', fetchErr.message);
+      return;
+    }
+
+    if (!resolvingReels || resolvingReels.length === 0) return;
+
+    const abandonedIds = [];
+    for (const reel of resolvingReels) {
+      const claimTime = activeJobClaimTimes.get(reel.id);
+      if (typeof claimTime === 'number') {
+        if (now - claimTime >= ABANDONED_JOB_TIMEOUT_MS) {
+          abandonedIds.push(reel.id);
+        }
+      } else {
+        // Fall back to parsing created_at safely with Date.parse
+        const createdMs = reel.created_at ? Date.parse(reel.created_at) : NaN;
+        if (!isNaN(createdMs) && (now - createdMs >= ABANDONED_JOB_TIMEOUT_MS)) {
+          abandonedIds.push(reel.id);
+        }
+      }
+    }
+
+    if (abandonedIds.length > 0) {
+      const { data: recovered, error: updateErr } = await supabase
+        .from('reels')
+        .update({ processing_status: 'pending' })
+        .in('id', abandonedIds)
+        .eq('processing_status', 'resolving')
+        .select('id');
+
+      if (updateErr) {
+        console.warn('[Worker] Abandoned jobs update error:', updateErr.message);
+      } else if (recovered && recovered.length > 0) {
+        for (const r of recovered) {
+          activeJobClaimTimes.delete(r.id);
+        }
+        workerMetrics.abandonedRecoveredCount += recovered.length;
+        console.log(`[Worker] Recovered ${recovered.length} abandoned reels back to 'pending'.`);
+      }
+    }
+  } catch (err) {
+    console.warn('[Worker] Abandoned recovery exception:', err.message);
+  }
+}
+
 async function runLoop() {
   console.log('[Worker] Watch Later Background Worker running. Polling for pending reels...');
   await cleanupEmptyCategories();
+  await recoverAbandonedJobs();
 
-  while (true) {
+  let cycleCounter = 0;
+
+  while (!isShuttingDown) {
+    cycleCounter++;
     try {
+      // Periodically check for and recover abandoned jobs every ~60 polling cycles
+      if (cycleCounter % 60 === 0) {
+        await recoverAbandonedJobs();
+      }
+
       const { data: pendingReels, error } = await supabase
         .from('reels')
         .select('*')
         .eq('processing_status', 'pending')
-        .limit(10);
+        .order('created_at', { ascending: true })
+        .limit(MAX_CONCURRENT_JOBS);
 
       if (error) {
         console.error('[Worker] Error fetching pending reels:', error.message);
-      } else if (pendingReels && pendingReels.length > 0) {
-        for (const reel of pendingReels) {
-          await processReel(reel);
-        }
+      } else if (pendingReels && pendingReels.length > 0 && !isShuttingDown) {
+        // Process bounded concurrency in parallel with atomic row claims
+        const promises = pendingReels.map(async (reel) => {
+          const promise = processReel(reel);
+          activeJobPromises.add(promise);
+          try {
+            await promise;
+          } finally {
+            activeJobPromises.delete(promise);
+            activeJobClaimTimes.delete(reel.id);
+          }
+        });
+        await Promise.allSettled(promises);
       }
     } catch (loopErr) {
       console.error('[Worker] Loop cycle error:', loopErr);
     }
 
-    await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
+    if (!isShuttingDown) {
+      await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
+    }
   }
+
+  console.log('[Worker] Worker loop stopped cleanly.');
 }
+
+// Graceful shutdown handling
+function handleGracefulShutdown(signal) {
+  console.log(`[Worker] Received ${signal}. Initiating graceful shutdown...`);
+  isShuttingDown = true;
+
+  const shutdownTimeout = setTimeout(() => {
+    console.error('[Worker] Graceful shutdown timed out after 15s. Forcing exit.');
+    process.exit(1);
+  }, 15000);
+
+  Promise.allSettled(Array.from(activeJobPromises)).then(() => {
+    clearTimeout(shutdownTimeout);
+    console.log('[Worker] All active jobs finished. Closing HTTP server and exiting.');
+    server.close(() => process.exit(0));
+  });
+}
+
+process.on('SIGTERM', () => handleGracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => handleGracefulShutdown('SIGINT'));
 
 const http = require('http');
 
-// Simple health-check HTTP server so Render Free Tier Web Service keeps running
 const PORT = process.env.PORT || 10000;
-const server = http.createServer((req, res) => {
+const server = http.createServer(async (req, res) => {
   if (req.url === '/health' || req.url === '/') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ status: 'ok', service: 'watch-later-worker', uptime: process.uptime() }));
+    res.end(JSON.stringify({
+      status: isShuttingDown ? 'shutting_down' : 'ok',
+      service: 'watch-later-worker',
+      uptime: process.uptime(),
+      metrics: workerMetrics,
+      activeJobs: activeJobPromises.size
+    }));
   } else {
     res.writeHead(404);
     res.end();
