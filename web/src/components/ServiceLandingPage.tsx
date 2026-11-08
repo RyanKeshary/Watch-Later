@@ -178,12 +178,12 @@ export default function ServiceLandingPage({
   ];
 
   return (
-    <div className="relative min-h-screen bg-[#080809] text-[#E4E4E7] font-sans selection:bg-[#27272A] selection:text-white overflow-x-hidden antialiased">
+    <div className="relative min-h-screen bg-[#090A0F] text-[#F7F8F8] font-sans selection:bg-[#00F0FF]/20 selection:text-white overflow-x-hidden antialiased">
       {/* Custom Fluid Cursor Effect (preserved on desktop, hidden on touch devices) */}
       <div className="hidden md:block pointer-events-none">
         <SplashCursor
           contained={false}
-          colors={['#ffffff', '#d4d4d8', '#a1a1aa']}
+          colors={['#00F0FF', '#F59E0B', '#D0D6E0']}
           rainbow={false}
           size={0.55}
           force={0.25}
@@ -191,9 +191,9 @@ export default function ServiceLandingPage({
           trail={2.2}
           clickSplash
           colorSpeed={0}
-          intensity={0.42}
+          intensity={0.45}
           momentum={0.65}
-          glow={0.08}
+          glow={0.12}
           quality="medium"
           intro={false}
           zIndex={1}
@@ -201,12 +201,17 @@ export default function ServiceLandingPage({
       </div>
 
       {/* ========================================================================= */}
-      {/* 2.1 NAV: Pure Wordmark + Single Secondary CTA                             */}
+      {/* 2.1 NAV: Pure Wordmark + Optical Alignment + Single Secondary CTA        */}
       {/* ========================================================================= */}
-      <header className="sticky top-0 z-40 border-b border-white/[0.07] bg-[#080809]/90 backdrop-blur-md">
+      <header className="sticky top-0 z-40 border-b border-white/[0.08] bg-[#090A0F]/90 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6 sm:px-10">
-          <div className="flex items-center gap-2.5">
-            <span className="font-zolo text-lg font-bold tracking-tight text-white">Watch Later</span>
+          <div className="relative flex items-center">
+            {/* Ambient Logo Glow */}
+            <div className="absolute -left-3 h-8 w-24 bg-gradient-to-r from-cyan-500/25 via-amber-500/15 to-transparent blur-xl pointer-events-none" />
+            <div className="relative flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#00F0FF]" />
+              <span className="font-zolo text-lg font-bold tracking-tight text-[#F7F8F8]">Watch Later</span>
+            </div>
           </div>
 
           <div className="flex items-center gap-4">
@@ -214,7 +219,7 @@ export default function ServiceLandingPage({
               <button
                 type="button"
                 onClick={onEnterDashboard}
-                className="inline-flex items-center justify-center rounded-full bg-white text-black px-4 py-1.5 text-xs font-semibold hover:bg-[#E4E4E7] transition active:scale-[0.98]"
+                className="inline-flex items-center justify-center rounded-full bg-white text-black px-4 py-1.5 text-xs font-semibold hover:bg-[#D0D6E0] transition active:scale-[0.98]"
               >
                 Go to Dashboard
               </button>
@@ -225,7 +230,7 @@ export default function ServiceLandingPage({
                   setAuthMode('signin');
                   setShowAuthModal(true);
                 }}
-                className="inline-flex items-center justify-center rounded-full bg-white text-black px-4 py-1.5 text-xs font-semibold hover:bg-[#E4E4E7] transition active:scale-[0.98]"
+                className="inline-flex items-center justify-center rounded-full bg-white text-black px-4 py-1.5 text-xs font-semibold hover:bg-[#D0D6E0] transition active:scale-[0.98]"
               >
                 Sign In
               </button>
@@ -235,7 +240,7 @@ export default function ServiceLandingPage({
                 onClick={handleDownloadClick}
                 className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/5 hover:bg-white/10 px-4 py-1.5 text-xs font-medium text-white transition active:scale-[0.98]"
               >
-                <Download className="h-3.5 w-3.5" />
+                <Download className="h-3.5 w-3.5 text-cyan-400" />
                 <span>Download</span>
               </button>
             )}
@@ -248,7 +253,7 @@ export default function ServiceLandingPage({
       {/* ========================================================================= */}
       <section
         ref={heroRef}
-        className="relative min-h-[90vh] flex flex-col justify-center items-center px-6 sm:px-10 overflow-hidden pt-16 pb-28 border-b border-white/[0.06]"
+        className="relative min-h-[90vh] flex flex-col justify-center items-center px-6 sm:px-10 overflow-hidden pt-16 pb-28 border-b border-white/[0.08]"
       >
         {/* Reactive 3D Background (§3.1) */}
         <div
@@ -257,13 +262,13 @@ export default function ServiceLandingPage({
         >
           {/* Subtle Ambient Depth Lighting */}
           <div
-            className="absolute h-[500px] w-[500px] rounded-full bg-amber-700/[0.06] blur-[140px] transition-transform duration-700 ease-out"
+            className="absolute h-[520px] w-[520px] rounded-full bg-cyan-600/[0.07] blur-[150px] transition-transform duration-700 ease-out"
             style={{
               transform: `translate3d(${mousePos.x * 45}px, ${mousePos.y * 45 - scrollY * 0.15}px, 0)`
             }}
           />
           <div
-            className="absolute h-[380px] w-[380px] rounded-full bg-rose-950/[0.05] blur-[120px] transition-transform duration-700 ease-out"
+            className="absolute h-[420px] w-[420px] rounded-full bg-amber-600/[0.06] blur-[130px] transition-transform duration-700 ease-out"
             style={{
               transform: `translate3d(${-mousePos.x * 35}px, ${-mousePos.y * 35 - scrollY * 0.2}px, 0)`
             }}
@@ -276,9 +281,9 @@ export default function ServiceLandingPage({
               transform: `rotateX(${-mousePos.y * 12}deg) rotateY(${mousePos.x * 14}deg) translateZ(-50px) translateY(${-scrollY * 0.1}px)`
             }}
           >
-            {/* Monolithic Editorial Panel */}
-            <div className="h-72 w-72 sm:h-96 sm:w-96 rounded-[44px] border border-white/[0.08] bg-gradient-to-br from-white/[0.03] to-white/[0.005] [transform:rotate(12deg)] shadow-2xl relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-b from-white/[0.04] to-transparent opacity-80" />
+            {/* Monolithic Editorial Slate Panel */}
+            <div className="h-72 w-72 sm:h-96 sm:w-96 rounded-[44px] border border-white/[0.09] bg-gradient-to-br from-[#12151F]/80 to-[#090A0F]/60 [transform:rotate(12deg)] shadow-2xl relative overflow-hidden backdrop-blur-sm">
+              <div className="absolute inset-0 bg-gradient-to-b from-cyan-400/[0.05] to-transparent opacity-90" />
             </div>
 
             {/* Inset Offset Depth Frame */}
@@ -293,11 +298,11 @@ export default function ServiceLandingPage({
 
         {/* Hero Content */}
         <div className="relative z-10 mx-auto max-w-3xl text-center flex flex-col items-center">
-          <h1 className="font-zolo text-4xl sm:text-6xl md:text-7xl font-black tracking-tight text-white text-balance leading-[1.08] mb-6">
+          <h1 className="font-zolo text-4xl sm:text-6xl md:text-7xl font-black tracking-tight text-[#F7F8F8] text-balance leading-[1.08] mb-6">
             Never lose a reel worth revisiting.
           </h1>
 
-          <p className="text-base sm:text-lg text-[#A1A1AA] max-w-xl text-balance leading-relaxed mb-10">
+          <p className="text-base sm:text-lg text-[#D0D6E0] max-w-xl text-balance leading-relaxed mb-10">
             Stop letting reels rot in your saved folder. Just share the reel to Watch Later — it gets grabbed silently, sorted by AI into clean categories, and stays ready to actually watch.
           </p>
 
@@ -316,7 +321,7 @@ export default function ServiceLandingPage({
                     setAuthMode('signin');
                     setShowAuthModal(true);
                   }}
-                  className="group relative inline-flex items-center justify-center gap-2 rounded-full bg-white px-8 py-4 text-sm font-bold text-black shadow-2xl transition-all duration-200 hover:bg-[#E4E4E7] active:scale-[0.98]"
+                  className="group relative inline-flex items-center justify-center gap-2 rounded-full bg-white px-8 py-4 text-sm font-bold text-black shadow-2xl transition-all duration-200 hover:bg-[#D0D6E0] active:scale-[0.98]"
                 >
                   <span>Sign In</span>
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
@@ -325,7 +330,7 @@ export default function ServiceLandingPage({
                 <button
                   type="button"
                   onClick={handleDownloadClick}
-                  className="group relative inline-flex items-center justify-center gap-2.5 rounded-full bg-white px-8 py-4 text-sm font-bold text-black shadow-[0_0_35px_rgba(255,255,255,0.15)] transition-all duration-200 hover:bg-[#E4E4E7] active:scale-[0.98]"
+                  className="group relative inline-flex items-center justify-center gap-2.5 rounded-full bg-white px-8 py-4 text-sm font-bold text-black shadow-[0_0_35px_rgba(0,240,255,0.22)] transition-all duration-200 hover:bg-[#D0D6E0] active:scale-[0.98]"
                 >
                   <Download className="h-4 w-4" />
                   <span>Download App (Android)</span>
@@ -334,7 +339,7 @@ export default function ServiceLandingPage({
             </div>
 
             <p
-              className={`text-xs text-[#71717A] transition-opacity duration-300 ${
+              className={`text-xs text-[#8A8F98] transition-opacity duration-300 ${
                 hasDownloaded || downloadSuccess ? 'opacity-100' : 'opacity-0'
               }`}
             >
@@ -349,18 +354,19 @@ export default function ServiceLandingPage({
       {/* ========================================================================= */}
       <section
         ref={horizontalSectionRef}
-        className="relative md:h-[185vh] bg-[#0A0A0C] border-b border-white/[0.06]"
+        className="relative md:h-[185vh] bg-[#090A0F] border-b border-white/[0.08]"
       >
         <div className="md:sticky md:top-0 md:h-screen md:flex md:flex-col md:justify-center overflow-hidden py-20 md:py-0">
           <div className="mx-auto max-w-6xl px-6 sm:px-10 mb-6 md:mb-10 w-full flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/10 text-xs text-amber-400 font-mono mb-3">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/25 text-xs text-cyan-400 font-mono mb-3">
+                <span className="h-1.5 w-1.5 rounded-full bg-cyan-400" />
                 <span>01 — 04 SEQUENCE</span>
               </div>
-              <h2 className="font-zolo text-3xl sm:text-4xl font-extrabold tracking-tight text-white mb-2 text-balance">
+              <h2 className="font-zolo text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-[#F7F8F8] mb-2 text-balance leading-[1.12]">
                 One tap. Everything else is on autopilot.
               </h2>
-              <p className="text-sm text-zinc-400">
+              <p className="text-sm text-[#8A8F98] text-balance">
                 Follow the physical path from Instagram share sheet to clean library.
               </p>
             </div>
@@ -380,8 +386,8 @@ export default function ServiceLandingPage({
                   }}
                   className={`h-8 px-3 rounded-full text-xs font-mono transition-all flex items-center gap-1.5 ${
                     activeBeat === i
-                      ? 'bg-white text-black font-bold shadow-md'
-                      : 'bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white border border-white/5'
+                      ? 'bg-cyan-400 text-black font-bold shadow-[0_0_16px_rgba(0,240,255,0.4)]'
+                      : 'bg-[#12151F] text-[#8A8F98] hover:bg-[#181C2A] hover:text-[#F7F8F8] border border-white/[0.08]'
                   }`}
                 >
                   <span>{s.num}</span>
@@ -396,7 +402,7 @@ export default function ServiceLandingPage({
             <div
               className="flex gap-8 px-10 transition-transform duration-75 ease-out will-change-transform"
               style={{
-                // Calibrated strictly to travel exactly the rail overflow (4 cards @ 460px + gap 32px)
+                // Calibrated strictly to travel exactly the rail overflow
                 transform: `translateX(calc(${-(scrollProgress * 1180)}px + 2vw))`
               }}
             >
@@ -407,30 +413,30 @@ export default function ServiceLandingPage({
                     key={step.num}
                     className={`w-[440px] shrink-0 border-t-2 pt-6 pb-8 flex flex-col justify-between transition-all duration-300 ${
                       isCurrent
-                        ? 'border-white bg-white/[0.02] px-6 shadow-lg'
-                        : 'border-white/20 hover:border-white/40'
+                        ? 'border-cyan-400 bg-[#12151F]/90 px-6 shadow-2xl backdrop-blur-sm'
+                        : 'border-white/15 bg-[#12151F]/40 hover:border-white/30'
                     }`}
                   >
                     <div>
                       <div className="flex items-baseline justify-between mb-8">
-                        <span className={`font-mono text-3xl font-light tracking-tighter ${isCurrent ? 'text-white' : 'text-zinc-500'}`}>
+                        <span className={`font-mono text-3xl font-light tracking-tighter ${isCurrent ? 'text-cyan-400' : 'text-[#5C616B]'}`}>
                           {step.num}
                         </span>
-                        <span className="text-xs text-zinc-400 bg-white/5 px-2.5 py-1 rounded-full border border-white/5">
+                        <span className="text-xs text-[#D0D6E0] bg-white/[0.06] px-2.5 py-1 rounded-full border border-white/[0.08]">
                           {step.detail}
                         </span>
                       </div>
 
-                      <h3 className="font-zolo text-2xl font-bold text-white mb-2 tracking-tight">
+                      <h3 className="font-zolo text-2xl font-bold text-[#F7F8F8] mb-2 tracking-tight text-balance">
                         {step.title}
                       </h3>
                       <p className="text-sm text-amber-400 mb-4 font-medium">{step.note}</p>
-                      <p className="text-sm text-zinc-300 leading-relaxed">{step.body}</p>
+                      <p className="text-sm text-[#D0D6E0] leading-relaxed">{step.body}</p>
                     </div>
 
-                    <div className="pt-8 text-xs text-zinc-500 font-mono flex items-center justify-between">
+                    <div className="pt-8 text-xs text-[#8A8F98] font-mono flex items-center justify-between">
                       <span>BEAT {idx + 1} OF 4</span>
-                      <span className="text-[11px] text-zinc-400">{isCurrent ? '● ACTIVE' : '○'}</span>
+                      <span className="text-[11px] font-mono">{isCurrent ? '● ACTIVE' : '○'}</span>
                     </div>
                   </article>
                 );
@@ -444,36 +450,36 @@ export default function ServiceLandingPage({
               {steps.map((step, idx) => (
                 <article
                   key={step.num}
-                  className="w-[82vw] max-w-[340px] shrink-0 snap-center border-t-2 border-white/25 pt-5 pb-6 flex flex-col justify-between bg-white/[0.02] px-4"
+                  className="w-[82vw] max-w-[340px] shrink-0 snap-center border-t-2 border-cyan-400/60 pt-5 pb-6 flex flex-col justify-between bg-[#12151F] px-4"
                 >
                   <div>
                     <div className="flex items-baseline justify-between mb-4">
-                      <span className="font-mono text-2xl text-zinc-400">{step.num}</span>
-                      <span className="text-[11px] text-zinc-400 bg-white/5 px-2 py-0.5 rounded-full">{step.detail}</span>
+                      <span className="font-mono text-2xl text-cyan-400">{step.num}</span>
+                      <span className="text-[11px] text-[#D0D6E0] bg-white/[0.06] px-2 py-0.5 rounded-full">{step.detail}</span>
                     </div>
-                    <h3 className="font-zolo text-xl font-bold text-white mb-1.5">{step.title}</h3>
+                    <h3 className="font-zolo text-xl font-bold text-[#F7F8F8] mb-1.5 text-balance">{step.title}</h3>
                     <p className="text-xs text-amber-400 mb-2.5 font-medium">{step.note}</p>
-                    <p className="text-xs text-zinc-300 leading-relaxed">{step.body}</p>
+                    <p className="text-xs text-[#D0D6E0] leading-relaxed">{step.body}</p>
                   </div>
-                  <div className="pt-4 text-[10px] text-zinc-500 font-mono">
+                  <div className="pt-4 text-[10px] text-[#8A8F98] font-mono">
                     BEAT {idx + 1} OF 4 • SWIPE →
                   </div>
                 </article>
               ))}
             </div>
             {/* Visual fade cue on mobile edge */}
-            <div className="pointer-events-none absolute right-0 top-0 bottom-6 w-10 bg-gradient-to-l from-[#0A0A0C] to-transparent" />
+            <div className="pointer-events-none absolute right-0 top-0 bottom-6 w-10 bg-gradient-to-l from-[#090A0F] to-transparent" />
           </div>
 
           {/* Desktop Progress Line Indicator */}
           <div className="hidden md:flex items-center gap-3 px-10 mt-8 max-w-6xl mx-auto w-full">
             <div className="h-[2px] flex-1 bg-white/[0.08] rounded-full overflow-hidden">
               <div
-                className="h-full bg-white transition-all duration-100 ease-out"
+                className="h-full bg-cyan-400 shadow-[0_0_8px_#00F0FF] transition-all duration-100 ease-out"
                 style={{ width: `${Math.max(10, scrollProgress * 100)}%` }}
               />
             </div>
-            <span className="font-mono text-xs text-zinc-400">
+            <span className="font-mono text-xs text-[#8A8F98]">
               {activeBeat + 1} / 4
             </span>
           </div>
@@ -483,23 +489,24 @@ export default function ServiceLandingPage({
       {/* ========================================================================= */}
       {/* 2.35 INTERACTIVE HORIZONTAL PRODUCT SHOWCASE                              */}
       {/* ========================================================================= */}
-      <section className="relative py-24 px-6 sm:px-10 bg-[#080809] border-b border-white/[0.06] overflow-hidden">
+      <section className="relative py-24 px-6 sm:px-10 bg-[#090A0F] border-b border-white/[0.08] overflow-hidden">
         <div className="mx-auto max-w-6xl">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-xs text-amber-400 font-mono mb-3">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/25 text-xs text-amber-400 font-mono mb-3">
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
                 <span>INTERACTIVE SHOWCASE</span>
               </div>
-              <h2 className="font-zolo text-3xl sm:text-5xl font-black text-white tracking-tight text-balance">
+              <h2 className="font-zolo text-3xl sm:text-5xl font-black text-[#F7F8F8] tracking-tight text-balance leading-[1.1]">
                 Inside the actual engine.
               </h2>
-              <p className="text-sm sm:text-base text-zinc-400 mt-2 max-w-xl text-balance">
+              <p className="text-sm sm:text-base text-[#8A8F98] mt-2 max-w-xl text-balance">
                 Zero clutter. Reels land silently, get transcribed, and show up ready to watch with the key takeaway extracted.
               </p>
             </div>
 
             {/* Category Selector Buttons */}
-            <div className="flex items-center gap-2 bg-black/60 p-1.5 rounded-full border border-white/10 w-fit">
+            <div className="flex items-center gap-2 bg-[#12151F] p-1.5 rounded-full border border-white/[0.08] w-fit">
               {(['design', 'cooking', 'fitness'] as const).map((cat) => (
                 <button
                   key={cat}
@@ -507,8 +514,8 @@ export default function ServiceLandingPage({
                   onClick={() => setShowcaseCategory(cat)}
                   className={`px-4 py-1.5 rounded-full text-xs font-semibold capitalize transition-all ${
                     showcaseCategory === cat
-                      ? 'bg-white text-black shadow'
-                      : 'text-zinc-400 hover:text-white'
+                      ? 'bg-white text-black shadow-lg'
+                      : 'text-[#8A8F98] hover:text-[#F7F8F8]'
                   }`}
                 >
                   {cat === 'design' ? 'Design & Visual' : cat === 'cooking' ? 'Cooking & Food' : 'Fitness & Form'}
@@ -521,69 +528,69 @@ export default function ServiceLandingPage({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {showcaseCategory === 'design' && (
               <>
-                <div className="rounded-2xl border border-white/10 bg-[#0F0F12] p-6 flex flex-col justify-between hover:border-white/20 transition-all hover:-translate-y-1">
+                <div className="rounded-2xl border border-white/[0.08] bg-[#12151F] p-6 flex flex-col justify-between hover:border-cyan-400/40 transition-all hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(0,240,255,0.08)]">
                   <div>
-                    <div className="flex items-center justify-between text-xs text-zinc-400 mb-4 font-mono">
+                    <div className="flex items-center justify-between text-xs text-[#8A8F98] mb-4 font-mono">
                       <span>@studiodesign</span>
                       <span className="text-amber-400">Captured 14m ago</span>
                     </div>
-                    <h4 className="font-zolo text-lg font-bold text-white mb-2">Concentric Radii in Mobile UI</h4>
-                    <p className="text-xs text-zinc-300 leading-relaxed mb-4">
+                    <h4 className="font-zolo text-lg font-bold text-[#F7F8F8] mb-2 text-balance">Concentric Radii in Mobile UI</h4>
+                    <p className="text-xs text-[#D0D6E0] leading-relaxed mb-4">
                       Why nested containers look warped when outer and inner borders share the same radius. R_inner = R_outer - padding.
                     </p>
-                    <div className="rounded-xl bg-black/50 p-3 border border-white/5 text-[11px] text-zinc-400 font-mono">
+                    <div className="rounded-xl bg-[#090A0F] p-3 border border-white/[0.06] text-[11px] text-[#8A8F98] font-mono">
                       💡 AI Takeaway: Inner radius must subtract padding to maintain visual harmony.
                     </div>
                   </div>
-                  <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-xs">
+                  <div className="mt-6 pt-4 border-t border-white/[0.06] flex items-center justify-between text-xs">
                     <span className="text-emerald-400 flex items-center gap-1.5">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Transcribed
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#10B981]" /> Transcribed
                     </span>
-                    <span className="text-zinc-500 font-mono">0:48 duration</span>
+                    <span className="text-[#5C616B] font-mono">0:48 duration</span>
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-white/10 bg-[#0F0F12] p-6 flex flex-col justify-between hover:border-white/20 transition-all hover:-translate-y-1">
+                <div className="rounded-2xl border border-white/[0.08] bg-[#12151F] p-6 flex flex-col justify-between hover:border-cyan-400/40 transition-all hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(0,240,255,0.08)]">
                   <div>
-                    <div className="flex items-center justify-between text-xs text-zinc-400 mb-4 font-mono">
+                    <div className="flex items-center justify-between text-xs text-[#8A8F98] mb-4 font-mono">
                       <span>@motioncrafter</span>
                       <span className="text-amber-400">Captured 2h ago</span>
                     </div>
-                    <h4 className="font-zolo text-lg font-bold text-white mb-2">Spring Physics vs Linear Easing</h4>
-                    <p className="text-xs text-zinc-300 leading-relaxed mb-4">
+                    <h4 className="font-zolo text-lg font-bold text-[#F7F8F8] mb-2 text-balance">Spring Physics vs Linear Easing</h4>
+                    <p className="text-xs text-[#D0D6E0] leading-relaxed mb-4">
                       Linear transitions feel robotic. Damped springs (stiffness 280, damping 26) create physical weight users expect.
                     </p>
-                    <div className="rounded-xl bg-black/50 p-3 border border-white/5 text-[11px] text-zinc-400 font-mono">
+                    <div className="rounded-xl bg-[#090A0F] p-3 border border-white/[0.06] text-[11px] text-[#8A8F98] font-mono">
                       💡 AI Takeaway: Use spring physics for gestures, bezier easing for simple fades.
                     </div>
                   </div>
-                  <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-xs">
+                  <div className="mt-6 pt-4 border-t border-white/[0.06] flex items-center justify-between text-xs">
                     <span className="text-emerald-400 flex items-center gap-1.5">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Transcribed
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#10B981]" /> Transcribed
                     </span>
-                    <span className="text-zinc-500 font-mono">1:12 duration</span>
+                    <span className="text-[#5C616B] font-mono">1:12 duration</span>
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-white/10 bg-[#0F0F12] p-6 flex flex-col justify-between hover:border-white/20 transition-all hover:-translate-y-1">
+                <div className="rounded-2xl border border-white/[0.08] bg-[#12151F] p-6 flex flex-col justify-between hover:border-cyan-400/40 transition-all hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(0,240,255,0.08)]">
                   <div>
-                    <div className="flex items-center justify-between text-xs text-zinc-400 mb-4 font-mono">
+                    <div className="flex items-center justify-between text-xs text-[#8A8F98] mb-4 font-mono">
                       <span>@typefoundry</span>
                       <span className="text-amber-400">Captured 1d ago</span>
                     </div>
-                    <h4 className="font-zolo text-lg font-bold text-white mb-2">Editorial Line Heights & Contrast</h4>
-                    <p className="text-xs text-zinc-300 leading-relaxed mb-4">
+                    <h4 className="font-zolo text-lg font-bold text-[#F7F8F8] mb-2 text-balance">Editorial Line Heights & Contrast</h4>
+                    <p className="text-xs text-[#D0D6E0] leading-relaxed mb-4">
                       Tight display leading (1.05 to 1.1) paired with relaxed body leading (1.6) creates immediate editorial polish.
                     </p>
-                    <div className="rounded-xl bg-black/50 p-3 border border-white/5 text-[11px] text-zinc-400 font-mono">
+                    <div className="rounded-xl bg-[#090A0F] p-3 border border-white/[0.06] text-[11px] text-[#8A8F98] font-mono">
                       💡 AI Takeaway: Display headers want negative tracking and tight leading.
                     </div>
                   </div>
-                  <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-xs">
+                  <div className="mt-6 pt-4 border-t border-white/[0.06] flex items-center justify-between text-xs">
                     <span className="text-emerald-400 flex items-center gap-1.5">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Transcribed
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#10B981]" /> Transcribed
                     </span>
-                    <span className="text-zinc-500 font-mono">0:56 duration</span>
+                    <span className="text-[#5C616B] font-mono">0:56 duration</span>
                   </div>
                 </div>
               </>
@@ -591,69 +598,69 @@ export default function ServiceLandingPage({
 
             {showcaseCategory === 'cooking' && (
               <>
-                <div className="rounded-2xl border border-white/10 bg-[#0F0F12] p-6 flex flex-col justify-between hover:border-white/20 transition-all hover:-translate-y-1">
+                <div className="rounded-2xl border border-white/[0.08] bg-[#12151F] p-6 flex flex-col justify-between hover:border-amber-400/40 transition-all hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(245,158,11,0.08)]">
                   <div>
-                    <div className="flex items-center justify-between text-xs text-zinc-400 mb-4 font-mono">
+                    <div className="flex items-center justify-between text-xs text-[#8A8F98] mb-4 font-mono">
                       <span>@pasta.craft</span>
                       <span className="text-amber-400">Captured 3h ago</span>
                     </div>
-                    <h4 className="font-zolo text-lg font-bold text-white mb-2">The Real Carbonara Emulsion</h4>
-                    <p className="text-xs text-zinc-300 leading-relaxed mb-4">
+                    <h4 className="font-zolo text-lg font-bold text-[#F7F8F8] mb-2 text-balance">The Real Carbonara Emulsion</h4>
+                    <p className="text-xs text-[#D0D6E0] leading-relaxed mb-4">
                       Never add cream. Use warm pasta water and pecorino romano off the heat to create glossy velvet emulsification.
                     </p>
-                    <div className="rounded-xl bg-black/50 p-3 border border-white/5 text-[11px] text-zinc-400 font-mono">
+                    <div className="rounded-xl bg-[#090A0F] p-3 border border-white/[0.06] text-[11px] text-[#8A8F98] font-mono">
                       💡 Ingredients: Guanciale, Egg yolks, Pecorino Romano, Black pepper.
                     </div>
                   </div>
-                  <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-xs">
+                  <div className="mt-6 pt-4 border-t border-white/[0.06] flex items-center justify-between text-xs">
                     <span className="text-emerald-400 flex items-center gap-1.5">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Recipe Extracted
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#10B981]" /> Recipe Extracted
                     </span>
-                    <span className="text-zinc-500 font-mono">0:45 duration</span>
+                    <span className="text-[#5C616B] font-mono">0:45 duration</span>
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-white/10 bg-[#0F0F12] p-6 flex flex-col justify-between hover:border-white/20 transition-all hover:-translate-y-1">
+                <div className="rounded-2xl border border-white/[0.08] bg-[#12151F] p-6 flex flex-col justify-between hover:border-amber-400/40 transition-all hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(245,158,11,0.08)]">
                   <div>
-                    <div className="flex items-center justify-between text-xs text-zinc-400 mb-4 font-mono">
+                    <div className="flex items-center justify-between text-xs text-[#8A8F98] mb-4 font-mono">
                       <span>@breadlab</span>
                       <span className="text-amber-400">Captured 5h ago</span>
                     </div>
-                    <h4 className="font-zolo text-lg font-bold text-white mb-2">No-Knead Overnight Focaccia</h4>
-                    <p className="text-xs text-zinc-300 leading-relaxed mb-4">
+                    <h4 className="font-zolo text-lg font-bold text-[#F7F8F8] mb-2 text-balance">No-Knead Overnight Focaccia</h4>
+                    <p className="text-xs text-[#D0D6E0] leading-relaxed mb-4">
                       80% hydration, cold ferment for 24 hours. Generous olive oil dimpling creates cloud-like interior and blistered crust.
                     </p>
-                    <div className="rounded-xl bg-black/50 p-3 border border-white/5 text-[11px] text-zinc-400 font-mono">
+                    <div className="rounded-xl bg-[#090A0F] p-3 border border-white/[0.06] text-[11px] text-[#8A8F98] font-mono">
                       💡 Proofing: 24h in fridge, 2h room temp before bake.
                     </div>
                   </div>
-                  <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-xs">
+                  <div className="mt-6 pt-4 border-t border-white/[0.06] flex items-center justify-between text-xs">
                     <span className="text-emerald-400 flex items-center gap-1.5">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Recipe Extracted
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#10B981]" /> Recipe Extracted
                     </span>
-                    <span className="text-zinc-500 font-mono">1:04 duration</span>
+                    <span className="text-[#5C616B] font-mono">1:04 duration</span>
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-white/10 bg-[#0F0F12] p-6 flex flex-col justify-between hover:border-white/20 transition-all hover:-translate-y-1">
+                <div className="rounded-2xl border border-white/[0.08] bg-[#12151F] p-6 flex flex-col justify-between hover:border-amber-400/40 transition-all hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(245,158,11,0.08)]">
                   <div>
-                    <div className="flex items-center justify-between text-xs text-zinc-400 mb-4 font-mono">
+                    <div className="flex items-center justify-between text-xs text-[#8A8F98] mb-4 font-mono">
                       <span>@culinarytechnique</span>
                       <span className="text-amber-400">Captured 1d ago</span>
                     </div>
-                    <h4 className="font-zolo text-lg font-bold text-white mb-2">Steak Pan Sauce Deglaze</h4>
-                    <p className="text-xs text-zinc-300 leading-relaxed mb-4">
+                    <h4 className="font-zolo text-lg font-bold text-[#F7F8F8] mb-2 text-balance">Steak Pan Sauce Deglaze</h4>
+                    <p className="text-xs text-[#D0D6E0] leading-relaxed mb-4">
                       Scrape the browned fond with dry shallots and red wine. Kill the heat before whisking cold cubed butter to finish.
                     </p>
-                    <div className="rounded-xl bg-black/50 p-3 border border-white/5 text-[11px] text-zinc-400 font-mono">
+                    <div className="rounded-xl bg-[#090A0F] p-3 border border-white/[0.06] text-[11px] text-[#8A8F98] font-mono">
                       💡 Technique: Cold butter mount (monter au beurre) locks the gloss.
                     </div>
                   </div>
-                  <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-xs">
+                  <div className="mt-6 pt-4 border-t border-white/[0.06] flex items-center justify-between text-xs">
                     <span className="text-emerald-400 flex items-center gap-1.5">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Recipe Extracted
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#10B981]" /> Recipe Extracted
                     </span>
-                    <span className="text-zinc-500 font-mono">0:52 duration</span>
+                    <span className="text-[#5C616B] font-mono">0:52 duration</span>
                   </div>
                 </div>
               </>
@@ -661,69 +668,69 @@ export default function ServiceLandingPage({
 
             {showcaseCategory === 'fitness' && (
               <>
-                <div className="rounded-2xl border border-white/10 bg-[#0F0F12] p-6 flex flex-col justify-between hover:border-white/20 transition-all hover:-translate-y-1">
+                <div className="rounded-2xl border border-white/[0.08] bg-[#12151F] p-6 flex flex-col justify-between hover:border-emerald-400/40 transition-all hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(16,185,129,0.08)]">
                   <div>
-                    <div className="flex items-center justify-between text-xs text-zinc-400 mb-4 font-mono">
+                    <div className="flex items-center justify-between text-xs text-[#8A8F98] mb-4 font-mono">
                       <span>@biomechanics</span>
                       <span className="text-amber-400">Captured 4h ago</span>
                     </div>
-                    <h4 className="font-zolo text-lg font-bold text-white mb-2">Hip Wedge Setup for Deadlifts</h4>
-                    <p className="text-xs text-zinc-300 leading-relaxed mb-4">
+                    <h4 className="font-zolo text-lg font-bold text-[#F7F8F8] mb-2 text-balance">Hip Wedge Setup for Deadlifts</h4>
+                    <p className="text-xs text-[#D0D6E0] leading-relaxed mb-4">
                       Pull the slack out of the bar before pushing the floor away. Wedge your hips forward rather than squatting down.
                     </p>
-                    <div className="rounded-xl bg-black/50 p-3 border border-white/5 text-[11px] text-zinc-400 font-mono">
+                    <div className="rounded-xl bg-[#090A0F] p-3 border border-white/[0.06] text-[11px] text-[#8A8F98] font-mono">
                       💡 Form Cue: &apos;Protect your armpits&apos; to lock lats before initiation.
                     </div>
                   </div>
-                  <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-xs">
+                  <div className="mt-6 pt-4 border-t border-white/[0.06] flex items-center justify-between text-xs">
                     <span className="text-emerald-400 flex items-center gap-1.5">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Form Cues Extracted
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#10B981]" /> Form Cues Extracted
                     </span>
-                    <span className="text-zinc-500 font-mono">0:39 duration</span>
+                    <span className="text-[#5C616B] font-mono">0:39 duration</span>
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-white/10 bg-[#0F0F12] p-6 flex flex-col justify-between hover:border-white/20 transition-all hover:-translate-y-1">
+                <div className="rounded-2xl border border-white/[0.08] bg-[#12151F] p-6 flex flex-col justify-between hover:border-emerald-400/40 transition-all hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(16,185,129,0.08)]">
                   <div>
-                    <div className="flex items-center justify-between text-xs text-zinc-400 mb-4 font-mono">
+                    <div className="flex items-center justify-between text-xs text-[#8A8F98] mb-4 font-mono">
                       <span>@mobilityproject</span>
                       <span className="text-amber-400">Captured 8h ago</span>
                     </div>
-                    <h4 className="font-zolo text-lg font-bold text-white mb-2">Thoracic Spine Rotation Drills</h4>
-                    <p className="text-xs text-zinc-300 leading-relaxed mb-4">
+                    <h4 className="font-zolo text-lg font-bold text-[#F7F8F8] mb-2 text-balance">Thoracic Spine Rotation Drills</h4>
+                    <p className="text-xs text-[#D0D6E0] leading-relaxed mb-4">
                       Fix rounded desk posture in 3 minutes. Quadruped reach-throughs unlock overhead press range of motion.
                     </p>
-                    <div className="rounded-xl bg-black/50 p-3 border border-white/5 text-[11px] text-zinc-400 font-mono">
+                    <div className="rounded-xl bg-[#090A0F] p-3 border border-white/[0.06] text-[11px] text-[#8A8F98] font-mono">
                       💡 Reps: 8 slow rotations per side with deep exhalations.
                     </div>
                   </div>
-                  <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-xs">
+                  <div className="mt-6 pt-4 border-t border-white/[0.06] flex items-center justify-between text-xs">
                     <span className="text-emerald-400 flex items-center gap-1.5">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Form Cues Extracted
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#10B981]" /> Form Cues Extracted
                     </span>
-                    <span className="text-zinc-500 font-mono">0:49 duration</span>
+                    <span className="text-[#5C616B] font-mono">0:49 duration</span>
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-white/10 bg-[#0F0F12] p-6 flex flex-col justify-between hover:border-white/20 transition-all hover:-translate-y-1">
+                <div className="rounded-2xl border border-white/[0.08] bg-[#12151F] p-6 flex flex-col justify-between hover:border-emerald-400/40 transition-all hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(16,185,129,0.08)]">
                   <div>
-                    <div className="flex items-center justify-between text-xs text-zinc-400 mb-4 font-mono">
+                    <div className="flex items-center justify-between text-xs text-[#8A8F98] mb-4 font-mono">
                       <span>@rehabspecialist</span>
                       <span className="text-amber-400">Captured 2d ago</span>
                     </div>
-                    <h4 className="font-zolo text-lg font-bold text-white mb-2">Shoulder External Rotator Cue</h4>
-                    <p className="text-xs text-zinc-300 leading-relaxed mb-4">
+                    <h4 className="font-zolo text-lg font-bold text-[#F7F8F8] mb-2 text-balance">Shoulder External Rotator Cue</h4>
+                    <p className="text-xs text-[#D0D6E0] leading-relaxed mb-4">
                       Why high-elbow rows pinch the supraspinatus. Tuck elbows to 45 degrees and squeeze lower traps at peak contraction.
                     </p>
-                    <div className="rounded-xl bg-black/50 p-3 border border-white/5 text-[11px] text-zinc-400 font-mono">
+                    <div className="rounded-xl bg-[#090A0F] p-3 border border-white/[0.06] text-[11px] text-[#8A8F98] font-mono">
                       💡 Form Cue: Keep wrists neutral and drive with elbows, not biceps.
                     </div>
                   </div>
-                  <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-xs">
+                  <div className="mt-6 pt-4 border-t border-white/[0.06] flex items-center justify-between text-xs">
                     <span className="text-emerald-400 flex items-center gap-1.5">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Form Cues Extracted
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#10B981]" /> Form Cues Extracted
                     </span>
-                    <span className="text-zinc-500 font-mono">0:41 duration</span>
+                    <span className="text-[#5C616B] font-mono">0:41 duration</span>
                   </div>
                 </div>
               </>
@@ -735,13 +742,13 @@ export default function ServiceLandingPage({
       {/* ========================================================================= */}
       {/* 2.4 THE DASHBOARD / PAYOFF: Editorial List Layout (Replaces AI cards)     */}
       {/* ========================================================================= */}
-      <section className="py-32 px-6 sm:px-10 bg-[#080809] border-t border-white/[0.06]">
+      <section className="py-32 px-6 sm:px-10 bg-[#090A0F] border-t border-white/[0.08]">
         <div className="mx-auto max-w-5xl">
           <div className="max-w-xl mb-16">
-            <h2 className="font-zolo text-3xl sm:text-5xl font-black text-white tracking-tight mb-4 text-balance">
+            <h2 className="font-zolo text-3xl sm:text-5xl font-black text-[#F7F8F8] tracking-tight mb-4 text-balance leading-[1.1]">
               No endless saved list. Just what matters.
             </h2>
-            <p className="text-base text-[#A1A1AA] text-balance">
+            <p className="text-base text-[#D0D6E0] text-balance">
               Instead of scrolling past the same 200 saved reels forever, pick a category and actually watch what you saved.
             </p>
           </div>
@@ -750,45 +757,45 @@ export default function ServiceLandingPage({
           <div className="divide-y divide-white/[0.08] border-y border-white/[0.08]">
             <div className="py-8 grid grid-cols-1 md:grid-cols-12 gap-4 items-baseline group">
               <div className="md:col-span-4 flex items-baseline gap-3">
-                <span className="font-mono text-xs text-[#71717A]">01</span>
-                <h3 className="font-zolo text-xl font-bold text-white group-hover:text-amber-300 transition-colors">
+                <span className="font-mono text-xs text-cyan-400">01</span>
+                <h3 className="font-zolo text-xl font-bold text-[#F7F8F8] group-hover:text-cyan-300 transition-colors">
                   Cooking & Food
                 </h3>
               </div>
-              <p className="md:col-span-6 text-sm text-[#A1A1AA] leading-relaxed">
+              <p className="md:col-span-6 text-sm text-[#D0D6E0] leading-relaxed">
                 Italian pasta technique, 3-minute sourdough prep, homemade bone broth.
               </p>
-              <div className="md:col-span-2 text-left md:text-right font-mono text-xs text-[#71717A]">
+              <div className="md:col-span-2 text-left md:text-right font-mono text-xs text-[#8A8F98]">
                 4 reels queued
               </div>
             </div>
 
             <div className="py-8 grid grid-cols-1 md:grid-cols-12 gap-4 items-baseline group">
               <div className="md:col-span-4 flex items-baseline gap-3">
-                <span className="font-mono text-xs text-[#71717A]">02</span>
-                <h3 className="font-zolo text-xl font-bold text-white group-hover:text-amber-300 transition-colors">
+                <span className="font-mono text-xs text-cyan-400">02</span>
+                <h3 className="font-zolo text-xl font-bold text-[#F7F8F8] group-hover:text-cyan-300 transition-colors">
                   Design & Visual
                 </h3>
               </div>
-              <p className="md:col-span-6 text-sm text-[#A1A1AA] leading-relaxed">
+              <p className="md:col-span-6 text-sm text-[#D0D6E0] leading-relaxed">
                 Typography hierarchies, spatial motion principles, tactile interfaces.
               </p>
-              <div className="md:col-span-2 text-left md:text-right font-mono text-xs text-[#71717A]">
+              <div className="md:col-span-2 text-left md:text-right font-mono text-xs text-[#8A8F98]">
                 7 reels queued
               </div>
             </div>
 
             <div className="py-8 grid grid-cols-1 md:grid-cols-12 gap-4 items-baseline group">
               <div className="md:col-span-4 flex items-baseline gap-3">
-                <span className="font-mono text-xs text-[#71717A]">03</span>
-                <h3 className="font-zolo text-xl font-bold text-white group-hover:text-amber-300 transition-colors">
+                <span className="font-mono text-xs text-cyan-400">03</span>
+                <h3 className="font-zolo text-xl font-bold text-[#F7F8F8] group-hover:text-cyan-300 transition-colors">
                   Fitness & Recovery
                 </h3>
               </div>
-              <p className="md:col-span-6 text-sm text-[#A1A1AA] leading-relaxed">
+              <p className="md:col-span-6 text-sm text-[#D0D6E0] leading-relaxed">
                 Shoulder mobility cues, deadlift mechanics, deep tissue recovery routines.
               </p>
-              <div className="md:col-span-2 text-left md:text-right font-mono text-xs text-[#71717A]">
+              <div className="md:col-span-2 text-left md:text-right font-mono text-xs text-[#8A8F98]">
                 3 reels queued
               </div>
             </div>
@@ -799,12 +806,17 @@ export default function ServiceLandingPage({
       {/* ========================================================================= */}
       {/* 2.5 FINAL CTA: Single Action "Create account"                             */}
       {/* ========================================================================= */}
-      <section className="py-28 px-6 sm:px-10 border-t border-white/[0.06] bg-[#050506] text-center">
-        <div className="mx-auto max-w-xl flex flex-col items-center">
-          <h2 className="font-zolo text-3xl sm:text-5xl font-black text-white tracking-tight mb-4 text-balance">
+      <section className="py-28 px-6 sm:px-10 border-t border-white/[0.08] bg-[#090A0F] text-center relative overflow-hidden">
+        {/* Soft radial glow background */}
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <div className="h-96 w-96 rounded-full bg-cyan-500/[0.05] blur-[140px]" />
+        </div>
+
+        <div className="relative z-10 mx-auto max-w-xl flex flex-col items-center">
+          <h2 className="font-zolo text-3xl sm:text-5xl font-black text-[#F7F8F8] tracking-tight mb-4 text-balance leading-[1.1]">
             Never lose a reel worth revisiting.
           </h2>
-          <p className="text-sm sm:text-base text-[#A1A1AA] mb-8 text-balance">
+          <p className="text-sm sm:text-base text-[#D0D6E0] mb-8 text-balance">
             Get your personal dashboard ready before sharing your next reel.
           </p>
 
@@ -814,7 +826,7 @@ export default function ServiceLandingPage({
               setAuthMode('signup');
               setShowAuthModal(true);
             }}
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-8 py-4 text-sm font-bold text-black shadow-xl hover:bg-[#E4E4E7] transition active:scale-[0.98]"
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-8 py-4 text-sm font-bold text-black shadow-[0_0_35px_rgba(0,240,255,0.22)] hover:bg-[#D0D6E0] transition active:scale-[0.98]"
           >
             <span>Create account</span>
             <ArrowRight className="h-4 w-4" />
@@ -825,10 +837,13 @@ export default function ServiceLandingPage({
       {/* ========================================================================= */}
       {/* 2.6 FOOTER: One line Wordmark + Tagline                                   */}
       {/* ========================================================================= */}
-      <footer className="border-t border-white/[0.06] py-8 px-6 sm:px-10 bg-[#050506]">
-        <div className="mx-auto max-w-6xl flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#71717A]">
-          <span className="font-zolo font-bold text-sm text-white">Watch Later</span>
-          <span>Never lose a reel worth revisiting.</span>
+      <footer className="border-t border-white/[0.08] py-8 px-6 sm:px-10 bg-[#090A0F]">
+        <div className="mx-auto max-w-6xl flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#8A8F98]">
+          <div className="flex items-center gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_#00F0FF]" />
+            <span className="font-zolo font-bold text-sm text-[#F7F8F8]">Watch Later</span>
+          </div>
+          <span className="text-[#8A8F98]">Never lose a reel worth revisiting.</span>
         </div>
       </footer>
 
@@ -836,20 +851,26 @@ export default function ServiceLandingPage({
       {/* AUTH MODAL                                                                */}
       {/* ========================================================================= */}
       {showAuthModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="relative w-full max-w-md rounded-[24px] border border-white/15 bg-[#121214] p-8 shadow-2xl text-left">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="auth-modal-title"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+        >
+          <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-[24px] border border-white/[0.12] bg-[#12151F] p-6 sm:p-8 shadow-2xl text-left">
             <button
               type="button"
               onClick={() => setShowAuthModal(false)}
-              className="absolute top-6 right-6 text-[#71717A] hover:text-white transition"
+              className="absolute top-6 right-6 text-[#8A8F98] hover:text-[#F7F8F8] transition"
+              aria-label="Close dialog"
             >
               <X className="h-5 w-5" />
             </button>
 
-            <h3 className="font-zolo text-2xl font-bold text-white mb-1">
+            <h3 id="auth-modal-title" className="font-zolo text-2xl font-bold text-[#F7F8F8] mb-1">
               {authMode === 'signin' ? 'Welcome back' : 'Create account'}
             </h3>
-            <p className="text-xs text-[#A1A1AA] mb-6">
+            <p className="text-xs text-[#D0D6E0] mb-6">
               {authMode === 'signin'
                 ? 'Sign in to access your categorized reel library.'
                 : 'Create your account to start auto-sorting your saved reels.'}
@@ -863,32 +884,39 @@ export default function ServiceLandingPage({
 
             <form onSubmit={handleAuthSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-mono text-[#A1A1AA] mb-1.5">EMAIL</label>
+                <label htmlFor="auth-email-input" className="block text-xs font-mono text-[#8A8F98] mb-1.5">
+                  EMAIL
+                </label>
                 <input
+                  id="auth-email-input"
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@example.com"
-                  className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white placeholder-[#52525B] focus:border-white/30 focus:outline-none"
+                  className="w-full rounded-xl border border-white/[0.1] bg-[#090A0F]/80 px-4 py-2.5 text-sm text-[#F7F8F8] placeholder-[#5C616B] focus:border-cyan-400 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-mono text-[#A1A1AA] mb-1.5">PASSWORD</label>
+                <label htmlFor="auth-password-input" className="block text-xs font-mono text-[#8A8F98] mb-1.5">
+                  PASSWORD
+                </label>
                 <div className="relative">
                   <input
+                    id="auth-password-input"
                     type={showPassword ? 'text' : 'password'}
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white placeholder-[#52525B] focus:border-white/30 focus:outline-none"
+                    className="w-full rounded-xl border border-white/[0.1] bg-[#090A0F]/80 px-4 py-2.5 text-sm text-[#F7F8F8] placeholder-[#5C616B] focus:border-cyan-400 focus:outline-none"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 top-2.5 text-[#71717A] hover:text-white"
+                    className="absolute right-3.5 top-2.5 text-[#8A8F98] hover:text-[#F7F8F8]"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -898,20 +926,20 @@ export default function ServiceLandingPage({
               <button
                 type="submit"
                 disabled={authLoading}
-                className="w-full mt-2 inline-flex items-center justify-center rounded-xl bg-white py-3 text-sm font-bold text-black hover:bg-[#E4E4E7] transition disabled:opacity-50 active:scale-[0.98]"
+                className="w-full mt-2 inline-flex items-center justify-center rounded-xl bg-white py-3 text-sm font-bold text-black hover:bg-[#D0D6E0] transition disabled:opacity-50 active:scale-[0.98] shadow-lg"
               >
                 {authLoading ? 'Authenticating...' : authMode === 'signin' ? 'Sign In' : 'Create Account'}
               </button>
             </form>
 
-            <div className="mt-6 text-center text-xs text-[#71717A]">
+            <div className="mt-6 text-center text-xs text-[#8A8F98]">
               {authMode === 'signin' ? (
                 <>
                   Don&apos;t have an account?{' '}
                   <button
                     type="button"
                     onClick={() => setAuthMode('signup')}
-                    className="text-white hover:underline font-semibold"
+                    className="text-[#F7F8F8] hover:underline font-semibold"
                   >
                     Create account
                   </button>
@@ -922,7 +950,7 @@ export default function ServiceLandingPage({
                   <button
                     type="button"
                     onClick={() => setAuthMode('signin')}
-                    className="text-white hover:underline font-semibold"
+                    className="text-[#F7F8F8] hover:underline font-semibold"
                   >
                     Sign In
                   </button>
