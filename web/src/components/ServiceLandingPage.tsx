@@ -36,6 +36,10 @@ export default function ServiceLandingPage({
   const [hasDownloaded, setHasDownloaded] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
 
+  // Active category tab for the Product Showcase
+  const [showcaseCategory, setShowcaseCategory] = useState<'cooking' | 'design' | 'fitness'>('design');
+  const [activeBeat, setActiveBeat] = useState(0);
+
   // Check if previously downloaded in this session
   useEffect(() => {
     if (typeof window !== 'undefined' && sessionStorage.getItem('wl_downloaded') === 'true') {
@@ -135,6 +139,7 @@ export default function ServiceLandingPage({
       const topOffset = -rect.top;
       const progress = Math.max(0, Math.min(1, topOffset / totalScrollable));
       setScrollProgress(progress);
+      setActiveBeat(Math.min(3, Math.floor(progress * 3.99)));
     };
 
     window.addEventListener('scroll', onScroll, { passive: true });
@@ -340,89 +345,389 @@ export default function ServiceLandingPage({
       </section>
 
       {/* ========================================================================= */}
-      {/* 2.3 HOW IT WORKS: Horizontal Scroll Narrative (No AI card clichés)         */}
+      {/* 2.3 HOW IT WORKS: Horizontal Scroll Narrative (Tightly Calibrated Travel)  */}
       {/* ========================================================================= */}
       <section
         ref={horizontalSectionRef}
-        className="relative md:h-[280vh] bg-[#0A0A0C]"
+        className="relative md:h-[185vh] bg-[#0A0A0C] border-b border-white/[0.06]"
       >
-        <div className="md:sticky md:top-0 md:h-screen md:flex md:flex-col md:justify-center overflow-hidden py-24 md:py-0">
-          <div className="mx-auto max-w-6xl px-6 sm:px-10 mb-8 md:mb-12">
-            <h2 className="font-zolo text-3xl sm:text-4xl font-extrabold tracking-tight text-white mb-2 text-balance">
-              One tap. Everything else is on autopilot.
-            </h2>
-            <p className="text-sm text-[#71717A]">
-              Follow the physical path from Instagram share sheet to clean library.
-            </p>
-          </div>
+        <div className="md:sticky md:top-0 md:h-screen md:flex md:flex-col md:justify-center overflow-hidden py-20 md:py-0">
+          <div className="mx-auto max-w-6xl px-6 sm:px-10 mb-6 md:mb-10 w-full flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/10 text-xs text-amber-400 font-mono mb-3">
+                <span>01 — 04 SEQUENCE</span>
+              </div>
+              <h2 className="font-zolo text-3xl sm:text-4xl font-extrabold tracking-tight text-white mb-2 text-balance">
+                One tap. Everything else is on autopilot.
+              </h2>
+              <p className="text-sm text-zinc-400">
+                Follow the physical path from Instagram share sheet to clean library.
+              </p>
+            </div>
 
-          {/* Desktop Horizontal Sliding Track (§3.2) */}
-          <div className="hidden md:block w-full overflow-hidden">
-            <div
-              className="flex gap-8 px-10 transition-transform duration-100 ease-out will-change-transform"
-              style={{
-                transform: `translateX(calc(${-(scrollProgress * (steps.length - 1) * 440)}px + 3vw))`
-              }}
-            >
-              {steps.map((step, idx) => (
-                <article
-                  key={step.num}
-                  className="w-[460px] shrink-0 border-t-2 border-white/20 pt-6 pb-8 flex flex-col justify-between transition-colors hover:border-white/50"
+            {/* Interactive Beat Jumpers */}
+            <div className="hidden md:flex items-center gap-2">
+              {steps.map((s, i) => (
+                <button
+                  key={s.num}
+                  type="button"
+                  onClick={() => {
+                    if (!horizontalSectionRef.current) return;
+                    const el = horizontalSectionRef.current;
+                    const totalScrollable = el.offsetHeight - window.innerHeight;
+                    const targetScroll = el.offsetTop + (i / (steps.length - 1)) * totalScrollable;
+                    window.scrollTo({ top: targetScroll, behavior: 'smooth' });
+                  }}
+                  className={`h-8 px-3 rounded-full text-xs font-mono transition-all flex items-center gap-1.5 ${
+                    activeBeat === i
+                      ? 'bg-white text-black font-bold shadow-md'
+                      : 'bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white border border-white/5'
+                  }`}
                 >
-                  <div>
-                    <div className="flex items-baseline justify-between mb-8">
-                      <span className="font-mono text-3xl font-light tracking-tighter text-[#71717A]">
-                        {step.num}
-                      </span>
-                      <span className="text-xs text-[#A1A1AA]">{step.detail}</span>
-                    </div>
-
-                    <h3 className="font-zolo text-2xl font-bold text-white mb-2 tracking-tight">
-                      {step.title}
-                    </h3>
-                    <p className="text-sm text-amber-400/90 mb-4 font-medium">{step.note}</p>
-                    <p className="text-sm text-[#A1A1AA] leading-relaxed">{step.body}</p>
-                  </div>
-
-                  <div className="pt-8 text-xs text-[#71717A] font-mono">
-                    BEAT {idx + 1} OF 4
-                  </div>
-                </article>
+                  <span>{s.num}</span>
+                  <span className="hidden lg:inline text-[11px] font-sans font-medium">{s.title.split(' ')[0]}</span>
+                </button>
               ))}
             </div>
           </div>
 
+          {/* Desktop Horizontal Sliding Track (§3.2 / scroll-craft pan) */}
+          <div className="hidden md:block w-full overflow-hidden">
+            <div
+              className="flex gap-8 px-10 transition-transform duration-75 ease-out will-change-transform"
+              style={{
+                // Calibrated strictly to travel exactly the rail overflow (4 cards @ 460px + gap 32px)
+                transform: `translateX(calc(${-(scrollProgress * 1180)}px + 2vw))`
+              }}
+            >
+              {steps.map((step, idx) => {
+                const isCurrent = activeBeat === idx;
+                return (
+                  <article
+                    key={step.num}
+                    className={`w-[440px] shrink-0 border-t-2 pt-6 pb-8 flex flex-col justify-between transition-all duration-300 ${
+                      isCurrent
+                        ? 'border-white bg-white/[0.02] px-6 shadow-lg'
+                        : 'border-white/20 hover:border-white/40'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-baseline justify-between mb-8">
+                        <span className={`font-mono text-3xl font-light tracking-tighter ${isCurrent ? 'text-white' : 'text-zinc-500'}`}>
+                          {step.num}
+                        </span>
+                        <span className="text-xs text-zinc-400 bg-white/5 px-2.5 py-1 rounded-full border border-white/5">
+                          {step.detail}
+                        </span>
+                      </div>
+
+                      <h3 className="font-zolo text-2xl font-bold text-white mb-2 tracking-tight">
+                        {step.title}
+                      </h3>
+                      <p className="text-sm text-amber-400 mb-4 font-medium">{step.note}</p>
+                      <p className="text-sm text-zinc-300 leading-relaxed">{step.body}</p>
+                    </div>
+
+                    <div className="pt-8 text-xs text-zinc-500 font-mono flex items-center justify-between">
+                      <span>BEAT {idx + 1} OF 4</span>
+                      <span className="text-[11px] text-zinc-400">{isCurrent ? '● ACTIVE' : '○'}</span>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Mobile Touch Native Horizontal Swipe Strip (§3.5) */}
-          <div className="md:hidden flex gap-5 overflow-x-auto px-6 pb-6 pt-2 snap-x snap-mandatory scrollbar-none">
-            {steps.map((step) => (
-              <article
-                key={step.num}
-                className="w-[84vw] shrink-0 snap-center border-t-2 border-white/20 pt-5 pb-6 flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-baseline justify-between mb-4">
-                    <span className="font-mono text-2xl text-[#71717A]">{step.num}</span>
-                    <span className="text-[11px] text-[#A1A1AA]">{step.detail}</span>
+          <div className="md:hidden relative">
+            <div className="flex gap-4 overflow-x-auto px-6 pb-6 pt-2 snap-x snap-mandatory scrollbar-none pr-12">
+              {steps.map((step, idx) => (
+                <article
+                  key={step.num}
+                  className="w-[82vw] max-w-[340px] shrink-0 snap-center border-t-2 border-white/25 pt-5 pb-6 flex flex-col justify-between bg-white/[0.02] px-4"
+                >
+                  <div>
+                    <div className="flex items-baseline justify-between mb-4">
+                      <span className="font-mono text-2xl text-zinc-400">{step.num}</span>
+                      <span className="text-[11px] text-zinc-400 bg-white/5 px-2 py-0.5 rounded-full">{step.detail}</span>
+                    </div>
+                    <h3 className="font-zolo text-xl font-bold text-white mb-1.5">{step.title}</h3>
+                    <p className="text-xs text-amber-400 mb-2.5 font-medium">{step.note}</p>
+                    <p className="text-xs text-zinc-300 leading-relaxed">{step.body}</p>
                   </div>
-                  <h3 className="font-zolo text-xl font-bold text-white mb-1.5">{step.title}</h3>
-                  <p className="text-xs text-amber-400/90 mb-3 font-medium">{step.note}</p>
-                  <p className="text-xs text-[#A1A1AA] leading-relaxed">{step.body}</p>
-                </div>
-              </article>
-            ))}
+                  <div className="pt-4 text-[10px] text-zinc-500 font-mono">
+                    BEAT {idx + 1} OF 4 • SWIPE →
+                  </div>
+                </article>
+              ))}
+            </div>
+            {/* Visual fade cue on mobile edge */}
+            <div className="pointer-events-none absolute right-0 top-0 bottom-6 w-10 bg-gradient-to-l from-[#0A0A0C] to-transparent" />
           </div>
 
           {/* Desktop Progress Line Indicator */}
-          <div className="hidden md:flex items-center gap-2 px-10 mt-10 max-w-6xl mx-auto w-full">
+          <div className="hidden md:flex items-center gap-3 px-10 mt-8 max-w-6xl mx-auto w-full">
             <div className="h-[2px] flex-1 bg-white/[0.08] rounded-full overflow-hidden">
               <div
-                className="h-full bg-white transition-all duration-150"
-                style={{ width: `${Math.max(12, scrollProgress * 100)}%` }}
+                className="h-full bg-white transition-all duration-100 ease-out"
+                style={{ width: `${Math.max(10, scrollProgress * 100)}%` }}
               />
             </div>
-            <span className="font-mono text-xs text-[#71717A] ml-2">
-              {Math.min(4, Math.floor(scrollProgress * 4) + 1)}/4
+            <span className="font-mono text-xs text-zinc-400">
+              {activeBeat + 1} / 4
             </span>
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* 2.35 INTERACTIVE HORIZONTAL PRODUCT SHOWCASE                              */}
+      {/* ========================================================================= */}
+      <section className="relative py-24 px-6 sm:px-10 bg-[#080809] border-b border-white/[0.06] overflow-hidden">
+        <div className="mx-auto max-w-6xl">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-xs text-amber-400 font-mono mb-3">
+                <span>INTERACTIVE SHOWCASE</span>
+              </div>
+              <h2 className="font-zolo text-3xl sm:text-5xl font-black text-white tracking-tight text-balance">
+                Inside the actual engine.
+              </h2>
+              <p className="text-sm sm:text-base text-zinc-400 mt-2 max-w-xl text-balance">
+                Zero clutter. Reels land silently, get transcribed, and show up ready to watch with the key takeaway extracted.
+              </p>
+            </div>
+
+            {/* Category Selector Buttons */}
+            <div className="flex items-center gap-2 bg-black/60 p-1.5 rounded-full border border-white/10 w-fit">
+              {(['design', 'cooking', 'fitness'] as const).map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setShowcaseCategory(cat)}
+                  className={`px-4 py-1.5 rounded-full text-xs font-semibold capitalize transition-all ${
+                    showcaseCategory === cat
+                      ? 'bg-white text-black shadow'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  {cat === 'design' ? 'Design & Visual' : cat === 'cooking' ? 'Cooking & Food' : 'Fitness & Form'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Interactive Horizontal Reel Rail */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {showcaseCategory === 'design' && (
+              <>
+                <div className="rounded-2xl border border-white/10 bg-[#0F0F12] p-6 flex flex-col justify-between hover:border-white/20 transition-all hover:-translate-y-1">
+                  <div>
+                    <div className="flex items-center justify-between text-xs text-zinc-400 mb-4 font-mono">
+                      <span>@studiodesign</span>
+                      <span className="text-amber-400">Captured 14m ago</span>
+                    </div>
+                    <h4 className="font-zolo text-lg font-bold text-white mb-2">Concentric Radii in Mobile UI</h4>
+                    <p className="text-xs text-zinc-300 leading-relaxed mb-4">
+                      Why nested containers look warped when outer and inner borders share the same radius. R_inner = R_outer - padding.
+                    </p>
+                    <div className="rounded-xl bg-black/50 p-3 border border-white/5 text-[11px] text-zinc-400 font-mono">
+                      💡 AI Takeaway: Inner radius must subtract padding to maintain visual harmony.
+                    </div>
+                  </div>
+                  <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-xs">
+                    <span className="text-emerald-400 flex items-center gap-1.5">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Transcribed
+                    </span>
+                    <span className="text-zinc-500 font-mono">0:48 duration</span>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-[#0F0F12] p-6 flex flex-col justify-between hover:border-white/20 transition-all hover:-translate-y-1">
+                  <div>
+                    <div className="flex items-center justify-between text-xs text-zinc-400 mb-4 font-mono">
+                      <span>@motioncrafter</span>
+                      <span className="text-amber-400">Captured 2h ago</span>
+                    </div>
+                    <h4 className="font-zolo text-lg font-bold text-white mb-2">Spring Physics vs Linear Easing</h4>
+                    <p className="text-xs text-zinc-300 leading-relaxed mb-4">
+                      Linear transitions feel robotic. Damped springs (stiffness 280, damping 26) create physical weight users expect.
+                    </p>
+                    <div className="rounded-xl bg-black/50 p-3 border border-white/5 text-[11px] text-zinc-400 font-mono">
+                      💡 AI Takeaway: Use spring physics for gestures, bezier easing for simple fades.
+                    </div>
+                  </div>
+                  <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-xs">
+                    <span className="text-emerald-400 flex items-center gap-1.5">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Transcribed
+                    </span>
+                    <span className="text-zinc-500 font-mono">1:12 duration</span>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-[#0F0F12] p-6 flex flex-col justify-between hover:border-white/20 transition-all hover:-translate-y-1">
+                  <div>
+                    <div className="flex items-center justify-between text-xs text-zinc-400 mb-4 font-mono">
+                      <span>@typefoundry</span>
+                      <span className="text-amber-400">Captured 1d ago</span>
+                    </div>
+                    <h4 className="font-zolo text-lg font-bold text-white mb-2">Editorial Line Heights & Contrast</h4>
+                    <p className="text-xs text-zinc-300 leading-relaxed mb-4">
+                      Tight display leading (1.05 to 1.1) paired with relaxed body leading (1.6) creates immediate editorial polish.
+                    </p>
+                    <div className="rounded-xl bg-black/50 p-3 border border-white/5 text-[11px] text-zinc-400 font-mono">
+                      💡 AI Takeaway: Display headers want negative tracking and tight leading.
+                    </div>
+                  </div>
+                  <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-xs">
+                    <span className="text-emerald-400 flex items-center gap-1.5">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Transcribed
+                    </span>
+                    <span className="text-zinc-500 font-mono">0:56 duration</span>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {showcaseCategory === 'cooking' && (
+              <>
+                <div className="rounded-2xl border border-white/10 bg-[#0F0F12] p-6 flex flex-col justify-between hover:border-white/20 transition-all hover:-translate-y-1">
+                  <div>
+                    <div className="flex items-center justify-between text-xs text-zinc-400 mb-4 font-mono">
+                      <span>@pasta.craft</span>
+                      <span className="text-amber-400">Captured 3h ago</span>
+                    </div>
+                    <h4 className="font-zolo text-lg font-bold text-white mb-2">The Real Carbonara Emulsion</h4>
+                    <p className="text-xs text-zinc-300 leading-relaxed mb-4">
+                      Never add cream. Use warm pasta water and pecorino romano off the heat to create glossy velvet emulsification.
+                    </p>
+                    <div className="rounded-xl bg-black/50 p-3 border border-white/5 text-[11px] text-zinc-400 font-mono">
+                      💡 Ingredients: Guanciale, Egg yolks, Pecorino Romano, Black pepper.
+                    </div>
+                  </div>
+                  <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-xs">
+                    <span className="text-emerald-400 flex items-center gap-1.5">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Recipe Extracted
+                    </span>
+                    <span className="text-zinc-500 font-mono">0:45 duration</span>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-[#0F0F12] p-6 flex flex-col justify-between hover:border-white/20 transition-all hover:-translate-y-1">
+                  <div>
+                    <div className="flex items-center justify-between text-xs text-zinc-400 mb-4 font-mono">
+                      <span>@breadlab</span>
+                      <span className="text-amber-400">Captured 5h ago</span>
+                    </div>
+                    <h4 className="font-zolo text-lg font-bold text-white mb-2">No-Knead Overnight Focaccia</h4>
+                    <p className="text-xs text-zinc-300 leading-relaxed mb-4">
+                      80% hydration, cold ferment for 24 hours. Generous olive oil dimpling creates cloud-like interior and blistered crust.
+                    </p>
+                    <div className="rounded-xl bg-black/50 p-3 border border-white/5 text-[11px] text-zinc-400 font-mono">
+                      💡 Proofing: 24h in fridge, 2h room temp before bake.
+                    </div>
+                  </div>
+                  <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-xs">
+                    <span className="text-emerald-400 flex items-center gap-1.5">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Recipe Extracted
+                    </span>
+                    <span className="text-zinc-500 font-mono">1:04 duration</span>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-[#0F0F12] p-6 flex flex-col justify-between hover:border-white/20 transition-all hover:-translate-y-1">
+                  <div>
+                    <div className="flex items-center justify-between text-xs text-zinc-400 mb-4 font-mono">
+                      <span>@culinarytechnique</span>
+                      <span className="text-amber-400">Captured 1d ago</span>
+                    </div>
+                    <h4 className="font-zolo text-lg font-bold text-white mb-2">Steak Pan Sauce Deglaze</h4>
+                    <p className="text-xs text-zinc-300 leading-relaxed mb-4">
+                      Scrape the browned fond with dry shallots and red wine. Kill the heat before whisking cold cubed butter to finish.
+                    </p>
+                    <div className="rounded-xl bg-black/50 p-3 border border-white/5 text-[11px] text-zinc-400 font-mono">
+                      💡 Technique: Cold butter mount (monter au beurre) locks the gloss.
+                    </div>
+                  </div>
+                  <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-xs">
+                    <span className="text-emerald-400 flex items-center gap-1.5">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Recipe Extracted
+                    </span>
+                    <span className="text-zinc-500 font-mono">0:52 duration</span>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {showcaseCategory === 'fitness' && (
+              <>
+                <div className="rounded-2xl border border-white/10 bg-[#0F0F12] p-6 flex flex-col justify-between hover:border-white/20 transition-all hover:-translate-y-1">
+                  <div>
+                    <div className="flex items-center justify-between text-xs text-zinc-400 mb-4 font-mono">
+                      <span>@biomechanics</span>
+                      <span className="text-amber-400">Captured 4h ago</span>
+                    </div>
+                    <h4 className="font-zolo text-lg font-bold text-white mb-2">Hip Wedge Setup for Deadlifts</h4>
+                    <p className="text-xs text-zinc-300 leading-relaxed mb-4">
+                      Pull the slack out of the bar before pushing the floor away. Wedge your hips forward rather than squatting down.
+                    </p>
+                    <div className="rounded-xl bg-black/50 p-3 border border-white/5 text-[11px] text-zinc-400 font-mono">
+                      💡 Form Cue: &apos;Protect your armpits&apos; to lock lats before initiation.
+                    </div>
+                  </div>
+                  <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-xs">
+                    <span className="text-emerald-400 flex items-center gap-1.5">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Form Cues Extracted
+                    </span>
+                    <span className="text-zinc-500 font-mono">0:39 duration</span>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-[#0F0F12] p-6 flex flex-col justify-between hover:border-white/20 transition-all hover:-translate-y-1">
+                  <div>
+                    <div className="flex items-center justify-between text-xs text-zinc-400 mb-4 font-mono">
+                      <span>@mobilityproject</span>
+                      <span className="text-amber-400">Captured 8h ago</span>
+                    </div>
+                    <h4 className="font-zolo text-lg font-bold text-white mb-2">Thoracic Spine Rotation Drills</h4>
+                    <p className="text-xs text-zinc-300 leading-relaxed mb-4">
+                      Fix rounded desk posture in 3 minutes. Quadruped reach-throughs unlock overhead press range of motion.
+                    </p>
+                    <div className="rounded-xl bg-black/50 p-3 border border-white/5 text-[11px] text-zinc-400 font-mono">
+                      💡 Reps: 8 slow rotations per side with deep exhalations.
+                    </div>
+                  </div>
+                  <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-xs">
+                    <span className="text-emerald-400 flex items-center gap-1.5">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Form Cues Extracted
+                    </span>
+                    <span className="text-zinc-500 font-mono">0:49 duration</span>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-[#0F0F12] p-6 flex flex-col justify-between hover:border-white/20 transition-all hover:-translate-y-1">
+                  <div>
+                    <div className="flex items-center justify-between text-xs text-zinc-400 mb-4 font-mono">
+                      <span>@rehabspecialist</span>
+                      <span className="text-amber-400">Captured 2d ago</span>
+                    </div>
+                    <h4 className="font-zolo text-lg font-bold text-white mb-2">Shoulder External Rotator Cue</h4>
+                    <p className="text-xs text-zinc-300 leading-relaxed mb-4">
+                      Why high-elbow rows pinch the supraspinatus. Tuck elbows to 45 degrees and squeeze lower traps at peak contraction.
+                    </p>
+                    <div className="rounded-xl bg-black/50 p-3 border border-white/5 text-[11px] text-zinc-400 font-mono">
+                      💡 Form Cue: Keep wrists neutral and drive with elbows, not biceps.
+                    </div>
+                  </div>
+                  <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-xs">
+                    <span className="text-emerald-400 flex items-center gap-1.5">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Form Cues Extracted
+                    </span>
+                    <span className="text-zinc-500 font-mono">0:41 duration</span>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </section>
