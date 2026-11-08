@@ -532,7 +532,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
 
   // Hover-expand state for collapsed navbar with 0.25s intent delay
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);
-  const isEffectiveExpanded = !sidebarCollapsed || isSidebarHovered;
+  const isEffectiveExpanded = mobileMenuOpen || !sidebarCollapsed || isSidebarHovered;
   const sidebarHoverTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleSidebarMouseEnter = () => {
@@ -707,7 +707,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                 <Home className={`h-5 w-5 transition-transform duration-200 ${currentPage === 'home' ? 'text-white scale-110 drop-shadow-[0_0_6px_rgba(255,255,255,0.4)]' : 'text-[#888888]'}`} />
               </div>
               <span className={`transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] whitespace-nowrap overflow-hidden ${
-                isEffectiveExpanded ? 'max-w-[120px] opacity-100' : 'max-w-0 opacity-0 pointer-events-none'
+                isEffectiveExpanded ? 'max-w-[120px] opacity-100 ml-3' : 'max-w-0 opacity-0 pointer-events-none'
               }`}>Home</span>
             </button>
 
@@ -908,7 +908,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
               <SettingsIcon className={`h-5 w-5 transition-transform duration-200 ${currentPage === 'settings' ? 'text-white scale-110 drop-shadow-[0_0_6px_rgba(255,255,255,0.4)]' : 'text-zinc-400'}`} />
             </div>
             <span className={`transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] whitespace-nowrap overflow-hidden ${
-              isEffectiveExpanded ? 'max-w-[120px] opacity-100' : 'max-w-0 opacity-0 pointer-events-none'
+              isEffectiveExpanded ? 'max-w-[120px] opacity-100 ml-3' : 'max-w-0 opacity-0 pointer-events-none'
             }`}>Settings</span>
           </button>
         </div>
@@ -918,17 +918,8 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top Header */}
         <header className="sticky top-0 z-30 h-14 sm:h-16 border-b border-[#333333] bg-[#0B0B0B]/95 backdrop-blur-xl px-3 sm:px-6 flex items-center justify-between gap-2 sm:gap-3 shrink-0">
-          <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-            {/* Mobile Hamburger Toggle */}
-            <button
-              onClick={() => setMobileMenuOpen(true)}
-              aria-label="Open navigation menu"
-              className="md:hidden p-1.5 rounded-lg border border-[#333333] bg-[#141414] text-zinc-300 hover:text-white shrink-0 active:scale-95 transition"
-            >
-              <Menu className="h-4 w-4" />
-            </button>
-
-            {/* Mobile Watch Later Brand Header */}
+          <div className="flex items-center justify-between md:justify-start gap-2 sm:gap-3 flex-1 min-w-0">
+            {/* Mobile Brand Header on Left */}
             <div className="flex md:hidden items-center gap-2 min-w-0">
               <img
                 src="/logo.png"
@@ -960,9 +951,9 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
               </h2>
             </div>
 
-            {/* Full-width Search Bar with Dynamic Animation */}
+            {/* Desktop Full-width Search Bar with Dynamic Animation */}
             {currentPage !== 'home' && currentPage !== 'settings' && !(currentPage === 'categories' && !selectedCategoryId) && (
-              <div className="flex items-center gap-2.5 flex-1 w-full transition-all duration-300">
+              <div className="hidden md:flex items-center gap-2.5 flex-1 w-full transition-all duration-300">
                 <div className="relative flex-1">
                   <div className={`flex items-center gap-2.5 bg-[#1A1A1A] px-3.5 py-2 rounded-xl border transition-all duration-300 ease-out ${isSearchFocused ? 'border-white shadow-[0_0_20px_rgba(255,255,255,0.08)] bg-[#202020]' : 'border-[#333333] hover:border-[#444444]'
                     }`}>
@@ -1008,6 +999,15 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                 </div>
               </div>
             )}
+
+            {/* Mobile Menu Toggle Button on Right */}
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              aria-label="Open navigation menu"
+              className="md:hidden p-1.5 rounded-lg border border-[#333333] bg-[#141414] text-zinc-300 hover:text-white shrink-0 active:scale-95 transition"
+            >
+              <Menu className="h-4 w-4" />
+            </button>
           </div>
         </header>
 
@@ -1951,7 +1951,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
 
                               {activeCardMenuId === reel.id && (
                                 <div
-                                  className="absolute right-full top-0 mr-2.5 w-48 rounded-2xl border border-white/20 bg-[#0C0C0E]/98 backdrop-blur-2xl p-1.5 shadow-[0_24px_60px_rgba(0,0,0,0.95),inset_0_1px_1px_rgba(255,255,255,0.25)] z-50 animate-in fade-in zoom-in-95 duration-150 text-left select-none text-white"
+                                  className="absolute right-0 sm:right-full top-full sm:top-0 mt-1 sm:mt-0 sm:mr-2.5 w-48 rounded-2xl border border-white/20 bg-[#0C0C0E]/98 backdrop-blur-2xl p-1.5 shadow-[0_24px_60px_rgba(0,0,0,0.95),inset_0_1px_1px_rgba(255,255,255,0.25)] z-50 animate-in fade-in zoom-in-95 duration-150 text-left select-none text-white max-w-[calc(100vw-32px)]"
                                   onClick={(e) => e.stopPropagation()}
                                 >
                                   <div className="absolute top-0 inset-x-0 h-10 bg-gradient-to-b from-white/10 to-transparent pointer-events-none rounded-t-2xl" />
@@ -2185,7 +2185,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
 
                             {activeCardMenuId === reel.id && (
                               <div
-                                className="absolute right-full top-0 mr-2 w-48 rounded-2xl border border-white/20 bg-[#0C0C0E]/98 backdrop-blur-2xl p-1.5 shadow-[0_24px_60px_rgba(0,0,0,0.95),inset_0_1px_1px_rgba(255,255,255,0.25)] z-50 animate-in fade-in zoom-in-95 duration-150 text-left select-none text-white"
+                                className="absolute right-0 sm:right-full top-full sm:top-0 mt-1 sm:mt-0 sm:mr-2 w-48 rounded-2xl border border-white/20 bg-[#0C0C0E]/98 backdrop-blur-2xl p-1.5 shadow-[0_24px_60px_rgba(0,0,0,0.95),inset_0_1px_1px_rgba(255,255,255,0.25)] z-50 animate-in fade-in zoom-in-95 duration-150 text-left select-none text-white max-w-[calc(100vw-32px)]"
                                 onClick={(e) => e.stopPropagation()}
                               >
                                 <div className="absolute top-0 inset-x-0 h-10 bg-gradient-to-b from-white/10 to-transparent pointer-events-none rounded-t-2xl" />

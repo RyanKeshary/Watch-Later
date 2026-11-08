@@ -296,7 +296,7 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
         try {
           localStorage.setItem(`watchlater_saved_later_ids_${userId}`, JSON.stringify(next));
         } catch (e) { }
-        broadcastCrossTab({ type: 'SAVES_CHANGE', payload: { userId, savedLaterIds: next } });
+        broadcastCrossDevice('SAVES_CHANGE', { userId, savedLaterIds: next });
       }
       showIncomingAlert(isSaved ? 'Removed from Saves' : 'Saved to Saves vault ✓');
       return next;
@@ -1194,16 +1194,16 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
       }
 
       if (data) {
-        setCategories(prev => [...prev, data as Category]);
+        const createdCat = data as Category;
+        setCategories(prev => prev.some(c => c.id === createdCat.id) ? prev : [...prev, createdCat]);
         setSavesFolderIds(prev => {
-          const next = [...prev, data.id];
+          const next = prev.includes(createdCat.id) ? prev : [...prev, createdCat.id];
           try {
             localStorage.setItem(`watchlater_saves_folder_ids_${userId}`, JSON.stringify(next));
           } catch (e) { }
+          broadcastCrossDevice('SAVES_FOLDERS_CHANGE', { userId, savesFolderIds: next });
           return next;
         });
-        broadcastCrossTab({ type: 'SAVES_FOLDERS_CHANGE', payload: { userId, savesFolderIds: [...savesFolderIds, data.id] } });
-        broadcastCrossTab({ type: 'DATA_REFRESH' });
         showIncomingAlert(`Created Saves folder "${trimmed}" ✓`);
       }
     } finally {
