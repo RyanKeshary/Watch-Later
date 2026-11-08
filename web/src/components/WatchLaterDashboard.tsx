@@ -413,6 +413,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
     passwordMsg,
     handleChangePassword,
     handleRemoveDevice,
+    handleSyncDevice,
     exportData
   } = useWatchLater();
 
@@ -2644,12 +2645,22 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                               </span>
                             </div>
                           </div>
-                          <button
-                            onClick={() => handleRemoveDevice(dev.id)}
-                            className="text-xs text-red-400 hover:text-red-300 font-medium px-2 py-1 rounded hover:bg-red-950/30 transition"
-                          >
-                            Remove
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleSyncDevice(dev.id)}
+                              className="flex items-center gap-1.5 text-xs text-white hover:text-zinc-200 font-medium px-2.5 py-1 rounded border border-[#2E2E2E] bg-[#141414] hover:bg-[#1C1C1C] transition active:scale-95"
+                              title="Sync device with dashboard"
+                            >
+                              <RefreshCw className="h-3 w-3" />
+                              <span>Sync</span>
+                            </button>
+                            <button
+                              onClick={() => handleRemoveDevice(dev.id)}
+                              className="text-xs text-red-400 hover:text-red-300 font-medium px-2 py-1 rounded hover:bg-red-950/30 transition"
+                            >
+                              Remove
+                            </button>
+                          </div>
                         </div>
                       );
                     })

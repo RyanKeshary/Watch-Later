@@ -1,8 +1,12 @@
 package com.reelvault.app.ui
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
 import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
+import androidx.core.app.NotificationCompat
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedVisibility
@@ -60,6 +64,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
@@ -286,6 +291,31 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun showSyncNotification(deviceName: String) {
+        val channelId = "watchlater_dashboard_sync"
+        val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                channelId,
+                "Dashboard Sync",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = "Notifications when device is synchronized with dashboard"
+            }
+            manager.createNotificationChannel(channel)
+        }
+
+        val notif = NotificationCompat.Builder(this, channelId)
+            .setSmallIcon(android.R.drawable.stat_notify_sync)
+            .setContentTitle("Device Synchronized")
+            .setContentText("$deviceName is synced with Watch Later dashboard.")
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setAutoCancel(true)
+            .build()
+
+        manager.notify(2001, notif)
+    }
+
     private suspend fun checkDeviceRegistration(): Boolean {
         val token = PreferenceManager.getAccessToken(this) ?: return false
         val userId = PreferenceManager.getUserId(this) ?: return false
@@ -297,13 +327,31 @@ class MainActivity : ComponentActivity() {
                 url {
                     parameters.append("user_id", "eq.$userId")
                     parameters.append("device_name", "eq.$deviceName")
-                    parameters.append("select", "id")
+                    parameters.append("select", "id,last_synced_at")
                 }
             }
             if (response.status.value in 200..299) {
                 val body = response.bodyAsText().trim()
                 if (body != "[]") {
                     PreferenceManager.setDeviceRegistered(this, true)
+                    // Check if last_synced_at timestamp changed (triggered from web dashboard)
+                    runCatching {
+                        val parsed = Json.parseToJsonElement(body)
+                        val deviceObj = parsed.jsonArray.firstOrNull()?.jsonObject
+                        val lastSynced = deviceObj?.get("last_synced_at")?.jsonPrimitive?.content
+                        if (lastSynced != null) {
+                            val saved = PreferenceManager.getLastSyncTimestamp(this@MainActivity)
+                            if (saved == null) {
+                                PreferenceManager.setLastSyncTimestamp(this@MainActivity, lastSynced)
+                            } else if (saved != lastSynced) {
+                                PreferenceManager.setLastSyncTimestamp(this@MainActivity, lastSynced)
+                                withContext(Dispatchers.Main) {
+                                    showSyncNotification(deviceName)
+                                    Toast.makeText(this@MainActivity, "Device synced with dashboard!", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        }
+                    }
                     true
                 } else {
                     // Only treat empty array as removed if previously registered

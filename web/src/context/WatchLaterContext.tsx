@@ -127,6 +127,7 @@ interface WatchLaterContextType {
   passwordMsg: string | null;
   handleChangePassword: (e: React.FormEvent) => Promise<void>;
   handleRemoveDevice: (deviceId: string) => Promise<void>;
+  handleSyncDevice: (deviceId: string) => Promise<void>;
   exportData: () => void;
 }
 
@@ -1462,6 +1463,19 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
     }
   };
 
+  const handleSyncDevice = async (deviceId: string) => {
+    const now = new Date().toISOString();
+    setDevices(prev => prev.map(d => (d.id === deviceId ? { ...d, last_synced_at: now } : d)));
+    const { error } = await supabase
+      .from('devices')
+      .update({ last_synced_at: now })
+      .eq('id', deviceId);
+    if (error) {
+      alert(`Error syncing device: ${error.message}`);
+      await loadData();
+    }
+  };
+
   const exportData = () => {
     const headers = ['id', 'url', 'ai_title', 'creator_username', 'completion_status', 'created_at'];
     const sanitizeCell = (val: string | null | undefined) => {
@@ -1617,6 +1631,7 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
     passwordMsg,
     handleChangePassword,
     handleRemoveDevice,
+    handleSyncDevice,
     exportData
   };
 

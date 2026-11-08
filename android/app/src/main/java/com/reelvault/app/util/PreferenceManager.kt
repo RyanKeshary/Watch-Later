@@ -11,6 +11,7 @@ object PreferenceManager {
     private const val KEY_USER_ID = "user_id"
     private const val KEY_USER_EMAIL = "user_email"
     private const val KEY_DEVICE_REGISTERED = "device_registered"
+    private const val KEY_LAST_SYNC_TS = "last_sync_timestamp"
 
     private fun getPrefs(context: Context) = EncryptedSharedPreferences.create(
         context,
@@ -35,6 +36,14 @@ object PreferenceManager {
 
     fun isDeviceRegistered(context: Context): Boolean {
         return getPrefs(context).getBoolean(KEY_DEVICE_REGISTERED, false)
+    }
+
+    fun getLastSyncTimestamp(context: Context): String? {
+        return getPrefs(context).getString(KEY_LAST_SYNC_TS, null)
+    }
+
+    fun setLastSyncTimestamp(context: Context, timestamp: String) {
+        getPrefs(context).edit().putString(KEY_LAST_SYNC_TS, timestamp).apply()
     }
 
     fun clearSession(context: Context) {
