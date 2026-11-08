@@ -240,6 +240,16 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
   const [draggedItem, setDraggedItem] = useState<{ type: 'reel' | 'folder'; id: string; reelId?: string; folderId?: string } | null>(null);
   const [dragOverCatId, setDragOverCatId] = useState<string | null>(null);
 
+  // Device sync acknowledgment polling tracking
+  const syncPollTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const syncPollActiveRef = useRef<boolean>(false);
+  useEffect(() => {
+    return () => {
+      syncPollActiveRef.current = false;
+      if (syncPollTimerRef.current) clearInterval(syncPollTimerRef.current);
+    };
+  }, []);
+
   // Pinned Folders in Sidebar
   const [pinnedFolderIds, setPinnedFolderIds] = useState<string[]>([]);
 
@@ -1464,6 +1474,13 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
   };
 
   const handleSyncDevice = async (deviceId: string) => {
+    // Clear any previous active polling timer
+    if (syncPollTimerRef.current) {
+      clearInterval(syncPollTimerRef.current);
+      syncPollTimerRef.current = null;
+    }
+    syncPollActiveRef.current = true;
+
     const now = new Date().toISOString();
     setDevices(prev => prev.map(d => (d.id === deviceId ? { ...d, last_synced_at: now } : d)));
     const { error } = await supabase
@@ -1471,9 +1488,52 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
       .update({ last_synced_at: now })
       .eq('id', deviceId);
     if (error) {
+      syncPollActiveRef.current = false;
       alert(`Error syncing device: ${error.message}`);
       await loadData();
+      return;
     }
+
+    // Poll up to 10 seconds to verify that the phone acknowledged receipt
+    const startTime = Date.now();
+    let isRequestInFlight = false;
+
+    syncPollTimerRef.current = setInterval(async () => {
+      if (!syncPollActiveRef.current || isRequestInFlight) return;
+      isRequestInFlight = true;
+
+      try {
+        const { data, error: pollErr } = await supabase
+          .from('devices')
+          .select('device_name')
+          .eq('id', deviceId)
+          .single();
+
+        if (!syncPollActiveRef.current) return;
+
+        // Stop polling if device row is missing or deleted
+        if (pollErr || !data) {
+          syncPollActiveRef.current = false;
+          if (syncPollTimerRef.current) clearInterval(syncPollTimerRef.current);
+          return;
+        }
+
+        const syncMatch = data.device_name?.match(/\[synced:(.*?)\]/);
+        const ackMs = syncMatch ? new Date(syncMatch[1]).getTime() : NaN;
+        const targetMs = new Date(now).getTime();
+        const isAcknowledged = !isNaN(ackMs) && !isNaN(targetMs) && ackMs >= targetMs;
+        if (isAcknowledged) {
+          syncPollActiveRef.current = false;
+          if (syncPollTimerRef.current) clearInterval(syncPollTimerRef.current);
+          showIncomingAlert('Device acknowledged notification — sync confirmed ✓');
+        } else if (Date.now() - startTime > 10000) {
+          syncPollActiveRef.current = false;
+          if (syncPollTimerRef.current) clearInterval(syncPollTimerRef.current);
+        }
+      } finally {
+        isRequestInFlight = false;
+      }
+    }, 1500);
   };
 
   const exportData = () => {

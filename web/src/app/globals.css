@@ -23,6 +23,12 @@ html, body {
   overflow-x: clip;
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  html, body {
+    scroll-behavior: smooth;
+  }
+}
+
 /* Subtle continuous top-to-bottom motion for abstract dotted background */
 @keyframes moveDottedBg {
   0% {
@@ -41,7 +47,13 @@ html, body {
     radial-gradient(rgba(255, 255, 255, 0.06) 1px, #0B0B0B 1px);
   background-size: 20px 20px, 10px 10px;
   background-position: 0 0, 5px 5px;
-  animation: moveDottedBg 25s linear infinite;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .bg-fabric {
+    animation: moveDottedBg 35s linear infinite;
+    will-change: background-position;
+  }
 }
 
 /* Subtle border sheen & typography */

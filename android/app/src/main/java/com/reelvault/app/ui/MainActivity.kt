@@ -53,6 +53,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.android.Android
 import io.ktor.client.request.get
 import io.ktor.client.request.header
+import io.ktor.client.request.patch
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
@@ -320,14 +321,15 @@ class MainActivity : ComponentActivity() {
         val token = PreferenceManager.getAccessToken(this) ?: return false
         val userId = PreferenceManager.getUserId(this) ?: return false
         val deviceName = "${Build.MANUFACTURER} ${Build.MODEL}"
+        val sanitizedName = deviceName.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
         return try {
             val response = httpClient.get("${BuildConfig.SUPABASE_URL}/rest/v1/devices") {
                 header("apikey", BuildConfig.SUPABASE_ANON_KEY)
                 header("Authorization", "Bearer $token")
                 url {
                     parameters.append("user_id", "eq.$userId")
-                    parameters.append("device_name", "eq.$deviceName")
-                    parameters.append("select", "id,last_synced_at")
+                    parameters.append("device_name", "like.$sanitizedName*")
+                    parameters.append("select", "id,device_name,last_synced_at")
                 }
             }
             if (response.status.value in 200..299) {
@@ -337,17 +339,44 @@ class MainActivity : ComponentActivity() {
                     // Check if last_synced_at timestamp changed (triggered from web dashboard)
                     runCatching {
                         val parsed = Json.parseToJsonElement(body)
-                        val deviceObj = parsed.jsonArray.firstOrNull()?.jsonObject
-                        val lastSynced = deviceObj?.get("last_synced_at")?.jsonPrimitive?.content
+                        val matchingDevice = parsed.jsonArray.mapNotNull { it.jsonObject }.firstOrNull { obj ->
+                            val rawName = obj["device_name"]?.jsonPrimitive?.content ?: ""
+                            val baseName = rawName.replace(Regex("\\s*\\[synced:.*?\\]"), "").trim()
+                            baseName == deviceName
+                        }
+                        val devId = matchingDevice?.get("id")?.jsonPrimitive?.content
+                        val lastSynced = matchingDevice?.get("last_synced_at")?.jsonPrimitive?.content
                         if (lastSynced != null) {
                             val saved = PreferenceManager.getLastSyncTimestamp(this@MainActivity)
                             if (saved == null) {
                                 PreferenceManager.setLastSyncTimestamp(this@MainActivity, lastSynced)
                             } else if (saved != lastSynced) {
-                                PreferenceManager.setLastSyncTimestamp(this@MainActivity, lastSynced)
                                 withContext(Dispatchers.Main) {
                                     showSyncNotification(deviceName)
                                     Toast.makeText(this@MainActivity, "Device synced with dashboard!", Toast.LENGTH_SHORT).show()
+                                }
+                                // Acknowledge receipt back to Supabase and only advance saved timestamp upon 2xx success
+                                if (devId != null) {
+                                    val ackName = "$deviceName [synced:$lastSynced]"
+                                    val patchRes = runCatching {
+                                        httpClient.patch("${BuildConfig.SUPABASE_URL}/rest/v1/devices") {
+                                            header("apikey", BuildConfig.SUPABASE_ANON_KEY)
+                                            header("Authorization", "Bearer $token")
+                                            contentType(ContentType.Application.Json)
+                                            url {
+                                                parameters.append("id", "eq.$devId")
+                                            }
+                                            setBody(buildJsonObject {
+                                                put("device_name", ackName)
+                                            }.toString())
+                                        }
+                                    }.getOrNull()
+
+                                    if (patchRes != null && patchRes.status.value in 200..299) {
+                                        PreferenceManager.setLastSyncTimestamp(this@MainActivity, lastSynced)
+                                    }
+                                } else {
+                                    PreferenceManager.setLastSyncTimestamp(this@MainActivity, lastSynced)
                                 }
                             }
                         }
@@ -831,19 +860,26 @@ class MainActivity : ComponentActivity() {
     private suspend fun registerDevice(token: String, userId: String): Boolean {
         return try {
             val deviceName = "${Build.MANUFACTURER} ${Build.MODEL}"
-            // Upsert / check existing device to avoid duplicates using query parameters
+            val sanitizedName = deviceName.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+            // Exact device query using like with exact wildcard suffix only for [synced:...]
             val checkResponse = httpClient.get("${BuildConfig.SUPABASE_URL}/rest/v1/devices") {
                 header("apikey", BuildConfig.SUPABASE_ANON_KEY)
                 header("Authorization", "Bearer $token")
                 url {
                     parameters.append("user_id", "eq.$userId")
-                    parameters.append("device_name", "eq.$deviceName")
-                    parameters.append("select", "id")
+                    parameters.append("device_name", "like.$sanitizedName*")
+                    parameters.append("select", "id,device_name")
                 }
             }
             if (checkResponse.status.value in 200..299) {
                 val existingBody = checkResponse.bodyAsText()
-                if (existingBody.contains("\"id\"")) {
+                val parsed = runCatching { Json.parseToJsonElement(existingBody) }.getOrNull()
+                val hasExactMatch = parsed?.jsonArray?.any { element ->
+                    val rawName = element.jsonObject["device_name"]?.jsonPrimitive?.content ?: ""
+                    val baseName = rawName.replace(Regex("\\s*\\[synced:.*?\\]"), "").trim()
+                    baseName == deviceName
+                } ?: false
+                if (hasExactMatch) {
                     PreferenceManager.setDeviceRegistered(this, true)
                     return true
                 }

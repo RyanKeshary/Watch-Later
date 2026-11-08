@@ -58,7 +58,7 @@ export default function Preloader({ onSequenceSettle, onSequenceComplete }: Prel
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-[#0B0B0B] text-[#FFFFFF] overflow-hidden select-none transition-transform duration-700 ease-in-out ${
+      className={`fixed inset-0 w-screen h-screen min-h-[100dvh] z-[9999] flex items-center justify-center bg-[#0B0B0B] text-[#FFFFFF] overflow-hidden select-none transition-transform duration-700 ease-in-out ${
         isExiting ? '-translate-y-full pointer-events-none' : 'translate-y-0'
       }`}
     >

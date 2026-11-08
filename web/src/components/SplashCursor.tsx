@@ -873,6 +873,7 @@ export default function SplashCursor({
     const frame = (now: number) => {
       raf = 0;
       if (disposed || lost) return;
+      if (document.hidden) return; // Pause rendering completely when tab is hidden
       const s = settingsRef.current;
       const dt = clamp((now - last) / 1000, 0, 1 / 60);
       last = now;
@@ -896,11 +897,24 @@ export default function SplashCursor({
     };
 
     const wake = () => {
+      if (document.hidden) return;
       lastActivity = performance.now();
       if (raf || disposed || lost) return;
       last = performance.now();
       raf = requestAnimationFrame(frame);
     };
+
+    const handleVisibility = () => {
+      if (document.hidden) {
+        if (raf) {
+          cancelAnimationFrame(raf);
+          raf = 0;
+        }
+      } else {
+        wake();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
 
     const locate = (clientX: number, clientY: number) => {
       const rect = canvas.getBoundingClientRect();
@@ -994,6 +1008,7 @@ export default function SplashCursor({
     return () => {
       disposed = true;
       cancelAnimationFrame(raf);
+      document.removeEventListener('visibilitychange', handleVisibility);
       motionQuery?.removeEventListener?.('change', onMotionChange);
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('pointerdown', onPointerDown);

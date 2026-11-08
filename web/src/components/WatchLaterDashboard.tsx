@@ -4,7 +4,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useWatchLater, NavPage, isAllContentReel, isInboxReel } from '@/context/WatchLaterContext';
 import { supabase } from '@/lib/supabase';
-import { Reel } from '@/types/database';
+import { Reel, cleanDeviceName } from '@/types/database';
 import { Morph, Loading } from 'loading-dev';
 import ServiceLandingPage from '@/components/ServiceLandingPage';
 import GameOnboardingGuide from '@/components/GameOnboardingGuide';
@@ -1053,7 +1053,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                     <NumberTicker value={devices.length} />
                   </div>
                   <span className="font-mono-micro text-[#6B6B6B] mt-1 sm:mt-2 block text-[9px] sm:text-[10px]">
-                    {devices.length > 0 ? (devices[0]?.device_name || 'Active Android / iOS') : 'No devices synced'}
+                    {devices.length > 0 ? (cleanDeviceName(devices[0]?.device_name) || 'Active Android / iOS') : 'No devices synced'}
                   </span>
                 </div>
               </div>
@@ -2635,7 +2635,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                             </div>
                             <div>
                               <div className="flex items-center gap-2">
-                                <span className="text-xs font-semibold text-white">{dev.device_name || (isApple ? 'Apple iPhone' : 'Android Device')}</span>
+                                <span className="text-xs font-semibold text-white">{cleanDeviceName(dev.device_name) || (isApple ? 'Apple iPhone' : 'Android Device')}</span>
                                 <span className="font-mono text-[10px] px-1.5 py-0.5 rounded border border-[#2E2E2E] bg-[#141414] text-zinc-300">
                                   {isApple ? ' iOS' : '🤖 Android'}
                                 </span>

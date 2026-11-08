@@ -53,3 +53,8 @@ export interface Device {
   last_synced_at: string;
 }
 
+export function cleanDeviceName(name: string | null | undefined): string {
+  if (!name) return '';
+  return name.replace(/\s*\[synced:.*?\]/, '').trim();
+}
+
