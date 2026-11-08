@@ -4,8 +4,14 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { supabase } from '@/lib/supabase';
 import { Reel, Category, Device, CompletionStatus } from '@/types/database';
 
-export type NavPage = 'home' | 'all' | 'categories' | 'savelater' | 'watched' | 'inbox' | 'failed' | 'archived' | 'settings';
+export type NavPage = 'home' | 'all' | 'categories' | 'savelater' | 'saves' | 'watched' | 'inbox' | 'failed' | 'archived' | 'settings';
 export type PostTypeFilter = 'all' | 'reels' | 'posts' | 'carousels';
+
+export const isAllContentReel = (r: Reel) =>
+  r.completion_status !== 'archived' && !r.is_failed && r.processing_status !== 'extraction_failed';
+
+export const isInboxReel = (r: Reel) =>
+  r.processing_status === 'pending' || r.processing_status === 'resolving';
 
 interface WatchLaterContextType {
   session: any;
@@ -42,7 +48,7 @@ interface WatchLaterContextType {
     targetCatId: string | null;
     title: string;
   } | null;
-  showIncomingAlert: (msg: string) => void;
+  showIncomingAlert: (msg: string, isMoveAction?: boolean) => void;
   undoLastMove: () => Promise<void>;
   handleStatusChange: (reelId: string, status: CompletionStatus) => Promise<void>;
   handleDeleteReel: (reelId: string, e?: React.MouseEvent) => Promise<void>;
@@ -141,13 +147,17 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
   } | null>(null);
   const incomingAlertTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const showIncomingAlert = useCallback((msg: string) => {
+  const showIncomingAlert = useCallback((msg: string, isMoveAction: boolean = false) => {
     if (incomingAlertTimerRef.current) {
       clearTimeout(incomingAlertTimerRef.current);
+    }
+    if (!isMoveAction) {
+      setLastMoveAction(null);
     }
     setIncomingAlert(msg);
     incomingAlertTimerRef.current = setTimeout(() => {
       setIncomingAlert(null);
+      setLastMoveAction(null);
       incomingAlertTimerRef.current = null;
     }, 4500);
   }, []);
@@ -369,6 +379,7 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
         return { data: all, error: null };
       };
 
+      const fetchStartTime = Date.now();
       const reelsPromise = fetchAllReels();
       const catsPromise = supabase.from('categories').select('*').order('name');
       const devsPromise = supabase.from('devices').select('*').order('last_synced_at', { ascending: false });
@@ -386,7 +397,11 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
           const fetchedIds = new Set(fetchedReels.map(r => r.id));
 
           setReels(prevReels => {
-            const recentNewReels = prevReels.filter(r => !fetchedIds.has(r.id));
+            const recentNewReels = prevReels.filter(r => {
+              if (fetchedIds.has(r.id)) return false;
+              const createdMs = new Date(r.created_at).getTime();
+              return !isNaN(createdMs) && createdMs >= fetchStartTime;
+            });
             return [...recentNewReels, ...fetchedReels];
           });
 
@@ -474,8 +489,9 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
   }, [savedLaterIds, session?.user?.id, loading]);
 
   // Real-time synchronization
+  const currentUserId = session?.user?.id;
   useEffect(() => {
-    if (session) {
+    if (currentUserId) {
       loadData();
 
       const channel = supabase
@@ -494,7 +510,7 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
             } else if (payload.eventType === 'UPDATE') {
               const updatedReel = payload.new as Reel;
               setReels((prev) =>
-                prev.map((reel) => (reel.id === updatedReel.id ? updatedReel : reel))
+                prev.map((reel) => (reel.id === updatedReel.id ? { ...reel, ...updatedReel } : reel))
               );
             } else if (payload.eventType === 'DELETE') {
               setReels((prev) => prev.filter((reel) => reel.id !== payload.old.id));
@@ -545,7 +561,7 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
         supabase.removeChannel(channel);
       };
     }
-  }, [session, loadData, showIncomingAlert]);
+  }, [currentUserId, loadData, showIncomingAlert]);
 
   // Archive Auto-Delete retention window runner
   useEffect(() => {
@@ -562,8 +578,10 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
 
       const toPurge = reels.filter(r => {
         if (r.completion_status !== 'archived') return false;
-        const createdTime = new Date(r.created_at).getTime();
-        return now - createdTime > maxAgeMs;
+        if (!r.completed_at) return false;
+        const archiveTime = new Date(r.completed_at).getTime();
+        if (isNaN(archiveTime)) return false;
+        return now - archiveTime > maxAgeMs;
       });
 
       if (toPurge.length > 0) {
@@ -580,7 +598,7 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
 
   // Action Handlers
   const handleStatusChange = async (reelId: string, status: CompletionStatus) => {
-    const timestamp = status === 'completed' ? new Date().toISOString() : null;
+    const timestamp = status === 'completed' || status === 'archived' ? new Date().toISOString() : null;
     setReels(prev => prev.map(r => r.id === reelId ? {
       ...r,
       completion_status: status,
@@ -621,6 +639,16 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
       const targetReel = reels.find(r => r.id === reelId);
       if (!targetReel) return;
 
+      const { error: delErr } = await supabase
+        .from('extracted_content')
+        .delete()
+        .eq('reel_id', reelId);
+
+      if (delErr) {
+        alert(`Failed to clear extraction data: ${delErr.message}`);
+        return;
+      }
+
       const { error: updateErr } = await supabase
         .from('reels')
         .update({
@@ -631,10 +659,10 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
 
       if (updateErr) {
         alert(`Failed to reset status: ${updateErr.message}`);
+        await loadData();
         return;
       }
 
-      await supabase.from('extracted_content').delete().eq('reel_id', reelId);
       await loadData();
     } catch (err: any) {
       alert(`Retry failed: ${err.message}`);
@@ -780,7 +808,7 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
         alert(`Failed to move reel: ${error.message}`);
         await loadData();
       } else {
-        showIncomingAlert(targetDbId ? `Moved reel into "${targetCat?.name || 'Folder'}" ✓` : 'Removed reel from folder ✓');
+        showIncomingAlert(targetDbId ? `Moved reel into "${targetCat?.name || 'Folder'}" ✓` : 'Removed reel from folder ✓', true);
       }
     } else if (dragData.type === 'folder') {
       const folderId = dragData.folderId || dragData.id;
@@ -829,7 +857,7 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
         alert(`Failed to nest folder: ${error.message}`);
         await loadData();
       } else {
-        showIncomingAlert(targetDbId ? `Nested folder inside "${targetCat?.name || 'Folder'}" ✓` : 'Moved folder to root level ✓');
+        showIncomingAlert(targetDbId ? `Nested folder inside "${targetCat?.name || 'Folder'}" ✓` : 'Moved folder to root level ✓', true);
       }
     }
 
@@ -837,20 +865,26 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
   };
 
   const handleConfirmClearHistory = async () => {
+    const userId = session?.user?.id;
+    if (!userId) return;
     setIsClearingHistory(true);
     try {
-      setReels([]);
-      setSavedLaterIds([]);
       if (clearCategoriesAlso) {
+        const { error: catErr } = await supabase.from('categories').delete().eq('user_id', userId);
+        if (catErr) throw catErr;
         setCategories([]);
         setSelectedCategoryId(null);
-        await supabase.from('categories').delete().neq('id', '00000000-0000-0000-0000-000000000000');
       }
-      await supabase.from('reels').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      const { error: reelErr } = await supabase.from('reels').delete().eq('user_id', userId);
+      if (reelErr) throw reelErr;
+
+      setReels([]);
+      setSavedLaterIds([]);
       setShowClearHistoryLightbox(false);
       await loadData();
     } catch (err: any) {
-      alert(`Clear failed: ${err.message}`);
+      alert(`Clear failed: ${err.message || err}`);
+      await loadData();
     } finally {
       setIsClearingHistory(false);
     }
@@ -922,10 +956,10 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
   }, [reels, detailReelId]);
 
   const counts = useMemo(() => {
-    const all = reels.length;
+    const all = reels.filter(isAllContentReel).length;
     const savelater = reels.filter(r => savedLaterIds.includes(r.id)).length;
     const watched = reels.filter(r => r.completion_status === 'completed').length;
-    const inbox = reels.filter(r => r.completion_status !== 'completed' && !savedLaterIds.includes(r.id) && !r.category_id).length;
+    const inbox = reels.filter(isInboxReel).length;
     const failed = reels.filter(r => r.is_failed || r.processing_status === 'extraction_failed').length;
     const archived = reels.filter(r => r.completion_status === 'archived').length;
     const categoriesCount = categories.length;

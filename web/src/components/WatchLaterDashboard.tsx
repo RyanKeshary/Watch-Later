@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useWatchLater, NavPage } from '@/context/WatchLaterContext';
+import { useWatchLater, NavPage, isAllContentReel, isInboxReel } from '@/context/WatchLaterContext';
 import { supabase } from '@/lib/supabase';
 import { Reel } from '@/types/database';
 import { Morph, Loading } from 'loading-dev';
@@ -354,13 +354,14 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
 
       switch (currentPage) {
         case 'all':
-          return reel.completion_status !== 'archived' && !reel.is_failed && reel.processing_status !== 'extraction_failed';
+          return isAllContentReel(reel);
         case 'savelater':
+        case 'saves':
           return savedLaterIds.includes(reel.id);
         case 'watched':
           return reel.completion_status === 'completed';
         case 'inbox':
-          return reel.processing_status === 'pending' || reel.processing_status === 'resolving';
+          return isInboxReel(reel);
         case 'failed':
           return reel.is_failed || reel.processing_status === 'extraction_failed';
         case 'archived':
@@ -546,8 +547,8 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
 
             {/* Saves Page */}
             <button
-              onClick={() => { router.push('/savelater'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
-              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-between md:justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${currentPage === 'savelater' ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
+              onClick={() => { router.push('/saves'); setSelectedCategoryId(null); setMobileMenuOpen(false); }}
+              className={`flex w-full items-center ${sidebarCollapsed ? 'justify-between md:justify-center' : 'justify-between'} rounded-lg px-2.5 py-2 text-xs font-medium transition ${(currentPage === 'savelater' || currentPage === 'saves') ? 'bg-[#1A1A1A] text-white font-semibold border border-[#333333]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-[#D9D9D9]'
                 }`}
               title="Saves"
             >
@@ -683,7 +684,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                 {currentPage === 'home' && 'Analytics & Intelligence'}
                 {currentPage === 'all' && 'All Saved Content'}
                 {currentPage === 'categories' && (selectedCategoryId ? categories.find(c => c.id === selectedCategoryId)?.name || 'Folder' : 'Folders Directory')}
-                {currentPage === 'savelater' && 'Saves'}
+                {(currentPage === 'savelater' || currentPage === 'saves') && 'Saves'}
                 {currentPage === 'watched' && 'Watched Collection'}
                 {currentPage === 'inbox' && 'Processing Inbox'}
                 {currentPage === 'failed' && 'Extraction Issues'}
@@ -995,21 +996,21 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                     <button
                       onClick={() => setSelectedCategoryId(null)}
                       onDragOver={(e) => {
-                        if (currentPage !== 'savelater') return;
+                        if (currentPage !== 'savelater' && currentPage !== 'saves' && currentPage !== 'categories') return;
                         e.preventDefault();
                         e.stopPropagation();
                         setDragOverCatId('__root__');
                       }}
                       onDragLeave={() => setDragOverCatId(null)}
                       onDrop={(e) => {
-                        if (currentPage !== 'savelater') return;
+                        if (currentPage !== 'savelater' && currentPage !== 'saves' && currentPage !== 'categories') return;
                         handleDropOnCategory('__root__', e);
                       }}
                       className={`text-xs px-2 py-1 rounded-lg border transition ${
                         dragOverCatId === '__root__' ? 'border-amber-400 bg-amber-950/40 text-amber-200 ring-2 ring-amber-400' : 'border-transparent text-[#D9D9D9] hover:underline'
                       }`}
                     >
-                      ← Back to Folders {currentPage === 'savelater' && '(Drop to take out)'}
+                      ← Back to Folders {(currentPage === 'savelater' || currentPage === 'saves' || currentPage === 'categories') && '(Drop to take out)'}
                     </button>
                     <span className="text-[#6B6B6B]">/</span>
                     <span className="text-xs text-white font-semibold">
@@ -1021,6 +1022,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                   {(() => {
                     const subCats = categories.filter(c => c.parent_id === selectedCategoryId);
                     if (subCats.length === 0) return null;
+                    const isDragAllowed = currentPage === 'savelater' || currentPage === 'saves' || currentPage === 'categories';
                     return (
                       <div className="p-3 rounded-xl border border-[#2E2E2E] bg-[#141414]/90 backdrop-blur space-y-2">
                         <span className="text-[10px] font-mono uppercase tracking-wider text-[#737373] block">
@@ -1033,23 +1035,23 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                             return (
                               <button
                                 key={sub.id}
-                                draggable={currentPage === 'savelater'}
+                                draggable={isDragAllowed}
                                 onDragStart={(e) => {
-                                  if (currentPage !== 'savelater') { e.preventDefault(); return; }
+                                  if (!isDragAllowed) { e.preventDefault(); return; }
                                   setDraggedItem({ type: 'folder', id: sub.id, folderId: sub.id });
                                   e.dataTransfer.setData('application/json', JSON.stringify({ type: 'folder', id: sub.id, folderId: sub.id }));
                                   e.dataTransfer.effectAllowed = 'move';
                                 }}
                                 onDragEnd={() => setDraggedItem(null)}
                                 onDragOver={(e) => {
-                                  if (currentPage !== 'savelater') return;
+                                  if (!isDragAllowed) return;
                                   e.preventDefault();
                                   e.stopPropagation();
                                   setDragOverCatId(sub.id);
                                 }}
                                 onDragLeave={() => setDragOverCatId(null)}
                                 onDrop={(e) => {
-                                  if (currentPage !== 'savelater') return;
+                                  if (!isDragAllowed) return;
                                   handleDropOnCategory(sub.id, e);
                                 }}
                                 onClick={() => setSelectedCategoryId(sub.id)}
@@ -1068,6 +1070,44 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                     );
                   })()}
                 </div>
+              )}
+
+              {/* Option to create folders in Saves */}
+              {(currentPage === 'savelater' || currentPage === 'saves') && !selectedCategoryId && (
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl border border-white/10 bg-[#141414]/80 backdrop-blur-md">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-1.5 rounded-lg bg-white/10 text-white">
+                      <Folder className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-semibold text-white block">Saves Vault Folders</span>
+                      <span className="text-[11px] text-[#7E7E7E] block">Create folders to organize your saved reels</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsCreatingCategory(!isCreatingCategory)}
+                    className="flex items-center gap-1.5 rounded-xl bg-white hover:bg-zinc-200 text-black px-3 py-1.5 text-xs font-semibold active:scale-95 transition shadow-sm"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    <span>New Folder</span>
+                  </button>
+                </div>
+              )}
+
+              {isCreatingCategory && (currentPage === 'savelater' || currentPage === 'saves') && !selectedCategoryId && (
+                <form onSubmit={handleCreateCategory} className="mb-4 p-3.5 rounded-2xl border border-white/15 bg-[#181818]/95 backdrop-blur-xl flex flex-wrap gap-2 animate-fade-up">
+                  <input
+                    type="text"
+                    required
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    placeholder="New folder name..."
+                    className="flex-1 min-w-[180px] rounded-xl border border-white/20 bg-black/60 px-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:border-white focus:outline-none"
+                  />
+                  <button type="submit" className="rounded-xl bg-white hover:bg-zinc-200 text-black px-3.5 py-1.5 text-xs font-semibold active:scale-95 transition">
+                    Create Folder
+                  </button>
+                </form>
               )}
 
               {displayedReels.length === 0 ? (
@@ -1092,13 +1132,14 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                       : reel.extracted_content?.extraction_error;
                     const isPending = reel.processing_status === 'pending' || reel.processing_status === 'resolving';
                     const isThisRetrying = retryingId === reel.id || isPending;
+                    const isDragAllowed = currentPage === 'savelater' || currentPage === 'saves' || currentPage === 'categories';
 
                     return (
                       <div
                         key={`${reel.id}-${searchQuery ? 's' : 'i'}`}
-                        draggable={currentPage === 'savelater'}
+                        draggable={isDragAllowed}
                         onDragStart={(e) => {
-                          if (currentPage !== 'savelater') return;
+                          if (!isDragAllowed) return;
                           setDraggedItem({ type: 'reel', id: reel.id, reelId: reel.id });
                           e.dataTransfer.setData('application/json', JSON.stringify({ type: 'reel', id: reel.id, reelId: reel.id }));
                           e.dataTransfer.effectAllowed = 'move';
@@ -1110,8 +1151,15 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                           }
                           window.open(reel.url, '_blank', 'noopener,noreferrer');
                         }}
-                        className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-[#333333] bg-[#141414] hover:border-white/40 ${currentPage === 'savelater' ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} transition-all duration-300 shadow-md ${density === 'compact' ? 'p-3' : density === 'spacious' ? 'p-5' : 'p-4'
-                          } ${activeCardMenuId === reel.id ? 'z-20' : ''} ${searchQuery ? 'animate-in fade-in zoom-in-95 duration-150' : ''}`}
+                        className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-[#333333] bg-[#141414] hover:border-white/40 ${
+                          isDragAllowed ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
+                        } transition-all duration-500 shadow-md ${
+                          density === 'compact'
+                            ? 'min-h-[420px] aspect-[9/18] p-3'
+                            : density === 'spacious'
+                              ? 'min-h-[560px] aspect-[9/16] p-5'
+                              : 'min-h-[480px] sm:min-h-[500px] aspect-[9/17] p-4'
+                        } ${activeCardMenuId === reel.id ? 'z-20' : ''} ${searchQuery ? 'animate-in fade-in zoom-in-95 duration-150' : ''}`}
                       >
                         {/* Media Cover Layer */}
                         {showThumbnails && reel.thumbnail_url && (
@@ -1119,25 +1167,20 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                             <img
                               src={reel.thumbnail_url}
                               alt="Reel Cover"
-                              className="h-full w-full object-cover opacity-25 filter blur-[1px] group-hover:opacity-60 group-hover:blur-0 group-hover:scale-105 transition-all duration-500 ease-out"
+                              className="h-full w-full object-cover opacity-30 filter blur-[0.5px] group-hover:opacity-85 group-hover:blur-0 group-hover:scale-105 transition-all duration-700 ease-out"
                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-[#0B0B0B] via-[#0B0B0B]/85 to-[#0B0B0B]/40 group-hover:via-[#0B0B0B]/70 group-hover:to-transparent transition-all duration-500" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-[#0B0B0B] via-[#0B0B0B]/80 to-[#0B0B0B]/40 group-hover:from-[#0B0B0B]/70 group-hover:via-[#0B0B0B]/25 group-hover:to-transparent transition-all duration-700 ease-out" />
                           </div>
                         )}
 
                         {/* Card Top: Controls & Status */}
                         <div className="relative z-10 flex items-center justify-between gap-1.5 w-full mb-3">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <span
-                              className={`rounded-full px-2 py-0.5 text-[10px] font-mono font-medium backdrop-blur-md shadow-sm ${reel.is_failed || reel.processing_status === 'extraction_failed'
-                                ? 'bg-red-500/20 text-red-300 border border-red-500/30'
-                                : reel.processing_status === 'processed'
-                                  ? 'bg-white/10 text-zinc-200 border border-white/15'
-                                  : 'bg-white/5 text-zinc-400 border border-white/10'
-                                }`}
-                            >
-                              {reel.processing_status}
-                            </span>
+                            {(reel.is_failed || reel.processing_status === 'extraction_failed') && (
+                              <span className="rounded-full px-2 py-0.5 text-[10px] font-mono font-medium backdrop-blur-md shadow-sm bg-red-500/20 text-red-300 border border-red-500/30">
+                                Failed
+                              </span>
+                            )}
                             {isPending && (
                               <div className="flex items-center text-white" title="Extracting Content...">
                                 <Morph size={20} />
@@ -1164,7 +1207,11 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                                   e.stopPropagation();
                                   setActiveCardMenuId(activeCardMenuId === reel.id ? null : reel.id);
                                 }}
-                                className="p-1 rounded-lg hover:bg-white/15 text-zinc-400 hover:text-white transition"
+                                className={`p-1.5 rounded-xl text-zinc-400 hover:text-white transition-all duration-500 ${
+                                  activeCardMenuId === reel.id
+                                    ? 'opacity-100 bg-white/15'
+                                    : 'opacity-70 group-hover:opacity-0 hover:!opacity-100 hover:bg-white/15'
+                                }`}
                                 title="Actions"
                               >
                                 <MoreVertical className="h-4 w-4" />
@@ -1172,17 +1219,19 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
 
                               {activeCardMenuId === reel.id && (
                                 <div
-                                  className="absolute right-0 top-full mt-1 w-44 rounded-xl border border-white/20 bg-[#161616]/95 backdrop-blur-xl p-1 shadow-2xl z-50 animate-fade-up text-left"
+                                  className="absolute right-full top-0 mr-2.5 w-48 rounded-2xl border border-white/25 bg-gradient-to-b from-white/[0.18] via-[#141414]/90 to-[#0A0A0A]/95 backdrop-blur-2xl p-1.5 shadow-[0_20px_50px_rgba(0,0,0,0.85),inset_0_1px_1px_rgba(255,255,255,0.35)] z-50 animate-in fade-in zoom-in-95 duration-200 text-left select-none"
                                   onClick={(e) => e.stopPropagation()}
                                 >
+                                  <div className="absolute top-0 inset-x-0 h-10 bg-gradient-to-b from-white/15 to-transparent pointer-events-none rounded-t-2xl" />
+
                                   <button
                                     onClick={() => {
                                       setDetailReelId(reel.id);
                                       setActiveCardMenuId(null);
                                     }}
-                                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-zinc-200 hover:bg-white/10 transition"
+                                    className="relative z-10 flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-xs font-medium text-white hover:bg-white/15 transition active:scale-98"
                                   >
-                                    <Info className="h-3.5 w-3.5 text-cyan-400" />
+                                    <Info className="h-3.5 w-3.5 text-cyan-300" />
                                     <span>Inspect Details</span>
                                   </button>
 
@@ -1191,20 +1240,20 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                                       handleStatusChange(reel.id, reel.completion_status === 'completed' ? 'pending' : 'completed');
                                       setActiveCardMenuId(null);
                                     }}
-                                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-zinc-200 hover:bg-white/10 transition"
+                                    className="relative z-10 flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-xs font-medium text-white hover:bg-white/15 transition active:scale-98"
                                   >
                                     <CheckCircle className="h-3.5 w-3.5 text-emerald-400" />
                                     <span>{reel.completion_status === 'completed' ? 'Mark Unwatched' : 'Mark Watched'}</span>
                                   </button>
 
-                                  <div className="my-1 border-t border-white/10" />
+                                  <div className="relative z-10 my-1 border-t border-white/15" />
 
                                   <button
                                     onClick={(e) => {
                                       setActiveCardMenuId(null);
                                       handleDeleteReel(reel.id, e);
                                     }}
-                                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-red-400 hover:bg-red-950/40 transition"
+                                    className="relative z-10 flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-xs font-medium text-red-400 hover:bg-red-950/50 hover:text-red-300 transition active:scale-98"
                                   >
                                     <Trash2 className="h-3.5 w-3.5" />
                                     <span>Delete Post</span>
@@ -1216,11 +1265,11 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                         </div>
 
                         {/* Card Bottom: Content info */}
-                        <div className="relative z-10 w-full mt-auto pt-4">
+                        <div className="relative z-10 w-full mt-auto pt-4 transition-transform duration-700 ease-out transform group-hover:translate-y-8">
                           <h3 className="font-sans font-bold text-white leading-snug text-sm sm:text-base mb-1.5 line-clamp-2 drop-shadow-sm group-hover:text-zinc-100 transition">
                             {reel.ai_title || 'Instagram Post'}
                           </h3>
-                          <p className="text-xs text-zinc-300 line-clamp-2 leading-relaxed">
+                          <p className="text-xs text-zinc-300 line-clamp-2 leading-relaxed transition-opacity duration-700 group-hover:opacity-75">
                             {reel.ai_summary || reel.ai_description || reel.caption || 'No summary available'}
                           </p>
 
@@ -1247,12 +1296,14 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                     const catObj = categories.find(c => c.id === reel.category_id);
                     const subObj = categories.find(c => c.id === reel.subcategory_id);
 
+                    const isDragAllowed = currentPage === 'savelater' || currentPage === 'saves' || currentPage === 'categories';
+
                     return (
                       <div
                         key={`${reel.id}-${searchQuery ? 's' : 'i'}`}
-                        draggable={currentPage === 'savelater'}
+                        draggable={isDragAllowed}
                         onDragStart={(e) => {
-                          if (currentPage !== 'savelater') return;
+                          if (!isDragAllowed) return;
                           setDraggedItem({ type: 'reel', id: reel.id, reelId: reel.id });
                           e.dataTransfer.setData('application/json', JSON.stringify({ type: 'reel', id: reel.id, reelId: reel.id }));
                           e.dataTransfer.effectAllowed = 'move';
@@ -1265,7 +1316,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                           window.open(reel.url, '_blank', 'noopener,noreferrer');
                         }}
                         className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-xl border border-[#333333] bg-[#1A1A1A]/90 ${density === 'compact' ? 'p-2.5 sm:py-2 sm:px-3' : density === 'spacious' ? 'p-4' : 'p-3'
-                          } backdrop-blur hover:border-[#6B6B6B] ${currentPage === 'savelater' ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} ${activeCardMenuId === reel.id ? 'relative z-20' : ''} ${searchQuery ? 'animate-in fade-in zoom-in-95 duration-150' : ''} transition shadow-sm`}
+                          } backdrop-blur hover:border-[#6B6B6B] ${isDragAllowed ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} ${activeCardMenuId === reel.id ? 'relative z-20' : ''} ${searchQuery ? 'animate-in fade-in zoom-in-95 duration-150' : ''} transition shadow-sm`}
                       >
                         <div className="flex items-center gap-3.5 min-w-0 flex-1 w-full sm:w-auto">
                           {isPending ? (
@@ -1284,16 +1335,11 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
 
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2 mb-1 flex-wrap">
-                              <span
-                                className={`rounded px-1.5 py-0.5 font-mono-micro ${reel.is_failed || reel.processing_status === 'extraction_failed'
-                                  ? 'bg-red-950/60 text-red-400 border border-red-800/50'
-                                  : reel.processing_status === 'processed'
-                                    ? 'bg-[#0B0B0B] text-[#D9D9D9] border border-[#333333]'
-                                    : 'bg-[#0B0B0B] text-[#6B6B6B] border border-[#333333]'
-                                  }`}
-                              >
-                                {reel.processing_status}
-                              </span>
+                              {(reel.is_failed || reel.processing_status === 'extraction_failed') && (
+                                <span className="rounded px-1.5 py-0.5 font-mono-micro bg-red-950/60 text-red-400 border border-red-800/50">
+                                  Failed
+                                </span>
+                              )}
 
                               {catObj && (
                                 <span className="rounded bg-[#0B0B0B] px-1.5 py-0.5 font-mono-micro text-[#D9D9D9] border border-[#333333] truncate">
@@ -1347,17 +1393,19 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
 
                             {activeCardMenuId === reel.id && (
                               <div
-                                className="absolute right-0 top-full mt-1 w-44 rounded-xl border border-[#333333] bg-[#141414] p-1 shadow-2xl z-50 animate-fade-up text-left"
+                                className="absolute right-full top-0 mr-2 w-48 rounded-2xl border border-white/25 bg-gradient-to-b from-white/[0.18] via-[#141414]/90 to-[#0A0A0A]/95 backdrop-blur-2xl p-1.5 shadow-[0_20px_50px_rgba(0,0,0,0.85),inset_0_1px_1px_rgba(255,255,255,0.35)] z-50 animate-in fade-in zoom-in-95 duration-200 text-left select-none"
                                 onClick={(e) => e.stopPropagation()}
                               >
+                                <div className="absolute top-0 inset-x-0 h-10 bg-gradient-to-b from-white/15 to-transparent pointer-events-none rounded-t-2xl" />
+
                                 <button
                                   onClick={() => {
                                     setDetailReelId(reel.id);
                                     setActiveCardMenuId(null);
                                   }}
-                                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-[#D9D9D9] hover:bg-[#222222]"
+                                  className="relative z-10 flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-xs font-medium text-white hover:bg-white/15 transition active:scale-98"
                                 >
-                                  <Info className="h-3.5 w-3.5 text-cyan-400" />
+                                  <Info className="h-3.5 w-3.5 text-cyan-300" />
                                   <span>Inspect Details</span>
                                 </button>
 
@@ -1366,20 +1414,20 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                                     handleStatusChange(reel.id, reel.completion_status === 'completed' ? 'pending' : 'completed');
                                     setActiveCardMenuId(null);
                                   }}
-                                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-[#D9D9D9] hover:bg-[#222222]"
+                                  className="relative z-10 flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-xs font-medium text-white hover:bg-white/15 transition active:scale-98"
                                 >
                                   <CheckCircle className="h-3.5 w-3.5 text-emerald-400" />
                                   <span>{reel.completion_status === 'completed' ? 'Mark Unwatched' : 'Mark Watched'}</span>
                                 </button>
 
-                                <div className="my-1 border-t border-[#262626]" />
+                                <div className="relative z-10 my-1 border-t border-white/15" />
 
                                 <button
                                   onClick={(e) => {
                                     setActiveCardMenuId(null);
                                     handleDeleteReel(reel.id, e);
                                   }}
-                                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-red-400 hover:bg-red-950/40"
+                                  className="relative z-10 flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-xs font-medium text-red-400 hover:bg-red-950/50 hover:text-red-300 transition active:scale-98"
                                 >
                                   <Trash2 className="h-3.5 w-3.5" />
                                   <span>Delete Post</span>
