@@ -95,10 +95,17 @@ async function extractViaOpenGraph(url) {
   const rawTitle = decodeHtmlEntities(extractMetaProperty(html, 'og:title') || '');
   const rawDesc = decodeHtmlEntities(extractMetaProperty(html, 'og:description') || extractMetaProperty(html, 'description') || '');
   const rawImage = extractMetaProperty(html, 'og:image');
+  const rawUrl = extractMetaProperty(html, 'og:url') || '';
   const image = rawImage ? decodeHtmlEntities(rawImage) : null;
 
   let creator = null;
-  if (rawTitle) {
+  if (rawUrl) {
+    const urlCreatorMatch = rawUrl.match(/instagram\.com\/([a-zA-Z0-9._]+)\/(?:reel|p)\//i);
+    if (urlCreatorMatch && urlCreatorMatch[1] !== 'p' && urlCreatorMatch[1] !== 'reel' && urlCreatorMatch[1] !== 'reels') {
+      creator = urlCreatorMatch[1];
+    }
+  }
+  if (!creator && rawTitle) {
     const creatorMatch = rawTitle.match(/@([a-zA-Z0-9._]+)/);
     if (creatorMatch) creator = creatorMatch[1];
   }
@@ -108,9 +115,18 @@ async function extractViaOpenGraph(url) {
   }
 
   let caption = rawDesc;
-  const quoteMatch = rawDesc.match(/:\s*["“](.*?)["”]\s*$/s);
-  if (quoteMatch) {
-    caption = quoteMatch[1];
+  // If rawTitle contains a quoted post caption, that is often the cleanest text
+  const titleQuoteMatch = rawTitle.match(/:\s*["“](.*?)["”]\s*$/s);
+  if (titleQuoteMatch && titleQuoteMatch[1].trim()) {
+    caption = titleQuoteMatch[1].trim();
+  } else {
+    const quoteMatch = rawDesc.match(/:\s*["“](.*?)["”]\s*$/s);
+    if (quoteMatch && quoteMatch[1].trim()) {
+      caption = quoteMatch[1].trim();
+    } else {
+      // Remove trailing " - @creator on Date" metadata suffix attached to og:description
+      caption = rawDesc.replace(/\s*-\s*@[a-zA-Z0-9._]+\s+on\s+[A-Za-z]+\s+\d+.*$/i, '').trim();
+    }
   }
 
   // Extract hashtags and mentions from caption and descriptions
@@ -184,21 +200,32 @@ async function categorizeWithGroq(metadata, existingCategoryTree) {
   const categoriesContext = (existingCategoryTree || []).map(cat => cat.name);
 
   const systemPrompt = `You are an expert AI content classifier and taxonomist.
-Your task is to organize user social saves into a clean, intuitive flat taxonomy with high-quality, strict parent categories.
-Do NOT generate or use subcategories.
+Your task is to classify social media posts into an accurate, high-level primary domain category and generate metadata.
+Do NOT generate or use subcategories. Keep categories clean, focused, and distinct.
+
+STANDARD PRIMARY DOMAINS (Use these high-level parent categories when applicable):
+- "Gaming": Video games, gameplay, game launchers, mods, esports, gaming clips, consoles (e.g. Minecraft, Roblox, GTA, PlayStation, Xbox, Steam, Fortnite). NEVER classify video games as "Tech & AI".
+- "Tech & AI": Artificial intelligence, LLMs, machine learning, software tools, hardware, gadgets, tech news.
+- "Coding & Dev": Programming languages, web development, algorithms, software engineering, databases, DevOps.
+- "Design & Art": UI/UX, graphic design, 3D art, illustration, animation, architecture, interior design.
+- "Business & Finance": Investing, entrepreneurship, startups, personal finance, real estate, crypto.
+- "Food & Cooking": Recipes, restaurants, baking, cooking techniques, culinary reviews.
+- "Fitness & Health": Workouts, gym, bodybuilding, nutrition, wellness, mental health.
+- "Entertainment & Comedy": Skits, humor, memes, movies, TV shows, celebrity culture.
+- "Education & Science": Academic topics, science explanations, history, philosophy, life hacks.
 
 STRUCTURING RULES:
-1. ALWAYS inspect existing categories first:
+1. EXISTING CATEGORIES:
 ${JSON.stringify(categoriesContext, null, 2)}
-2. CATEGORIES:
-- If this post fits into an existing category, ALWAYS reuse that category name (e.g. if "Food & Cooking" exists, do not create "Cooking" or "Recipes").
-- If no existing category fits, create ONE high-level category name (e.g. "Food & Cooking", "Tech & AI", "Fitness", "Design & Art", "Comedy").
-3. DO NOT create subcategories under any circumstances. Keep categories clean, focused, and distinct.
-4. DO NOT create duplicate or synonymous categories.
+- ONLY reuse an existing category if it is a genuinely accurate semantic match for the post content.
+- CRITICAL: DO NOT force a post into an existing category if it belongs to a completely different domain (e.g. video games, Minecraft, game launchers belong in "Gaming", NEVER in "Tech & AI" or "Design & Art").
+- If no existing category fits, create ONE high-level parent category name (e.g. "Gaming", "Food & Cooking", "Fitness & Health").
+2. DO NOT create subcategories under any circumstances.
+3. DO NOT create duplicate or synonymous categories.
 
 Return strictly a valid JSON object matching this schema:
 {
-  "category": string (domain category name - reuse existing whenever possible),
+  "category": string (accurate primary category name - reuse existing ONLY when truly matching),
   "topic": string (laser-focused topic),
   "tags": string[] (3-6 precise keywords),
   "ai_title": string (engaging, informative headline, max 65 chars),
@@ -226,13 +253,13 @@ Return strictly a valid JSON object matching this schema:
         'Authorization': `Bearer ${GROQ_API_KEY}`
       },
       body: JSON.stringify({
-        model: 'openai/gpt-oss-20b',
+        model: 'openai/gpt-oss-120b',
         response_format: { type: 'json_object' },
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
-        temperature: 0.2
+        temperature: 0.1
       })
     });
 

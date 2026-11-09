@@ -128,6 +128,7 @@ interface WatchLaterContextType {
   handleChangePassword: (e: React.FormEvent) => Promise<void>;
   handleRemoveDevice: (deviceId: string) => Promise<void>;
   handleSyncDevice: (deviceId: string) => Promise<void>;
+  syncingDeviceId: string | null;
   exportData: () => void;
 }
 
@@ -241,11 +242,13 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
   const [dragOverCatId, setDragOverCatId] = useState<string | null>(null);
 
   // Device sync acknowledgment polling tracking
+  const [syncingDeviceId, setSyncingDeviceId] = useState<string | null>(null);
   const syncPollTimerRef = useRef<NodeJS.Timeout | null>(null);
   const syncPollGenerationRef = useRef<number>(0);
   useEffect(() => {
     return () => {
       syncPollGenerationRef.current += 1;
+      setSyncingDeviceId(null);
       if (syncPollTimerRef.current) clearInterval(syncPollTimerRef.current);
     };
   }, []);
@@ -363,15 +366,17 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
     } catch (err) { }
   }, []);
 
-  // Check Persona first-time status
+  // Check Persona first-time status (only celebrated once 20 reels milestone is reached)
   useEffect(() => {
-    if (session?.user?.id) {
-      const seen = localStorage.getItem(`watchlater_persona_celebrated_${session.user.id}`);
-      if (!seen) {
-        setIsFirstTimePersona(true);
-      }
+    if (!session?.user?.id || reels.length < 20) {
+      setIsFirstTimePersona(false);
+      return;
     }
-  }, [session]);
+    const seen = localStorage.getItem(`watchlater_persona_celebrated_${session.user.id}`);
+    if (!seen) {
+      setIsFirstTimePersona(true);
+    }
+  }, [session, reels.length]);
 
   const dismissFirstTimePersona = () => {
     setIsFirstTimePersona(false);
@@ -394,13 +399,19 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
     }
   }, [categories, selectedCategoryId]);
 
-  // Persona Insight Calculation
+  // Persona Insight Calculation: synthesized after 20 reels, updated every 100 reels
   const userPersonaInsight = useMemo(() => {
-    if (reels.length === 0) {
-      return "Your vault is ready for ingestion. Share any Reel from your phone to start synthesizing your taste profile.";
+    if (reels.length < 20) {
+      return `Vault Persona synthesizes after 20 reels (${reels.length}/20). Keep saving to unlock your taste profile.`;
     }
+
+    // Determine the snapshot size: 20 reels for first milestone, then rounded down to the nearest multiple of 100
+    const snapshotSize = reels.length < 100 ? 20 : Math.floor(reels.length / 100) * 100;
+    // reels is ordered newest-first; take the oldest snapshotSize reels so newly arriving reels do not shift the snapshot before the next milestone
+    const milestoneReels = reels.slice(-snapshotSize);
+
     const catCounts: Record<string, number> = {};
-    reels.forEach(r => {
+    milestoneReels.forEach(r => {
       const catName = categories.find(c => c.id === r.category_id)?.name || 'Inbox & Discovery';
       catCounts[catName] = (catCounts[catName] || 0) + 1;
     });
@@ -408,10 +419,14 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
     const topNiche = sorted[0]?.[0] || 'Knowledge & Curations';
     const secondNiche = sorted[1]?.[0];
 
+    const updateNote = reels.length >= 100
+      ? ` (Updated at ${snapshotSize} reels • next update at ${snapshotSize + 100})`
+      : ` (Generated at 20 reels • next update at 100)`;
+
     if (secondNiche) {
-      return `You are intensely drawn to ${topNiche} and ${secondNiche}. You curate high-value knowledge and trending media with laser focus.`;
+      return `You are intensely drawn to ${topNiche} and ${secondNiche}. You curate high-value knowledge and trending media with laser focus.${updateNote}`;
     }
-    return `Your vault leans heavily into ${topNiche}. Your focus signals a disciplined curation habit.`;
+    return `Your vault leans heavily into ${topNiche}. Your focus signals a disciplined curation habit.${updateNote}`;
   }, [reels, categories]);
 
   const togglePinFolder = (catId: string) => {
@@ -1480,6 +1495,7 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
       clearInterval(syncPollTimerRef.current);
       syncPollTimerRef.current = null;
     }
+    setSyncingDeviceId(deviceId);
 
     const now = new Date().toISOString();
     setDevices(prev => prev.map(d => (d.id === deviceId ? { ...d, last_synced_at: now } : d)));
@@ -1490,6 +1506,7 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
     if (error) {
       if (syncPollGenerationRef.current === currentGeneration) {
         syncPollGenerationRef.current += 1;
+        setSyncingDeviceId(null);
       }
       alert(`Error syncing device: ${error.message}`);
       await loadData();
@@ -1510,7 +1527,9 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
         clearInterval(timer);
         if (isCurrentPoll()) {
           syncPollGenerationRef.current += 1;
+          setSyncingDeviceId(null);
           if (syncPollTimerRef.current === timer) syncPollTimerRef.current = null;
+          showIncomingAlert('Device sync ping sent. Make sure app is open on device.');
         }
         return;
       }
@@ -1531,6 +1550,7 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
         if (pollErr || !data) {
           clearInterval(timer);
           syncPollGenerationRef.current += 1;
+          setSyncingDeviceId(null);
           if (syncPollTimerRef.current === timer) syncPollTimerRef.current = null;
           return;
         }
@@ -1542,6 +1562,7 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
         if (isAcknowledged) {
           clearInterval(timer);
           syncPollGenerationRef.current += 1;
+          setSyncingDeviceId(null);
           if (syncPollTimerRef.current === timer) syncPollTimerRef.current = null;
           showIncomingAlert('Device acknowledged notification — sync confirmed ✓');
         }
@@ -1709,6 +1730,7 @@ export function WatchLaterProvider({ children }: { children: React.ReactNode }) 
     handleChangePassword,
     handleRemoveDevice,
     handleSyncDevice,
+    syncingDeviceId,
     exportData
   };
 

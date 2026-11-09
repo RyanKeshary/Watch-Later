@@ -414,6 +414,7 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
     handleChangePassword,
     handleRemoveDevice,
     handleSyncDevice,
+    syncingDeviceId,
     exportData
   } = useWatchLater();
 
@@ -2648,11 +2649,14 @@ export default function WatchLaterDashboard({ activePage }: WatchLaterDashboardP
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() => handleSyncDevice(dev.id)}
-                              className="flex items-center gap-1.5 text-xs text-white hover:text-zinc-200 font-medium px-2.5 py-1 rounded border border-[#2E2E2E] bg-[#141414] hover:bg-[#1C1C1C] transition active:scale-95"
+                              disabled={syncingDeviceId === dev.id}
+                              className={`flex items-center gap-1.5 text-xs text-white hover:text-zinc-200 font-medium px-2.5 py-1 rounded border border-[#2E2E2E] bg-[#141414] hover:bg-[#1C1C1C] transition active:scale-95 ${
+                                syncingDeviceId === dev.id ? 'opacity-70 cursor-wait' : ''
+                              }`}
                               title="Sync device with dashboard"
                             >
-                              <RefreshCw className="h-3 w-3" />
-                              <span>Sync</span>
+                              <RefreshCw className={`h-3 w-3 ${syncingDeviceId === dev.id ? 'animate-spin text-cyan-400' : ''}`} />
+                              <span>{syncingDeviceId === dev.id ? 'Syncing…' : 'Sync'}</span>
                             </button>
                             <button
                               onClick={() => handleRemoveDevice(dev.id)}
