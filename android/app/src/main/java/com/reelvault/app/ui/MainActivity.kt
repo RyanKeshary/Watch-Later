@@ -1105,11 +1105,11 @@ class MainActivity : ComponentActivity() {
         }
 
         val categories = remember(reelsList) {
-            listOf("All") + reelsList.map { it.categoryName }.distinct().filter { it.isNotBlank() }
+            reelsList.map { it.categoryName }.distinct().filter { it.isNotBlank() }
         }
 
         LaunchedEffect(categories) {
-            if (reelsList.isNotEmpty() && selectedCategory !in categories) {
+            if (selectedCategory != "All" && selectedCategory !in categories) {
                 selectedCategory = "All"
             }
         }
@@ -1153,12 +1153,14 @@ class MainActivity : ComponentActivity() {
                         color = PureWhite,
                         letterSpacing = (-0.5).sp
                     )
-                    Text(
-                        text = if (pendingCount > 0) "$pendingCount pending sync" else "Vault Synced",
-                        fontSize = 11.sp,
-                        fontFamily = FontFamily.Monospace,
-                        color = if (pendingCount > 0) Color(0xFFFBBF24) else Color(0xFF34D399)
-                    )
+                    if (pendingCount > 0) {
+                        Text(
+                            text = "$pendingCount pending sync",
+                            fontSize = 11.sp,
+                            fontFamily = FontFamily.Monospace,
+                            color = Color(0xFFFBBF24)
+                        )
+                    }
                 }
 
                 // Top Segmented Tab Switcher (Dashboard vs Settings)
@@ -1286,12 +1288,14 @@ class MainActivity : ComponentActivity() {
                         .defaultMinSize(minHeight = 48.dp)
                 )
 
-                // Status Tabs (All / To Watch / Watched)
+                // Unified Filter Bar (Status + Categories in one clean horizontal scroll)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
                         .padding(bottom = 10.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     val statusTabs = listOf(
                         "all" to "All",
@@ -1316,7 +1320,7 @@ class MainActivity : ComponentActivity() {
                                     if (isSelected) PureWhite else DarkBorder,
                                     RoundedCornerShape(8.dp)
                                 )
-                                .padding(horizontal = 10.dp, vertical = 5.dp)
+                                .padding(horizontal = 11.dp, vertical = 6.dp)
                         ) {
                             Text(
                                 text = label,
@@ -1326,38 +1330,38 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                     }
-                }
 
-                // Category Filter Pills (horizontally scrollable without limit)
-                if (categories.size > 1) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState())
-                            .padding(bottom = 10.dp),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
+                    if (categories.isNotEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .width(1.dp)
+                                .height(16.dp)
+                                .background(DarkBorder)
+                        )
+
                         categories.forEach { cat ->
                             val isSelected = selectedCategory == cat
                             Box(
                                 modifier = Modifier
-                                    .clickable { selectedCategory = cat }
+                                    .clickable {
+                                        selectedCategory = if (isSelected) "All" else cat
+                                    }
                                     .background(
-                                        if (isSelected) PureWhite else DarkSurface,
-                                        RoundedCornerShape(12.dp)
+                                        if (isSelected) Color(0xFF10B981) else DarkSurface,
+                                        RoundedCornerShape(8.dp)
                                     )
                                     .border(
                                         1.dp,
-                                        if (isSelected) PureWhite else DarkBorder,
-                                        RoundedCornerShape(12.dp)
+                                        if (isSelected) Color(0xFF10B981) else DarkBorder,
+                                        RoundedCornerShape(8.dp)
                                     )
-                                    .padding(horizontal = 10.dp, vertical = 5.dp)
+                                    .padding(horizontal = 11.dp, vertical = 6.dp)
                             ) {
                                 Text(
                                     text = cat,
                                     fontSize = 11.sp,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                    color = if (isSelected) DarkBg else LightText
+                                    color = if (isSelected) Color.Black else LightText
                                 )
                             }
                         }
