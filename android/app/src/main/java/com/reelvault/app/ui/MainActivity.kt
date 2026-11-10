@@ -852,6 +852,7 @@ class MainActivity : ComponentActivity() {
     ) {
         var activeTab by rememberSaveable { mutableStateOf("dashboard") } // "dashboard" | "settings"
         var reelsList by remember { mutableStateOf<List<RemoteReelItem>>(emptyList()) }
+        var hasLoadedInitialReels by remember { mutableStateOf(false) }
         var pendingCount by remember { mutableStateOf(0) }
         var isFetching by remember { mutableStateOf(false) }
         var reloadRequested by remember { mutableStateOf(false) }
@@ -859,6 +860,7 @@ class MainActivity : ComponentActivity() {
         var selectedCategory by rememberSaveable { mutableStateOf("All") }
         var searchQuery by rememberSaveable { mutableStateOf("") }
         var statusFilter by rememberSaveable { mutableStateOf("all") } // "all" | "pending" | "completed"
+        val filterScrollState = rememberScrollState()
         var categoryMap by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
         var reelToDelete by remember { mutableStateOf<RemoteReelItem?>(null) }
         var inFlightUpdates by remember { mutableStateOf<Set<String>>(emptySet()) }
@@ -930,6 +932,7 @@ class MainActivity : ComponentActivity() {
                                 reelsList = items
                                 serverOffset = items.size
                                 hasMoreReels = items.size >= 100
+                                hasLoadedInitialReels = true
                             }
                         }
                     } else {
@@ -1108,8 +1111,8 @@ class MainActivity : ComponentActivity() {
             reelsList.map { it.categoryName }.distinct().filter { it.isNotBlank() }
         }
 
-        LaunchedEffect(categories) {
-            if (selectedCategory != "All" && selectedCategory !in categories) {
+        LaunchedEffect(categories, hasLoadedInitialReels) {
+            if (hasLoadedInitialReels && selectedCategory != "All" && selectedCategory !in categories) {
                 selectedCategory = "All"
             }
         }
@@ -1292,7 +1295,7 @@ class MainActivity : ComponentActivity() {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState())
+                        .horizontalScroll(filterScrollState)
                         .padding(bottom = 10.dp),
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically

@@ -1,6 +1,6 @@
 {
-  "versionCode": 7,
-  "versionName": "1.0.6",
+  "versionCode": 8,
+  "versionName": "1.0.7",
   "apkUrl": "https://watchlatertool.vercel.app/watch-later.apk",
-  "releaseNotes": "Automatic installer flow, foreground-aware update triggers, and dashboard stability improvements."
+  "releaseNotes": "Clean unified filter strip, hoisted tab filter scroll position, and stable category preservation."
 }
