@@ -64,9 +64,7 @@ class ReelSyncWorker(
                 val dao = db.reelDao()
 
                 var accessToken = PreferenceManager.getAccessToken(context)
-                val refreshToken = PreferenceManager.getRefreshToken(context)
                 val userId = PreferenceManager.getUserId(context)
-                val userEmail = PreferenceManager.getUserEmail(context)
 
                 if (accessToken.isNullOrEmpty() || userId.isNullOrEmpty()) {
                     Log.w("ReelSyncWorker", "User not logged in; skipping sync.")
@@ -84,38 +82,24 @@ class ReelSyncWorker(
 
                 try {
                     suspend fun refreshTokenCall(): Boolean {
-                        if (refreshToken.isNullOrEmpty()) return false
-                        return try {
-                            val refRes = client.post("${BuildConfig.SUPABASE_URL}/auth/v1/token?grant_type=refresh_token") {
-                                header("apikey", BuildConfig.SUPABASE_ANON_KEY)
-                                contentType(ContentType.Application.Json)
-                                setBody(buildJsonObject { put("refresh_token", refreshToken) }.toString())
-                            }
-                            if (refRes.status.isSuccess()) {
-                                val json = Json.parseToJsonElement(refRes.bodyAsText()).jsonObject
-                                val newAccess = json["access_token"]?.jsonPrimitive?.content
-                                val newRefresh = json["refresh_token"]?.jsonPrimitive?.content ?: refreshToken
-                                if (newAccess != null) {
-                                    PreferenceManager.saveSession(context, userId, userEmail ?: "", newAccess, newRefresh)
-                                    accessToken = newAccess
-                                    true
-                                } else false
-                            } else false
-                        } catch (e: Exception) {
-                            false
-                        }
+                        val refreshed = PreferenceManager.refreshSession(context, client)
+                        return if (refreshed != null) {
+                            accessToken = refreshed
+                            true
+                        } else false
                     }
 
                     // Remote device registration check: if removed from web dashboard, deregister locally
                     try {
-                        val deviceName = "${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL}"
+                        val deviceName = PreferenceManager.getDeviceName()
+                        val sanitizedName = PreferenceManager.sanitizeForLike(deviceName)
                         var checkRes = client.get("${BuildConfig.SUPABASE_URL}/rest/v1/devices") {
                             header("apikey", BuildConfig.SUPABASE_ANON_KEY)
                             header("Authorization", "Bearer $accessToken")
                             url {
                                 parameters.append("user_id", "eq.$userId")
-                                parameters.append("device_name", "eq.$deviceName")
-                                parameters.append("select", "id")
+                                parameters.append("device_name", "like.$sanitizedName*")
+                                parameters.append("select", "id,device_name")
                             }
                         }
                         if (checkRes.status.value == 401 && refreshTokenCall()) {
@@ -124,17 +108,24 @@ class ReelSyncWorker(
                                 header("Authorization", "Bearer $accessToken")
                                 url {
                                     parameters.append("user_id", "eq.$userId")
-                                    parameters.append("device_name", "eq.$deviceName")
-                                    parameters.append("select", "id")
+                                    parameters.append("device_name", "like.$sanitizedName*")
+                                    parameters.append("select", "id,device_name")
                                 }
                             }
                         }
                         if (checkRes.status.value in 200..299) {
                             val body = checkRes.bodyAsText().trim()
-                            if (body == "[]") {
-                                Log.w("ReelSyncWorker", "Device deregistered on web dashboard. Clearing local session.")
-                                PreferenceManager.clearSession(context)
-                                return@withLock true
+                            val parsedArray = runCatching { Json.parseToJsonElement(body).jsonArray }.getOrNull()
+                            if (parsedArray != null) {
+                                val hasDevice = parsedArray.any { el ->
+                                    val rawName = el.jsonObject["device_name"]?.jsonPrimitive?.content ?: ""
+                                    PreferenceManager.isDeviceNameMatch(rawName, deviceName)
+                                }
+                                if (!hasDevice) {
+                                    Log.w("ReelSyncWorker", "Device deregistered on web dashboard. Clearing local session.")
+                                    PreferenceManager.clearSession(context)
+                                    return@withLock true
+                                }
                             }
                         }
                     } catch (e: Exception) {

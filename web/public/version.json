@@ -1,6 +1,6 @@
 {
-  "versionCode": 5,
-  "versionName": "1.0.4",
+  "versionCode": 6,
+  "versionName": "1.0.5",
   "apkUrl": "https://watchlatertool.vercel.app/watch-later.apk",
-  "releaseNotes": "Bi-directional device sync verification between phone and web dashboard."
+  "releaseNotes": "Built-in mobile dashboard feed, optimized background sync and zero-pressure battery performance."
 }

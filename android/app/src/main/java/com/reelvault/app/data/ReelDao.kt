@@ -14,6 +14,9 @@ interface ReelDao {
     @Query("SELECT * FROM reels_local WHERE sync_status IN ('local_pending_sync', 'pending_auth') ORDER BY created_at ASC")
     suspend fun getPendingReels(): List<LocalReel>
 
+    @Query("SELECT COUNT(*) FROM reels_local WHERE sync_status IN ('local_pending_sync', 'pending_auth')")
+    suspend fun getPendingCount(): Int
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertReel(reel: LocalReel): Long
 
