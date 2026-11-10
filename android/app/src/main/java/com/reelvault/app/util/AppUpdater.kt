@@ -32,7 +32,15 @@ data class AppVersionInfo(
 
 enum class UpdateResult {
     SUCCESS,
+    PERMISSION_REQUIRED,
     BROWSER_OPENED,
+    FAILED
+}
+
+enum class InstallResult {
+    SUCCESS,
+    PERMISSION_REQUIRED,
+    NO_PENDING,
     FAILED
 }
 
@@ -65,6 +73,10 @@ object AppUpdater {
     ) {
         val appContext = context.applicationContext
         try {
+            val prefs = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            pendingInstallFile = null
+            prefs.edit().remove(KEY_PENDING_APK).apply()
+
             val filename = "watch-later-v${info.versionName}.apk"
             val destination = File(appContext.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), filename)
             if (destination.exists()) {
@@ -106,8 +118,21 @@ object AppUpdater {
                         }
 
                         if (isSuccess) {
-                            val installed = installApk(appContext, destination)
-                            onFinished(if (installed) UpdateResult.SUCCESS else UpdateResult.FAILED)
+                            val prefs = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                            pendingInstallFile = destination
+                            prefs.edit().putString(KEY_PENDING_APK, destination.absolutePath).apply()
+
+                            if (com.reelvault.app.ReelVaultApp.isAppInForeground) {
+                                val installRes = installApk(appContext, destination)
+                                val outcome = when (installRes) {
+                                    InstallResult.SUCCESS -> UpdateResult.SUCCESS
+                                    InstallResult.PERMISSION_REQUIRED -> UpdateResult.PERMISSION_REQUIRED
+                                    InstallResult.FAILED, InstallResult.NO_PENDING -> UpdateResult.FAILED
+                                }
+                                onFinished(outcome)
+                            } else {
+                                onFinished(UpdateResult.SUCCESS)
+                            }
                         } else {
                             onFinished(UpdateResult.FAILED)
                         }
@@ -143,10 +168,77 @@ object AppUpdater {
         }
     }
 
-    fun installApk(context: Context, apkFile: File): Boolean {
-        return try {
-            if (!apkFile.exists()) return false
+    private const val PREFS_NAME = "app_updater_prefs"
+    private const val KEY_PENDING_APK = "pending_apk_path"
 
+    @Volatile
+    private var pendingInstallFile: File? = null
+
+    suspend fun checkAndInstallPending(context: Context): InstallResult {
+        val (file, canInstall) = withContext(Dispatchers.IO) {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val savedPath = prefs.getString(KEY_PENDING_APK, null)
+            val f = pendingInstallFile ?: savedPath?.let { File(it) } ?: return@withContext null
+
+            if (!f.exists()) {
+                pendingInstallFile = null
+                prefs.edit().remove(KEY_PENDING_APK).apply()
+                return@withContext null
+            }
+
+            // Validate that the pending APK is still newer than the running version and belongs to this package
+            val pkgInfo = context.packageManager.getPackageArchiveInfo(f.absolutePath, 0)
+            val apkVersionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                pkgInfo?.longVersionCode?.toInt()
+            } else {
+                @Suppress("DEPRECATION")
+                pkgInfo?.versionCode
+            }
+            if (pkgInfo == null || pkgInfo.packageName != context.packageName || apkVersionCode == null || apkVersionCode <= BuildConfig.VERSION_CODE) {
+                pendingInstallFile = null
+                prefs.edit().remove(KEY_PENDING_APK).apply()
+                if (f.exists()) f.delete()
+                return@withContext null
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !context.packageManager.canRequestPackageInstalls()) {
+                return@withContext Pair(f, false)
+            }
+            Pair(f, true)
+        } ?: return InstallResult.NO_PENDING
+
+        if (!canInstall) {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            pendingInstallFile = file
+            prefs.edit().putString(KEY_PENDING_APK, file.absolutePath).apply()
+            return InstallResult.PERMISSION_REQUIRED
+        }
+
+        val res = installApk(context, file)
+        if (res == InstallResult.SUCCESS || res == InstallResult.FAILED) {
+            pendingInstallFile = null
+            context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().remove(KEY_PENDING_APK).apply()
+        }
+        return res
+    }
+
+    fun installApk(context: Context, apkFile: File): InstallResult {
+        return try {
+            if (!apkFile.exists()) return InstallResult.FAILED
+
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                if (!context.packageManager.canRequestPackageInstalls()) {
+                    pendingInstallFile = apkFile
+                    prefs.edit().putString(KEY_PENDING_APK, apkFile.absolutePath).apply()
+                    val settingsIntent = Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+                        data = Uri.parse("package:${context.packageName}")
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(settingsIntent)
+                    return InstallResult.PERMISSION_REQUIRED
+                }
+            }
             val contentUri = FileProvider.getUriForFile(
                 context,
                 "${context.packageName}.fileprovider",
@@ -159,10 +251,14 @@ object AppUpdater {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             context.startActivity(installIntent)
-            true
+
+            pendingInstallFile = null
+            prefs.edit().remove(KEY_PENDING_APK).apply()
+
+            InstallResult.SUCCESS
         } catch (e: Exception) {
             Log.e("AppUpdater", "Error launching APK installer", e)
-            false
+            InstallResult.FAILED
         }
     }
 }

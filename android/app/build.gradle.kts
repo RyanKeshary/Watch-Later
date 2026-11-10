@@ -1,8 +1,25 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("com.google.devtools.ksp")
     id("org.jetbrains.kotlin.plugin.serialization")
+}
+
+val keystorePropsFile = rootProject.file("keystore.properties")
+val keystoreProps = Properties().apply {
+    if (keystorePropsFile.exists()) {
+        FileInputStream(keystorePropsFile).use { load(it) }
+    }
+}
+
+fun isSigningConfigured(config: com.android.build.api.dsl.SigningConfig?): Boolean {
+    return config?.storeFile?.exists() == true &&
+        !config.storePassword.isNullOrEmpty() &&
+        !config.keyAlias.isNullOrEmpty() &&
+        !config.keyPassword.isNullOrEmpty()
 }
 
 android {
@@ -25,9 +42,37 @@ android {
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"sb_publishable_mARgoU-fTj2mBnigw207rA_wu2kTMnS\"")
     }
 
+    signingConfigs {
+        create("release") {
+            val keyPath = System.getenv("KEYSTORE_FILE")?.takeIf { it.isNotBlank() }
+                ?: keystoreProps.getProperty("storeFile")?.takeIf { it.isNotBlank() }
+                ?: "release.keystore"
+            // Default release.keystore location resolves relative to the root project directory
+            val resolvedFile = File(keyPath).let { f ->
+                if (f.isAbsolute) f else rootProject.file(keyPath)
+            }
+            storeFile = resolvedFile
+            storePassword = System.getenv("KEYSTORE_PASSWORD")?.takeIf { it.isNotBlank() }
+                ?: keystoreProps.getProperty("storePassword")?.takeIf { it.isNotBlank() }
+                ?: ""
+            keyAlias = System.getenv("KEY_ALIAS")?.takeIf { it.isNotBlank() }
+                ?: keystoreProps.getProperty("keyAlias")?.takeIf { it.isNotBlank() }
+                ?: ""
+            keyPassword = System.getenv("KEY_PASSWORD")?.takeIf { it.isNotBlank() }
+                ?: keystoreProps.getProperty("keyPassword")?.takeIf { it.isNotBlank() }
+                ?: ""
+            enableV1Signing = true
+            enableV2Signing = true
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            val relConfig = signingConfigs.getByName("release")
+            if (isSigningConfigured(relConfig)) {
+                signingConfig = relConfig
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -91,5 +136,21 @@ dependencies {
 
     // Testing
     testImplementation("junit:junit:4.13.2")
+}
+
+val checkReleaseSigning = tasks.register("checkReleaseSigning") {
+    doLast {
+        val relConfig = android.signingConfigs.findByName("release")
+        val isConfigured = isSigningConfigured(relConfig)
+        val allowUnsigned = (System.getenv("ALLOW_UNSIGNED_RELEASE")?.takeIf { it.isNotBlank() }
+            ?: keystoreProps.getProperty("allowUnsignedRelease"))?.toBoolean() == true
+        if (!isConfigured && !allowUnsigned) {
+            throw GradleException("Release build requires valid signing credentials or ALLOW_UNSIGNED_RELEASE=true.")
+        }
+    }
+}
+
+tasks.matching { it.name in listOf("validateSigningRelease", "packageRelease", "packageReleaseBundle") }.configureEach {
+    dependsOn(checkReleaseSigning)
 }
 

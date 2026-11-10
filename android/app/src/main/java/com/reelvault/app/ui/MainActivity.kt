@@ -33,7 +33,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PointMode
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -56,10 +58,16 @@ import com.reelvault.app.ui.theme.PureWhite
 import com.reelvault.app.ui.theme.WatchLaterDarkColorScheme
 import com.reelvault.app.util.AppUpdater
 import com.reelvault.app.util.AppVersionInfo
+import com.reelvault.app.util.InstallResult
 import com.reelvault.app.util.PreferenceManager
 import com.reelvault.app.util.UpdateResult
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.android.Android
+import io.ktor.client.request.HttpRequestBuilder
+import io.ktor.client.request.request
+import io.ktor.client.request.url
+import io.ktor.client.statement.HttpResponse
+import io.ktor.http.HttpMethod
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.patch
@@ -92,9 +100,49 @@ data class RemoteReelItem(
 
 class MainActivity : ComponentActivity() {
 
+    companion object {
+        private var hasShownPermissionToast = false
+    }
+
     private val httpClient = HttpClient(Android)
     private var isFirstResume = true
     private var isLoggedInState: MutableState<Boolean>? = null
+
+    private suspend fun executeAuthenticatedRequest(
+        block: HttpRequestBuilder.(token: String) -> Unit
+    ): HttpResponse? {
+        var token = PreferenceManager.getAccessToken(this@MainActivity) ?: return null
+        var res = httpClient.request {
+            header("apikey", BuildConfig.SUPABASE_ANON_KEY)
+            header("Authorization", "Bearer $token")
+            block(token)
+        }
+        if (res.status.value == 401) {
+            val refreshed = PreferenceManager.refreshSession(this@MainActivity, httpClient)
+            if (refreshed != null) {
+                token = refreshed
+                res = httpClient.request {
+                    header("apikey", BuildConfig.SUPABASE_ANON_KEY)
+                    header("Authorization", "Bearer $token")
+                    block(token)
+                }
+            }
+        }
+        return res
+    }
+
+    private fun parseReel(el: kotlinx.serialization.json.JsonElement, catMap: Map<String, String>): RemoteReelItem? {
+        val obj = el.jsonObject
+        val id = obj["id"]?.jsonPrimitive?.content ?: return null
+        val url = obj["url"]?.jsonPrimitive?.contentOrNull ?: ""
+        val title = obj["ai_title"]?.jsonPrimitive?.contentOrNull ?: "Saved Reel"
+        val creator = obj["creator_username"]?.jsonPrimitive?.contentOrNull ?: ""
+        val catId = obj["category_id"]?.jsonPrimitive?.contentOrNull
+        val catName = if (catId == null) "Inbox" else (catMap[catId] ?: "Categorized")
+        val compStatus = obj["completion_status"]?.jsonPrimitive?.contentOrNull ?: "pending"
+        val procStatus = obj["processing_status"]?.jsonPrimitive?.contentOrNull ?: "processed"
+        return RemoteReelItem(id, url, title, creator, catName, compStatus, procStatus)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -225,6 +273,9 @@ class MainActivity : ComponentActivity() {
                                                 isDownloadingUpdate = false
                                                 when (result) {
                                                     UpdateResult.SUCCESS -> {}
+                                                    UpdateResult.PERMISSION_REQUIRED -> {
+                                                        Toast.makeText(this@MainActivity, "Allow installation from this source, then return to complete update.", Toast.LENGTH_LONG).show()
+                                                    }
                                                     UpdateResult.BROWSER_OPENED -> {
                                                         Toast.makeText(this@MainActivity, "Opening update in browser...", Toast.LENGTH_SHORT).show()
                                                     }
@@ -264,6 +315,9 @@ class MainActivity : ComponentActivity() {
                                                 isDownloadingUpdate = false
                                                 when (result) {
                                                     UpdateResult.SUCCESS -> {}
+                                                    UpdateResult.PERMISSION_REQUIRED -> {
+                                                        Toast.makeText(this@MainActivity, "Allow installation from this source, then return to complete update.", Toast.LENGTH_LONG).show()
+                                                    }
                                                     UpdateResult.BROWSER_OPENED -> {
                                                         Toast.makeText(this@MainActivity, "Opening update in browser...", Toast.LENGTH_SHORT).show()
                                                     }
@@ -294,6 +348,21 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        lifecycleScope.launch {
+            val result = AppUpdater.checkAndInstallPending(this@MainActivity)
+            when (result) {
+                InstallResult.PERMISSION_REQUIRED -> {
+                    if (!hasShownPermissionToast) {
+                        hasShownPermissionToast = true
+                        Toast.makeText(this@MainActivity, "Allow installation from this source, then return to complete update.", Toast.LENGTH_LONG).show()
+                    }
+                }
+                InstallResult.FAILED -> {
+                    Toast.makeText(this@MainActivity, "Failed to install pending update", Toast.LENGTH_SHORT).show()
+                }
+                InstallResult.SUCCESS, InstallResult.NO_PENDING -> {}
+            }
+        }
         if (isFirstResume) {
             isFirstResume = false
             return
@@ -746,13 +815,23 @@ class MainActivity : ComponentActivity() {
         var reloadRequested by remember { mutableStateOf(false) }
         var fetchError by remember { mutableStateOf<String?>(null) }
         var selectedCategory by rememberSaveable { mutableStateOf("All") }
+        var searchQuery by rememberSaveable { mutableStateOf("") }
+        var statusFilter by rememberSaveable { mutableStateOf("all") } // "all" | "pending" | "completed"
         var categoryMap by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
+        var reelToDelete by remember { mutableStateOf<RemoteReelItem?>(null) }
+        var inFlightUpdates by remember { mutableStateOf<Set<String>>(emptySet()) }
+        var hasMoreReels by remember { mutableStateOf(false) }
+        var isLoadingMore by remember { mutableStateOf(false) }
+        var fetchGeneration by remember { mutableStateOf(0) }
+        var serverOffset by remember { mutableStateOf(0) }
 
         var loadReelsRef: (() -> Unit)? = null
 
         val executeFetch: () -> Unit = {
             isFetching = true
             fetchError = null
+            val currentGen = fetchGeneration + 1
+            fetchGeneration = currentGen
             lifecycleScope.launch(Dispatchers.IO) {
                 try {
                     var token = PreferenceManager.getAccessToken(this@MainActivity)
@@ -767,85 +846,55 @@ class MainActivity : ComponentActivity() {
                         pendingCount = localPending
                     }
 
-                        var refreshAttempted = false
-                        suspend fun fetchWithRetry(url: String, params: Map<String, String>): io.ktor.client.statement.HttpResponse {
-                            var res = httpClient.get(url) {
-                                header("apikey", BuildConfig.SUPABASE_ANON_KEY)
-                                header("Authorization", "Bearer $token")
-                                this.url {
-                                    params.forEach { (k, v) -> parameters.append(k, v) }
-                                }
-                            }
-                            if (res.status.value == 401 && !refreshAttempted) {
-                                refreshAttempted = true
-                                val refreshed = PreferenceManager.refreshSession(this@MainActivity, httpClient)
-                                if (refreshed != null) {
-                                    token = refreshed
-                                    res = httpClient.get(url) {
-                                        header("apikey", BuildConfig.SUPABASE_ANON_KEY)
-                                        header("Authorization", "Bearer $token")
-                                        this.url {
-                                            params.forEach { (k, v) -> parameters.append(k, v) }
-                                        }
-                                    }
-                                }
-                            }
-                            return res
+                    // Fetch user categories map
+                    val catRes = executeAuthenticatedRequest {
+                        method = HttpMethod.Get
+                        url("${BuildConfig.SUPABASE_URL}/rest/v1/categories")
+                        url.parameters.append("user_id", "eq.$userId")
+                        url.parameters.append("select", "id,name")
+                    }
+
+                    val activeCatMap = categoryMap.toMutableMap()
+                    if (catRes != null && catRes.status.isSuccess()) {
+                        val catJson = Json.parseToJsonElement(catRes.bodyAsText()).jsonArray
+                        for (catEl in catJson) {
+                            val cObj = catEl.jsonObject
+                            val cId = cObj["id"]?.jsonPrimitive?.contentOrNull ?: ""
+                            val cName = cObj["name"]?.jsonPrimitive?.contentOrNull ?: ""
+                            if (cId.isNotEmpty()) activeCatMap[cId] = cName
                         }
-
-                        // Fetch user categories map
-                        val catRes = fetchWithRetry(
-                            "${BuildConfig.SUPABASE_URL}/rest/v1/categories",
-                            mapOf("user_id" to "eq.$userId", "select" to "id,name")
-                        )
-
-                        val activeCatMap = categoryMap.toMutableMap()
-                        if (catRes.status.isSuccess()) {
-                            val catJson = Json.parseToJsonElement(catRes.bodyAsText()).jsonArray
-                            for (catEl in catJson) {
-                                val cObj = catEl.jsonObject
-                                val cId = cObj["id"]?.jsonPrimitive?.contentOrNull ?: ""
-                                val cName = cObj["name"]?.jsonPrimitive?.contentOrNull ?: ""
-                                if (cId.isNotEmpty()) activeCatMap[cId] = cName
-                            }
-                            withContext(Dispatchers.Main) {
-                                categoryMap = activeCatMap
-                            }
+                        withContext(Dispatchers.Main) {
+                            categoryMap = activeCatMap
                         }
+                    }
 
-                        // Fetch reels
-                        val res = fetchWithRetry(
-                            "${BuildConfig.SUPABASE_URL}/rest/v1/reels",
-                            mapOf(
-                                "user_id" to "eq.$userId",
-                                "select" to "id,url,ai_title,creator_username,category_id,completion_status,processing_status",
-                                "order" to "created_at.desc",
-                                "limit" to "100"
-                            )
-                        )
+                    // Fetch reels
+                    val res = executeAuthenticatedRequest {
+                        method = HttpMethod.Get
+                        url("${BuildConfig.SUPABASE_URL}/rest/v1/reels")
+                        url.parameters.append("user_id", "eq.$userId")
+                        url.parameters.append("select", "id,url,ai_title,creator_username,category_id,completion_status,processing_status")
+                        url.parameters.append("order", "created_at.desc")
+                        url.parameters.append("limit", "100")
+                    }
 
-                        if (res.status.isSuccess()) {
-                            val json = Json.parseToJsonElement(res.bodyAsText()).jsonArray
-                            val items = json.mapNotNull { el ->
-                                val obj = el.jsonObject
-                                val id = obj["id"]?.jsonPrimitive?.content ?: return@mapNotNull null
-                                val url = obj["url"]?.jsonPrimitive?.contentOrNull ?: ""
-                                val title = obj["ai_title"]?.jsonPrimitive?.contentOrNull ?: "Saved Reel"
-                                val creator = obj["creator_username"]?.jsonPrimitive?.contentOrNull ?: ""
-                                val catId = obj["category_id"]?.jsonPrimitive?.contentOrNull
-                                val catName = if (catId == null) "Inbox" else (activeCatMap[catId] ?: "Categorized")
-                                val compStatus = obj["completion_status"]?.jsonPrimitive?.contentOrNull ?: "pending"
-                                val procStatus = obj["processing_status"]?.jsonPrimitive?.contentOrNull ?: "processed"
-                                RemoteReelItem(id, url, title, creator, catName, compStatus, procStatus)
-                            }
-                            withContext(Dispatchers.Main) {
+                    if (res != null && res.status.isSuccess()) {
+                        val json = Json.parseToJsonElement(res.bodyAsText()).jsonArray
+                        val items = json.mapNotNull { parseReel(it, activeCatMap) }
+                        withContext(Dispatchers.Main) {
+                            if (inFlightUpdates.isNotEmpty()) {
+                                reloadRequested = true
+                            } else if (fetchGeneration == currentGen) {
                                 reelsList = items
-                            }
-                        } else {
-                            withContext(Dispatchers.Main) {
-                                fetchError = "Could not load reels (${res.status.value})"
+                                serverOffset = items.size
+                                hasMoreReels = items.size >= 100
                             }
                         }
+                    } else {
+                        withContext(Dispatchers.Main) {
+                            fetchError = "Could not load reels (${res?.status?.value ?: "unauthorized"})"
+                        }
+                    }
                     } catch (e: Exception) {
                         withContext(Dispatchers.Main) {
                             fetchError = "Connection error: ${e.message}"
@@ -863,7 +912,7 @@ class MainActivity : ComponentActivity() {
             }
 
         val loadReels: () -> Unit = {
-            if (isFetching) {
+            if (isFetching || inFlightUpdates.isNotEmpty()) {
                 reloadRequested = true
             } else {
                 executeFetch()
@@ -873,6 +922,144 @@ class MainActivity : ComponentActivity() {
 
         LaunchedEffect(Unit) {
             loadReels()
+        }
+
+        val loadMoreReels: () -> Unit = {
+            if (!isFetching && !isLoadingMore && hasMoreReels) {
+                isLoadingMore = true
+                val requestGen = fetchGeneration
+                lifecycleScope.launch(Dispatchers.IO) {
+                    try {
+                        val userId = PreferenceManager.getUserId(this@MainActivity)
+                        if (userId != null) {
+                            val offset = serverOffset
+                            val moreRes = executeAuthenticatedRequest {
+                                method = HttpMethod.Get
+                                url("${BuildConfig.SUPABASE_URL}/rest/v1/reels")
+                                url.parameters.append("user_id", "eq.$userId")
+                                url.parameters.append("select", "id,url,ai_title,creator_username,category_id,completion_status,processing_status")
+                                url.parameters.append("order", "created_at.desc")
+                                url.parameters.append("offset", "$offset")
+                                url.parameters.append("limit", "100")
+                            }
+                            if (moreRes != null && moreRes.status.isSuccess()) {
+                                val json = Json.parseToJsonElement(moreRes.bodyAsText()).jsonArray
+                                val newItems = json.mapNotNull { parseReel(it, categoryMap) }
+                                withContext(Dispatchers.Main) {
+                                    if (fetchGeneration == requestGen) {
+                                        val existingIds = reelsList.map { it.id }.toSet()
+                                        val distinctNew = newItems.filter { it.id !in existingIds }
+                                        reelsList = reelsList + distinctNew
+                                        serverOffset += json.size
+                                        hasMoreReels = json.size >= 100
+                                    }
+                                }
+                            } else {
+                                withContext(Dispatchers.Main) {
+                                    Toast.makeText(this@MainActivity, "Failed to load more reels (${moreRes?.status?.value ?: "unauthorized"})", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        }
+                    } catch (e: Exception) {
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(this@MainActivity, "Error loading more reels: ${e.message}", Toast.LENGTH_SHORT).show()
+                        }
+                    } finally {
+                        withContext(Dispatchers.Main) {
+                            isLoadingMore = false
+                        }
+                    }
+                }
+            }
+        }
+
+        val toggleWatched: (RemoteReelItem) -> Unit = { item ->
+            if (item.id !in inFlightUpdates) {
+                inFlightUpdates = inFlightUpdates + item.id
+                fetchGeneration += 1
+                if (isFetching) {
+                    reloadRequested = true
+                }
+                val oldStatus = item.completionStatus
+                val newStatus = if (oldStatus == "completed" || oldStatus == "watched") "pending" else "completed"
+                reelsList = reelsList.map { if (it.id == item.id) it.copy(completionStatus = newStatus) else it }
+                lifecycleScope.launch(Dispatchers.IO) {
+                    var success = false
+                    try {
+                        val patchRes = executeAuthenticatedRequest {
+                            method = HttpMethod.Patch
+                            contentType(ContentType.Application.Json)
+                            url("${BuildConfig.SUPABASE_URL}/rest/v1/reels")
+                            url.parameters.append("id", "eq.${item.id}")
+                            setBody(buildJsonObject {
+                                put("completion_status", newStatus)
+                            }.toString())
+                        }
+                        success = patchRes?.status?.isSuccess() == true
+                    } catch (_: Exception) {
+                        success = false
+                    } finally {
+                        withContext(Dispatchers.Main) {
+                            inFlightUpdates = inFlightUpdates - item.id
+                            if (!success) {
+                                reelsList = reelsList.map { if (it.id == item.id) it.copy(completionStatus = oldStatus) else it }
+                                Toast.makeText(this@MainActivity, "Failed to update status", Toast.LENGTH_SHORT).show()
+                            }
+                            if (inFlightUpdates.isEmpty() && reloadRequested && !isFetching) {
+                                reloadRequested = false
+                                loadReelsRef?.invoke()
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        val deleteReel: (RemoteReelItem) -> Unit = { item ->
+            if (item.id !in inFlightUpdates) {
+                val originalIndex = reelsList.indexOfFirst { it.id == item.id }
+                if (originalIndex != -1) {
+                    inFlightUpdates = inFlightUpdates + item.id
+                    fetchGeneration += 1
+                    if (isFetching) {
+                        reloadRequested = true
+                    }
+                    reelsList = reelsList.filter { it.id != item.id }
+                    serverOffset = (serverOffset - 1).coerceAtLeast(0)
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        var success = false
+                        try {
+                            val delRes = executeAuthenticatedRequest {
+                                method = HttpMethod.Delete
+                                url("${BuildConfig.SUPABASE_URL}/rest/v1/reels")
+                                url.parameters.append("id", "eq.${item.id}")
+                            }
+                            success = delRes?.status?.isSuccess() == true
+                        } catch (_: Exception) {
+                            success = false
+                        } finally {
+                            withContext(Dispatchers.Main) {
+                                inFlightUpdates = inFlightUpdates - item.id
+                                if (!success) {
+                                    if (reelsList.none { it.id == item.id }) {
+                                        reelsList = if (originalIndex in 0..reelsList.size) {
+                                            reelsList.toMutableList().apply { add(originalIndex, item) }
+                                        } else {
+                                            reelsList + item
+                                        }
+                                    }
+                                    serverOffset += 1
+                                    Toast.makeText(this@MainActivity, "Failed to delete reel", Toast.LENGTH_SHORT).show()
+                                }
+                                if (inFlightUpdates.isEmpty() && reloadRequested && !isFetching) {
+                                    reloadRequested = false
+                                    loadReelsRef?.invoke()
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         val categories = remember(reelsList) {
@@ -885,9 +1072,22 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        val filteredReels = remember(reelsList, selectedCategory) {
-            if (selectedCategory == "All" || selectedCategory !in categories) reelsList
-            else reelsList.filter { it.categoryName == selectedCategory }
+        val filteredReels = remember(reelsList, selectedCategory, searchQuery, statusFilter) {
+            reelsList.filter { item ->
+                val matchesCat = selectedCategory == "All" || selectedCategory !in categories || item.categoryName == selectedCategory
+                val matchesStatus = when (statusFilter) {
+                    "pending" -> item.completionStatus != "completed" && item.completionStatus != "watched"
+                    "completed" -> item.completionStatus == "completed" || item.completionStatus == "watched"
+                    else -> true
+                }
+                val matchesSearch = if (searchQuery.isBlank()) true else {
+                    val query = searchQuery.trim().lowercase()
+                    item.title.lowercase().contains(query) ||
+                    item.creator.lowercase().contains(query) ||
+                    item.categoryName.lowercase().contains(query)
+                }
+                matchesCat && matchesStatus && matchesSearch
+            }
         }
 
         Column(
@@ -1012,6 +1212,80 @@ class MainActivity : ComponentActivity() {
             }
 
             if (activeTab == "dashboard") {
+                // Search Input Box
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    placeholder = { Text("Search reels, creators, topics...", color = DarkMuted, fontSize = 12.sp) },
+                    singleLine = true,
+                    trailingIcon = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(
+                                onClick = { searchQuery = "" },
+                                modifier = Modifier.semantics { contentDescription = "Clear search" }
+                            ) {
+                                Text("✕", color = DarkMuted, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    },
+                    textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = PureWhite,
+                        unfocusedTextColor = LightText,
+                        focusedBorderColor = PureWhite,
+                        unfocusedBorderColor = DarkBorder,
+                        focusedContainerColor = DarkSurface,
+                        unfocusedContainerColor = DarkSurface
+                    ),
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp)
+                        .defaultMinSize(minHeight = 48.dp)
+                )
+
+                // Status Tabs (All / To Watch / Watched)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    val statusTabs = listOf(
+                        "all" to "All",
+                        "pending" to "To Watch",
+                        "completed" to "Watched"
+                    )
+                    statusTabs.forEach { (statusKey, label) ->
+                        val isSelected = statusFilter == statusKey
+                        Box(
+                            modifier = Modifier
+                                .clickable(
+                                    role = Role.Tab,
+                                    onClick = { statusFilter = statusKey }
+                                )
+                                .semantics { selected = isSelected }
+                                .background(
+                                    if (isSelected) PureWhite else DarkSurface,
+                                    RoundedCornerShape(8.dp)
+                                )
+                                .border(
+                                    1.dp,
+                                    if (isSelected) PureWhite else DarkBorder,
+                                    RoundedCornerShape(8.dp)
+                                )
+                                .padding(horizontal = 10.dp, vertical = 5.dp)
+                        ) {
+                            Text(
+                                text = label,
+                                fontSize = 11.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isSelected) DarkBg else LightText
+                            )
+                        }
+                    }
+                }
+
                 // Category Filter Pills (horizontally scrollable without limit)
                 if (categories.size > 1) {
                     Row(
@@ -1138,19 +1412,60 @@ class MainActivity : ComponentActivity() {
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
-                        Text(
-                            text = "No saved reels found",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = PureWhite
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = "Share any Instagram Reel to Watch Later to capture it silently.",
-                            fontSize = 13.sp,
-                            color = DarkMuted,
-                            textAlign = TextAlign.Center
-                        )
+                        if (reelsList.isNotEmpty()) {
+                            Text(
+                                text = "No matching reels",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = PureWhite
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = "Try adjusting your search query, status, or category filter.",
+                                fontSize = 13.sp,
+                                color = DarkMuted,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(14.dp))
+                            Button(
+                                onClick = {
+                                    searchQuery = ""
+                                    statusFilter = "all"
+                                    selectedCategory = "All"
+                                },
+                                shape = RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = DarkSurface,
+                                    contentColor = PureWhite
+                                )
+                            ) {
+                                Text("Clear Filters", fontSize = 12.sp)
+                            }
+                            if (hasMoreReels) {
+                                Spacer(modifier = Modifier.height(10.dp))
+                                if (isLoadingMore) {
+                                    CircularProgressIndicator(color = PureWhite, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
+                                } else {
+                                    TextButton(onClick = loadMoreReels) {
+                                        Text("Load More Reels", fontSize = 12.sp, color = PureWhite)
+                                    }
+                                }
+                            }
+                        } else {
+                            Text(
+                                text = "No saved reels found",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = PureWhite
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = "Share any Instagram Reel to Watch Later to capture it silently.",
+                                fontSize = 13.sp,
+                                color = DarkMuted,
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
                 } else {
                     LazyColumn(
@@ -1210,7 +1525,7 @@ class MainActivity : ComponentActivity() {
                                     overflow = TextOverflow.Ellipsis
                                 )
 
-                                Spacer(modifier = Modifier.height(6.dp))
+                                Spacer(modifier = Modifier.height(8.dp))
 
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
@@ -1223,13 +1538,69 @@ class MainActivity : ComponentActivity() {
                                         color = LightText
                                     )
 
-                                    if (item.completionStatus == "watched") {
-                                        Text(
-                                            text = "Watched ✓",
-                                            fontSize = 10.sp,
-                                            fontFamily = FontFamily.Monospace,
-                                            color = Color(0xFF34D399)
-                                        )
+                                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        val isCompleted = item.completionStatus == "completed" || item.completionStatus == "watched"
+                                        val isUpdating = item.id in inFlightUpdates
+                                        val toggleLabel = if (isCompleted) "Mark unwatched" else "Mark watched"
+                                        Box(
+                                            modifier = Modifier
+                                                .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                                                .then(
+                                                    if (isUpdating) Modifier else Modifier.clickable(
+                                                        role = Role.Button,
+                                                        onClickLabel = "$toggleLabel ${item.title}"
+                                                    ) { toggleWatched(item) }
+                                                )
+                                                .semantics { contentDescription = "$toggleLabel: ${item.title}" }
+                                                .padding(horizontal = 8.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = if (isCompleted) "Watched ✓" else "Mark Watched",
+                                                fontSize = 11.sp,
+                                                fontWeight = if (isCompleted) FontWeight.SemiBold else FontWeight.Normal,
+                                                color = if (isUpdating) DarkMuted.copy(alpha = 0.5f) else if (isCompleted) Color(0xFF34D399) else DarkMuted
+                                            )
+                                        }
+
+                                        Box(
+                                            modifier = Modifier
+                                                .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                                                .then(
+                                                    if (isUpdating) Modifier else Modifier.clickable(
+                                                        role = Role.Button,
+                                                        onClickLabel = "Delete ${item.title}"
+                                                    ) { reelToDelete = item }
+                                                )
+                                                .semantics { contentDescription = "Delete reel: ${item.title}" }
+                                                .padding(horizontal = 8.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = "Delete",
+                                                fontSize = 11.sp,
+                                                color = if (isUpdating) DarkMuted.copy(alpha = 0.5f) else Color(0xFFEF4444)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if (hasMoreReels) {
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 12.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (isLoadingMore) {
+                                        CircularProgressIndicator(color = PureWhite, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
+                                    } else {
+                                        TextButton(onClick = loadMoreReels) {
+                                            Text("Load More Reels", fontSize = 12.sp, color = PureWhite)
+                                        }
                                     }
                                 }
                             }
@@ -1306,6 +1677,34 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                 }
+            }
+
+            // Delete Confirmation Dialog
+            reelToDelete?.let { item ->
+                AlertDialog(
+                    onDismissRequest = { reelToDelete = null },
+                    containerColor = DarkSurface,
+                    titleContentColor = PureWhite,
+                    textContentColor = LightText,
+                    title = { Text("Delete Reel?", fontWeight = FontWeight.Bold) },
+                    text = { Text("Are you sure you want to delete \"${item.title}\"? This action cannot be undone.") },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                val toDelete = item
+                                reelToDelete = null
+                                deleteReel(toDelete)
+                            }
+                        ) {
+                            Text("Delete", color = Color(0xFFEF4444), fontWeight = FontWeight.Bold)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { reelToDelete = null }) {
+                            Text("Cancel", color = LightText)
+                        }
+                    }
+                )
             }
         }
     }
