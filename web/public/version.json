@@ -1,6 +1,6 @@
 {
-  "versionCode": 6,
-  "versionName": "1.0.5",
+  "versionCode": 7,
+  "versionName": "1.0.6",
   "apkUrl": "https://watchlatertool.vercel.app/watch-later.apk",
-  "releaseNotes": "Built-in mobile dashboard feed, optimized background sync and zero-pressure battery performance."
+  "releaseNotes": "Automatic installer flow, foreground-aware update triggers, and dashboard stability improvements."
 }
