@@ -45,21 +45,40 @@ enum class InstallResult {
 }
 
 object AppUpdater {
-    private const val VERSION_URL = "https://watchlatertool.vercel.app/version.json"
+    private const val PRIMARY_VERSION_URL = "https://watchlatertool.vercel.app/version.json"
+    private const val FALLBACK_VERSION_URL = "https://raw.githubusercontent.com/RyanKeshary/Watch-Later/main/web/public/version.json"
     private val json = Json { ignoreUnknownKeys = true }
 
     suspend fun checkForUpdate(): AppVersionInfo? = withContext(Dispatchers.IO) {
         val client = HttpClient(Android)
+        val cacheBust = System.currentTimeMillis()
+        val urls = listOf(
+            "$PRIMARY_VERSION_URL?t=$cacheBust",
+            "$FALLBACK_VERSION_URL?t=$cacheBust"
+        )
         try {
-            val response = client.get(VERSION_URL)
-            if (response.status.isSuccess()) {
-                val info = json.decodeFromString<AppVersionInfo>(response.bodyAsText())
-                if (info.versionCode > BuildConfig.VERSION_CODE) {
-                    return@withContext info
+            for (url in urls) {
+                try {
+                    val response = client.get(url) {
+                        headers.append("Cache-Control", "no-cache, no-store, must-revalidate")
+                        headers.append("Pragma", "no-cache")
+                    }
+                    if (response.status.isSuccess()) {
+                        val body = response.bodyAsText().trim()
+                        if (body.startsWith("{")) {
+                            val info = json.decodeFromString<AppVersionInfo>(body)
+                            if (info.versionCode > BuildConfig.VERSION_CODE) {
+                                return@withContext info
+                            } else {
+                                // Fetched valid JSON and version is not greater than current
+                                return@withContext null
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.w("AppUpdater", "Update check failed for $url: ${e.message}")
                 }
             }
-        } catch (e: Exception) {
-            Log.w("AppUpdater", "Update check failed: ${e.message}")
         } finally {
             client.close()
         }

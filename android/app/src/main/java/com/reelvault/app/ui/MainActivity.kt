@@ -107,6 +107,7 @@ class MainActivity : ComponentActivity() {
     private val httpClient = HttpClient(Android)
     private var isFirstResume = true
     private var isLoggedInState: MutableState<Boolean>? = null
+    private var availableUpdateState = mutableStateOf<AppVersionInfo?>(null)
 
     private suspend fun executeAuthenticatedRequest(
         block: HttpRequestBuilder.(token: String) -> Unit
@@ -142,6 +143,36 @@ class MainActivity : ComponentActivity() {
         val compStatus = obj["completion_status"]?.jsonPrimitive?.contentOrNull ?: "pending"
         val procStatus = obj["processing_status"]?.jsonPrimitive?.contentOrNull ?: "processed"
         return RemoteReelItem(id, url, title, creator, catName, compStatus, procStatus)
+    }
+
+    private fun triggerUpdateDownload(info: AppVersionInfo, onDownloadStateChanged: (Boolean) -> Unit) {
+        onDownloadStateChanged(true)
+        Toast.makeText(this@MainActivity, "Starting update download...", Toast.LENGTH_SHORT).show()
+
+        val watchdogJob = lifecycleScope.launch {
+            kotlinx.coroutines.delay(600_000L)
+            onDownloadStateChanged(false)
+            Toast.makeText(this@MainActivity, "Update download timed out", Toast.LENGTH_SHORT).show()
+        }
+
+        AppUpdater.startDownloadAndInstall(this@MainActivity, info) { result ->
+            watchdogJob.cancel()
+            runOnUiThread {
+                onDownloadStateChanged(false)
+                when (result) {
+                    UpdateResult.SUCCESS -> {}
+                    UpdateResult.PERMISSION_REQUIRED -> {
+                        Toast.makeText(this@MainActivity, "Allow installation from this source, then return to complete update.", Toast.LENGTH_LONG).show()
+                    }
+                    UpdateResult.BROWSER_OPENED -> {
+                        Toast.makeText(this@MainActivity, "Opening update in browser...", Toast.LENGTH_SHORT).show()
+                    }
+                    UpdateResult.FAILED -> {
+                        Toast.makeText(this@MainActivity, "Update download was cancelled or failed", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -204,15 +235,75 @@ class MainActivity : ComponentActivity() {
                         val isLoggedIn = remember { mutableStateOf(PreferenceManager.isLoggedIn(this@MainActivity)) }
                         isLoggedInState = isLoggedIn
                         var userEmail by remember { mutableStateOf(PreferenceManager.getUserEmail(this@MainActivity) ?: "") }
-                        var availableUpdate by remember { mutableStateOf<AppVersionInfo?>(null) }
+                        val availableUpdate = availableUpdateState.value
                         var isDownloadingUpdate by remember { mutableStateOf(false) }
 
                         // Check for in-app update on launch
                         LaunchedEffect(Unit) {
                             val update = AppUpdater.checkForUpdate()
                             if (update != null) {
-                                availableUpdate = update
+                                availableUpdateState.value = update
                             }
+                        }
+
+                        // Prominent global update alert dialog shown immediately regardless of current screen
+                        if (availableUpdate != null) {
+                            AlertDialog(
+                                onDismissRequest = {},
+                                title = {
+                                    Text(
+                                        text = "Update Available",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 18.sp,
+                                        color = PureWhite
+                                    )
+                                },
+                                text = {
+                                    Column {
+                                        Text(
+                                            text = "A new version of Watch Later (v${availableUpdate.versionName}) is available.",
+                                            fontSize = 14.sp,
+                                            color = PureWhite
+                                        )
+                                        if (!availableUpdate.releaseNotes.isNullOrBlank()) {
+                                            Spacer(modifier = Modifier.height(8.dp))
+                                            Text(
+                                                text = availableUpdate.releaseNotes,
+                                                fontSize = 12.sp,
+                                                color = LightText
+                                            )
+                                        }
+                                    }
+                                },
+                                confirmButton = {
+                                    Button(
+                                        onClick = {
+                                            triggerUpdateDownload(availableUpdate) { downloading ->
+                                                isDownloadingUpdate = downloading
+                                            }
+                                        },
+                                        enabled = !isDownloadingUpdate,
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = Color(0xFF10B981),
+                                            contentColor = Color.Black
+                                        )
+                                    ) {
+                                        if (isDownloadingUpdate) {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.size(16.dp),
+                                                strokeWidth = 2.dp,
+                                                color = Color.Black
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text("Downloading...")
+                                        } else {
+                                            Text("Update Now", fontWeight = FontWeight.Bold)
+                                        }
+                                    }
+                                },
+                                containerColor = DarkSurface,
+                                shape = RoundedCornerShape(16.dp)
+                            )
                         }
 
                         if (isLoggedIn.value) {
@@ -255,35 +346,8 @@ class MainActivity : ComponentActivity() {
                                 isDownloadingUpdate = isDownloadingUpdate,
                                 onUpdateClick = {
                                     availableUpdate?.let { info ->
-                                        isDownloadingUpdate = true
-                                        Toast.makeText(this@MainActivity, "Starting update download...", Toast.LENGTH_SHORT).show()
-
-                                        // Bounded 10-minute timeout watchdog to clear download spinner if download hangs or is cancelled
-                                        val watchdogJob = lifecycleScope.launch {
-                                            kotlinx.coroutines.delay(600_000L)
-                                            if (isDownloadingUpdate) {
-                                                isDownloadingUpdate = false
-                                                Toast.makeText(this@MainActivity, "Update download timed out", Toast.LENGTH_SHORT).show()
-                                            }
-                                        }
-
-                                        AppUpdater.startDownloadAndInstall(this@MainActivity, info) { result ->
-                                            watchdogJob.cancel()
-                                            runOnUiThread {
-                                                isDownloadingUpdate = false
-                                                when (result) {
-                                                    UpdateResult.SUCCESS -> {}
-                                                    UpdateResult.PERMISSION_REQUIRED -> {
-                                                        Toast.makeText(this@MainActivity, "Allow installation from this source, then return to complete update.", Toast.LENGTH_LONG).show()
-                                                    }
-                                                    UpdateResult.BROWSER_OPENED -> {
-                                                        Toast.makeText(this@MainActivity, "Opening update in browser...", Toast.LENGTH_SHORT).show()
-                                                    }
-                                                    UpdateResult.FAILED -> {
-                                                        Toast.makeText(this@MainActivity, "Update download was cancelled or failed", Toast.LENGTH_SHORT).show()
-                                                    }
-                                                }
-                                            }
+                                        triggerUpdateDownload(info) { downloading ->
+                                            isDownloadingUpdate = downloading
                                         }
                                     }
                                 },
@@ -298,34 +362,8 @@ class MainActivity : ComponentActivity() {
                                 isDownloadingUpdate = isDownloadingUpdate,
                                 onUpdateClick = {
                                     availableUpdate?.let { info ->
-                                        isDownloadingUpdate = true
-                                        Toast.makeText(this@MainActivity, "Starting update download...", Toast.LENGTH_SHORT).show()
-
-                                        val watchdogJob = lifecycleScope.launch {
-                                            kotlinx.coroutines.delay(600_000L)
-                                            if (isDownloadingUpdate) {
-                                                isDownloadingUpdate = false
-                                                Toast.makeText(this@MainActivity, "Update download timed out", Toast.LENGTH_SHORT).show()
-                                            }
-                                        }
-
-                                        AppUpdater.startDownloadAndInstall(this@MainActivity, info) { result ->
-                                            watchdogJob.cancel()
-                                            runOnUiThread {
-                                                isDownloadingUpdate = false
-                                                when (result) {
-                                                    UpdateResult.SUCCESS -> {}
-                                                    UpdateResult.PERMISSION_REQUIRED -> {
-                                                        Toast.makeText(this@MainActivity, "Allow installation from this source, then return to complete update.", Toast.LENGTH_LONG).show()
-                                                    }
-                                                    UpdateResult.BROWSER_OPENED -> {
-                                                        Toast.makeText(this@MainActivity, "Opening update in browser...", Toast.LENGTH_SHORT).show()
-                                                    }
-                                                    UpdateResult.FAILED -> {
-                                                        Toast.makeText(this@MainActivity, "Update download was cancelled or failed", Toast.LENGTH_SHORT).show()
-                                                    }
-                                                }
-                                            }
+                                        triggerUpdateDownload(info) { downloading ->
+                                            isDownloadingUpdate = downloading
                                         }
                                     }
                                 },
@@ -349,6 +387,10 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         lifecycleScope.launch {
+            val update = AppUpdater.checkForUpdate()
+            if (update != null) {
+                availableUpdateState.value = update
+            }
             val result = AppUpdater.checkAndInstallPending(this@MainActivity)
             when (result) {
                 InstallResult.PERMISSION_REQUIRED -> {
